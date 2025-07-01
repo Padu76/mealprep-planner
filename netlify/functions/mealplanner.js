@@ -30,7 +30,14 @@ exports.handler = async (event) => {
     Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
     Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
     Dieta: ${requestData.diet}.
-    Esclusioni alimentari: ${requestData.exclusions.join(', ') || 'Nessuna'}.
+    Allergie alimentari: ${requestData.allergies.join(', ') || 'Nessuna'}.
+    Preferenze alimentari: ${requestData.preferences.join(', ') || 'Nessuna'}.
+    Livello di abilità in cucina: ${requestData.cooking_skill_level || 'Non specificato'}.
+    Attrezzatura da cucina disponibile: ${requestData.equipment_available.join(', ') || 'Non specificata'}.
+    Numero di persone per il piano: ${requestData.family_members || '1'}.
+    Obiettivi specifici aggiuntivi: ${requestData.specific_goals || 'Nessuno'}.
+    Tipi di pasti da includere: ${requestData.meal_types_to_include.join(', ') || 'Colazione, Pranzo, Cena'}.
+    Note dietetiche aggiuntive: ${requestData.dietary_notes || 'Nessuna'}.
     Cibi già a casa: ${requestData.foods_at_home.join(', ') || 'Nessuno'}.
     Pasti al giorno: ${requestData.meals_per_day}.
 
