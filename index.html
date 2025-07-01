@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Prep Planner</title>
+  <style>
+    body { font-family: 'Open Sans', sans-serif; margin: 0; padding: 0; background: #ffffff; color: #333; }
+    header { background: #FF7F00; color: #fff; padding: 2rem; text-align: center; }
+    section { padding: 2rem; max-width: 800px; margin: auto; }
+    h1, h2 { color: #FF7F00; }
+    .cta-button { background: #4CAF50; color: #fff; padding: 1rem 2rem; border: none; border-radius: 5px; font-size: 1.2rem; cursor: pointer; margin-top: 1rem; }
+    form input, form select, form textarea { width: 100%; padding: 0.7rem; margin: 0.5rem 0; border-radius: 4px; border: 1px solid #ccc; }
+    table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 0.5rem; text-align: left; }
+    footer { background: #f5f5f5; text-align: center; padding: 1rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Meal Prep Planner Intelligente</h1>
+    <p>Crea il tuo piano personalizzato, mangia sano e risparmia tempo!</p>
+    <button class="cta-button" onclick="document.getElementById('plannerForm').scrollIntoView({behavior: 'smooth'});">👉 Crea il tuo piano ora</button>
+  </header>
+
+  <section>
+    <h2>Come funziona</h2>
+    <ol>
+      <li>Compila il form con i tuoi dati e preferenze.</li>
+      <li>Ricevi un piano meal prep personalizzato via Email o WhatsApp.</li>
+      <li>Segui il piano e torna in forma con facilità!</li>
+    </ol>
+  </section>
+
+  <section id="plannerForm">
+    <h2>Crea il tuo piano</h2>
+    <form>
+      <label>Durata meal prep:</label>
+      <select required>
+        <option value="2">2 giorni</option>
+        <option value="3">3 giorni</option>
+        <option value="5">5 giorni</option>
+        <option value="7">7 giorni</option>
+      </select>
+
+      <label>Obiettivo:</label>
+      <select required>
+        <option value="dimagrimento">Dimagrimento</option>
+        <option value="mantenimento">Mantenimento</option>
+        <option value="massa">Aumento massa</option>
+      </select>
+
+      <label>Età:</label>
+      <input type="number" min="10" max="100" required>
+
+      <label>Peso (kg):</label>
+      <input type="number" min="30" max="200" required>
+
+      <label>Altezza (cm):</label>
+      <input type="number" min="100" max="250" required>
+
+      <label>Dieta preferita:</label>
+      <select required>
+        <option value="bilanciato">Bilanciato</option>
+        <option value="lowcarb">Low-carb</option>
+        <option value="lowfat">Low-fat</option>
+      </select>
+
+      <label>Cibi da escludere:</label>
+      <textarea placeholder="Es: lattosio, glutine..."></textarea>
+
+      <label>Cibi già presenti in casa:</label>
+      <textarea placeholder="Es: pollo, riso, zucchine..."></textarea>
+
+      <label>Quanti pasti al giorno vuoi preparare?</label>
+      <select required>
+        <option value="1">1 pasto (pranzo o cena)</option>
+        <option value="2">2 pasti (pranzo e cena)</option>
+        <option value="3">3 pasti (colazione, pranzo e cena)</option>
+      </select>
+
+      <label>Email:</label>
+      <input type="email" required>
+
+      <label>Telefono (WhatsApp):</label>
+      <input type="tel" required>
+
+      <button class="cta-button" type="submit">Crea il mio piano ora!</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Dashboard richieste (demo)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Nome</th>
+          <th>Obiettivo</th>
+          <th>Durata</th>
+          <th>Stato</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>01/07/2025</td>
+          <td>Mario Rossi</td>
+          <td>Dimagrimento</td>
+          <td>5 giorni</td>
+          <td>Da elaborare</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p>© 2025 Meal Prep Planner - Tutti i diritti riservati</p>
+  </footer>
+</body>
+</html>
