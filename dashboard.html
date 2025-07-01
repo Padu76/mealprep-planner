@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Meal Prep Planner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #FF7F00 0%, #FF9A33 100%);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo a {
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo a:hover {
+            opacity: 0.8;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .home-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .home-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Stats Cards */
+        .stats-section {
+            padding: 2rem 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #FF7F00;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Filters */
+        .filters-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #FF7F00;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #FF7F00;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e66f00;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Table */
+        .table-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .export-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            display: inline-block;
+            min-width: 80px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-processing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-sent {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .meal-plan-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .meal-plan-section h3 {
+            color: #FF7F00;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .table-container {
+                font-size: 0.9rem;
+            }
+            
+            th, td {
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="index.html">🍎 Meal Prep Dashboard</a>
+                </div>
+                <div class="user-info">
+                    <a href="index.html" class="home-btn">🏠 Home</a>
+                    <span>Admin</span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRequests">0</div>
+                    <div class="stat-label">Richieste Totali</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingRequests">0</div>
+                    <div class="stat-label">Da Elaborare</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedRequests">0</div>
+                    <div class="stat-label">Completate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayRequests">0</div>
+                    <div class="stat-label">Oggi</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters Section -->
+    <section class="filters-section">
+        <div class="container">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="dateFrom">Data da:</label>
+                    <input type="date" id="dateFrom">
+                </div>
+                <div class="filter-group">
+                    <label for="dateTo">Data a:</label>
+                    <input type="date" id="dateTo">
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">Stato:</label>
+                    <select id="statusFilter">
+                        <option value="">Tutti</option>
+                        <option value="pending">Da elaborare</option>
+                        <option value="processing">In elaborazione</option>
+                        <option value="completed">Completato</option>
+                        <option value="sent">Inviato</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchName">Cerca nome:</label>
+                    <input type="text" id="searchName" placeholder="Nome cliente...">
+                </div>
+                <div class="filter-buttons">
+                    <button class="btn btn-primary" onclick="applyFilters()">Filtra</button>
+                    <button class="btn btn-secondary" onclick="clearFilters()">Reset</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Table Section -->
+    <section class="table-section">
+        <div class="container">
+            <div class="table-header">
+                <h2 class="table-title">Richieste Ricevute</h2>
+                <button class="export-btn" onclick="exportToCSV()">📊 Esporta CSV</button>
+            </div>
+            <div class="table-container">
+                <table id="requestsTable">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Obiettivo</th>
+                            <th>Durata</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestsTableBody">
+                        <!-- Rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-state-icon">📝</div>
+                    <h3>Nessuna richiesta trovata</h3>
+                    <p>Le nuove richieste dal form appariranno qui.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal for request details -->
+    <div class="modal" id="requestModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Dettagli Richiesta</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for demonstration
+        let sampleRequests = [
+            {
+                id: 1,
+                timestamp: new Date('2025-06-28T10:30:00').toISOString(),
+                nome: 'Mario Rossi',
+                email: 'mario.rossi@email.com',
+                telefono: '+39 123 456 7890',
+                eta: 35,
+                peso: 75,
+                altezza: 175,
+                obiettivo: 'dimagrire',
+                durata: '14',
+                dieta: 'mediterranea',
+                pasti: '4',
+                esclusioni: 'Glutine',
+                'cibi-casa': 'Riso, pasta, pollo',
+                calories: 1800,
+                status: 'pending'
+            },
+            {
+                id: 2,
+                timestamp: new Date('2025-06-29T14:15:00').toISOString(),
+                nome: 'Anna Bianchi',
+                email: 'anna.bianchi@email.com',
+                telefono: '+39 987 654 3210',
+                eta: 28,
+                peso: 60,
+                altezza: 165,
+                obiettivo: 'mantenere',
+                durata: '21',
+                dieta: 'vegetariana',
+                pasti: '5',
+                esclusioni: '',
+                'cibi-casa': 'Legumi, verdure',
+                calories: 1600,
+                status: 'completed'
+            },
+            {
+                id: 3,
+                timestamp: new Date().toISOString(),
+                nome: 'Luca Verdi',
+                email: 'luca.verdi@email.com',
+                telefono: '',
+                eta: 42,
+                peso: 85,
+                altezza: 180,
+                obiettivo: 'aumentare',
+                durata: '30',
+                dieta: 'proteica',
+                pasti: '6',
+                esclusioni: 'Lattosio',
+                'cibi-casa': 'Carne, uova',
+                calories: 2200,
+                status: 'processing'
+            }
+        ];
+
+        // Load data from localStorage or use sample data
+        function loadRequests() {
+            const saved = localStorage.getItem('mealPrepRequests');
+            return saved ? JSON.parse(saved) : sampleRequests;
+        }
+
+        // Save requests to localStorage
+        function saveRequests(requests) {
+            localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
+        }
+
+        let allRequests = loadRequests();
+        let filteredRequests = [...allRequests];
+
+        // Initialize dashboard
+        function initDashboard() {
+            updateStats();
+            renderTable();
+            setDefaultDates();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = allRequests.length;
+            const pending = allRequests.filter(r => r.status === 'pending').length;
+            const completed = allRequests.filter(r => r.status === 'completed' || r.status === 'sent').length;
+            const today = allRequests.filter(r => 
+                new Date(r.timestamp).toDateString() === new Date().toDateString()
+            ).length;
+
+            document.getElementById('totalRequests').textContent = total;
+            document.getElementById('pendingRequests').textContent = pending;
+            document.getElementById('completedRequests').textContent = completed;
+            document.getElementById('todayRequests').textContent = today;
+        }
+
+        // Set default dates
+        function setDefaultDates() {
+            const today = new Date();
+            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = weekAgo.toISOString().split('T')[0];
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('requestsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (filteredRequests.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            tbody.innerHTML = filteredRequests.map(request => `
+                <tr>
+                    <td>${formatDate(request.timestamp)}</td>
+                    <td>${request.nome}</td>
+                    <td>${request.email}</td>
+                    <td>${capitalizeFirst(request.obiettivo)}</td>
+                    <td>${request.durata} giorni</td>
+                    <td><span class="status-badge status-${request.status}">${getStatusLabel(request.status)}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="viewDetails(${request.id})">Dettagli</button>
+                        ${request.status === 'pending' ? 
+                            `<button class="btn btn-success btn-sm" onclick="markAsCompleted(${request.id})">Completa</button>` : 
+                            ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const status = document.getElementById('statusFilter').value;
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+
+            filteredRequests = allRequests.filter(request => {
+                const requestDate = new Date(request.timestamp).toISOString().split('T')[0];
+                
+                if (dateFrom && requestDate < dateFrom) return false;
+                if (dateTo && requestDate > dateTo) return false;
+                if (status && request.status !== status) return false;
+                if (searchName && !request.nome.toLowerCase().includes(searchName)) return false;
+                
+                return true;
+            });
+
+            renderTable();
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('searchName').value = '';
+            
+            filteredRequests = [...allRequests];
+            renderTable();
+        }
+
+        // View request details
+        function viewDetails(id) {
+            const request = allRequests.find(r => r.id === id);
+            if (!request) return;
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Nome</div>
+                        <div class="detail-value">${request.nome}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value">${request.email}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Telefono</div>
+                        <div class="detail-value">${request.telefono || 'Non fornito'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Età</div>
+                        <div class="detail-value">${request.eta} anni</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Peso</div>
+                        <div class="detail-value">${request.peso} kg</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Altezza</div>
+                        <div class="detail-value">${request.altezza} cm</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Obiettivo</div>
+                        <div class="detail-value">${capitalizeFirst(request.obiettivo)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Durata</div>
+                        <div class="detail-value">${request.durata} giorni</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Tipo di dieta</div>
+                        <div class="detail-value">${capitalizeFirst(request.dieta)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Pasti al giorno</div>
+                        <div class="detail-value">${request.pasti}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Calorie calcolate</div>
+                        <div class="detail-value">${request.calories} kcal/giorno</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Stato</div>
+                        <div class="detail-value">
+                            <span class="status-badge status-${request.status}">${getStatusLabel(request.status)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${request.esclusioni ? `
+                    <div style="margin-top: 1.5rem;">
+                        <div class="detail-label">Allergie/Intolleranze</div>
+                        <div class="detail-value">${request.esclusioni}</div>
+                    </div>
+                ` : ''}
+                
+                ${request['cibi-casa'] ? `
+                    <div style="margin-top: 1.5rem;">
+                        <div class="detail-label">Cibi già in casa</div>
+                        <div class="detail-value">${request['cibi-casa']}</div>
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+                    ${request.status === 'pending' ? 
+                        `<button class="btn btn-success" onclick="markAsCompleted(${request.id}); closeModal();">Segna come Completato</button>` : 
+                        ''}
+                    <button class="btn btn-primary" onclick="regeneratePlan(${request.id})">Rigenera Piano</button>
+                    <button class="btn btn-secondary" onclick="sendPlan(${request.id})">Invia Piano</button>
+                </div>
+            `;
+
+            document.getElementById('requestModal').style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('requestModal').style.display = 'none';
+        }
+
+        // Mark as completed
+        function markAsCompleted(id) {
+            const requestIndex = allRequests.findIndex(r => r.id === id);
+            if (requestIndex !== -1) {
+                allRequests[requestIndex].status = 'completed';
+                saveRequests(allRequests);
+                updateStats();
+                applyFilters();
+                alert('Richiesta segnata come completata!');
+            }
+        }
+
+        // Regenerate plan
+        function regeneratePlan(id) {
+            alert('Piano rigenerato! (Funzionalità da implementare)');
+        }
+
+        // Send plan
+        function sendPlan(id) {
+            const requestIndex = allRequests.findIndex(r => r.id === id);
+            if (requestIndex !== -1) {
+                allRequests[requestIndex].status = 'sent';
+                saveRequests(allRequests);
+                updateStats();
+                applyFilters();
+                alert('Piano inviato al cliente!');
+            }
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            const csvContent = [
+                ['Data', 'Nome', 'Email', 'Telefono', 'Età', 'Peso', 'Altezza', 'Obiettivo', 'Durata', 'Dieta', 'Pasti', 'Calorie', 'Stato'],
+                ...filteredRequests.map(r => [
+                    formatDate(r.timestamp),
+                    r.nome,
+                    r.email,
+                    r.telefono || '',
+                    r.eta,
+                    r.peso,
+                    r.altezza,
+                    r.obiettivo,
+                    r.durata,
+                    r.dieta,
+                    r.pasti,
+                    r.calories,
+                    r.status
+                ])
+            ].map(row => row.join(',')).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `meal-prep-requests-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Utility functions
+        function formatDate(timestamp) {
+            return new Date(timestamp).toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'pending': 'Da elaborare',
+                'processing': 'In elaborazione',
+                'completed': 'Completato',
+                'sent': 'Inviato'
+            };
+            return labels[status] || status;
+        }
+
+        function logout() {
+            if (confirm('Sei sicuro di voler uscire?')) {
+                // Redirect to home page
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('requestModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
