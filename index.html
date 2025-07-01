@@ -1,1034 +1,1165 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Prep Planner - Il tuo piano alimentare personalizzato</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Meal Prep Planner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Global Firebase variables
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        // Initialize Firebase with provided config
+        // __firebase_config and __app_id are provided by the Canvas environment
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Check if firebaseConfig is not empty before initializing
+        if (Object.keys(firebaseConfig).length > 0) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // Listen for authentication state changes
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("User authenticated:", userId);
+                    // If the user is authenticated, check if they are an admin
+                    // For this demo, we'll assume any authenticated user can view the dashboard
+                    // In a real app, you'd check roles/permissions
+                    if (window.location.hash === '#dashboard') {
+                        document.getElementById('dashboard-container').classList.remove('hidden');
+                        document.getElementById('landing-page').classList.add('hidden');
+                        document.getElementById('auth-section').classList.add('hidden'); // Hide auth section if logged in
+                        loadRequests(); // Load requests only if authenticated and on dashboard
+                    } else {
+                        document.getElementById('auth-section').classList.add('hidden');
+                    }
+                } else {
+                    userId = null;
+                    console.log("User not authenticated.");
+                    // Attempt to sign in anonymously if no initial token or if token fails
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Signed in with custom token.");
+                        } else {
+                            await signInAnonymously(auth);
+                            console.log("Signed in anonymously.");
+                        }
+                    } catch (error) {
+                        console.error("Firebase authentication error:", error);
+                        // Show login form if anonymous sign-in fails or no token
+                        document.getElementById('auth-section').classList.remove('hidden');
+                    }
+                }
+                isAuthReady = true; // Mark auth as ready
+            });
+        } else {
+            console.error("Firebase configuration is missing. Please ensure __firebase_config is provided.");
+            document.getElementById('auth-section').classList.remove('hidden'); // Show auth section if Firebase isn't configured
+        }
+
+
+        // Expose Firebase objects globally for use in other scripts
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.getFirestore = getFirestore;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.onSnapshot = onSnapshot;
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.query = query;
+        window.where = where;
+        window.getDocs = getDocs;
+        window.userId = userId; // This will be updated by onAuthStateChanged
+        window.isAuthReady = isAuthReady; // This will be updated by onAuthStateChanged
+        window.appId = appId; // Expose appId globally
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Montserrat', sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        /* Header */
-        header {
-            background: linear-gradient(135deg, #FF7F00 0%, #FF9A33 100%);
-            color: white;
-            padding: 1rem 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        ::-webkit-scrollbar-track {
+            background: #f5f5f5;
+            border-radius: 10px;
         }
-
-        .header-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        ::-webkit-scrollbar-thumb {
+            background: #ff7f00;
+            border-radius: 10px;
         }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-
-        .nav-links a:hover {
-            opacity: 0.8;
-        }
-
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, #FF7F00 0%, #FF9A33 100%);
-            color: white;
-            padding: 120px 0 80px;
-            text-align: center;
-            margin-top: 70px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            animation: fadeInUp 0.8s ease-out;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            animation: fadeInUp 0.8s ease-out 0.2s both;
-        }
-
-        .cta-button {
-            background: white;
-            color: #FF7F00;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            animation: fadeInUp 0.8s ease-out 0.4s both;
-        }
-
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        /* Benefits Section */
-        .benefits {
-            padding: 80px 0;
-            background: #F5F5F5;
-        }
-
-        .benefits h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-            color: #333;
-        }
-
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .benefit-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .benefit-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .benefit-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .benefit-card h3 {
-            color: #FF7F00;
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
-        }
-
-        /* How it works */
-        .how-it-works {
-            padding: 80px 0;
-            background: white;
-        }
-
-        .how-it-works h2 {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
-            color: #333;
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .step {
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .step-number {
-            background: #FF7F00;
-            color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0 auto 1rem;
-        }
-
-        .step h3 {
-            color: #333;
-            margin-bottom: 1rem;
-        }
-
-        /* Form Section */
-        .form-section {
-            padding: 80px 0;
-            background: #F5F5F5;
-        }
-
-        .form-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .form-container h2 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 2rem;
-            font-size: 2rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        input, select, textarea {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #FF7F00;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .submit-btn {
-            background: linear-gradient(135deg, #FF7F00 0%, #FF9A33 100%);
-            color: white;
-            padding: 15px 40px;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-top: 1rem;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(255, 127, 0, 0.3);
-        }
-
-        /* Footer */
-        footer {
-            background: #333;
-            color: white;
-            padding: 3rem 0;
-            text-align: center;
-        }
-
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .footer-section h3 {
-            color: #FF7F00;
-            margin-bottom: 1rem;
-        }
-
-        .footer-section a {
-            color: #ccc;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-section a:hover {
-            color: #FF7F00;
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Success Message */
-        .success-message {
-            display: none;
-            background: #4CAF50;
-            color: white;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            text-align: center;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 0 15px;
-            }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e67300;
         }
     </style>
 </head>
-<body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">🍎 Meal Prep Planner</div>
-                <nav>
-                    <ul class="nav-links">
-                        <li><a href="#benefits">Benefici</a></li>
-                        <li><a href="#come-funziona">Come Funziona</a></li>
-                        <li><a href="#form">Inizia Ora</a></li>
-                        <li><a href="dashboard.html" style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px;">📊 Dashboard</a></li>
-                    </ul>
-                </nav>
+<body class="bg-white text-gray-800">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500"></div>
+            <p class="mt-4 text-white text-lg">Elaborazione richiesta...</p>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="mb-6"></p>
+            <button id="modal-close-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-4 rounded-lg shadow-xl max-w-3xl w-full h-5/6 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Piano Pasti Generato</h3>
+                <button id="pdf-viewer-close-button" class="text-gray-600 hover:text-gray-900 text-2xl font-bold">&times;</button>
+            </div>
+            <iframe id="pdf-frame" class="w-full h-full border rounded-lg"></iframe>
+            <div class="mt-4 flex justify-end">
+                <a id="pdf-download-link" download="meal_prep_plan.pdf" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Scarica PDF</a>
             </div>
         </div>
-    </header>
+    </div>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Il Tuo Piano Alimentare Personalizzato</h1>
-            <p>Raggiungi i tuoi obiettivi con piani nutrizionali su misura, calcolo calorico preciso e liste della spesa pronte</p>
-            <a href="#form" class="cta-button">Crea il Tuo Piano Ora</a>
+    <!-- Dashboard Login/Auth Section -->
+    <section id="auth-section" class="min-h-screen bg-gray-100 flex items-center justify-center p-4 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center text-orange-500 mb-6">Accesso Dashboard</h2>
+            <p class="text-center text-gray-600 mb-4">Per accedere alla dashboard, è necessario essere autenticati.</p>
+            <p class="text-center text-gray-600">Se non sei autenticato, la pagina tenterà l'accesso anonimo o tramite token.</p>
+            <p class="text-center text-gray-600 mt-2">Attendere o ricaricare la pagina se l'accesso non avviene automaticamente.</p>
+            <button id="logout-button" class="mt-6 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 hidden">Logout</button>
         </div>
     </section>
 
-    <!-- Benefits Section -->
-    <section class="benefits" id="benefits">
-        <div class="container">
-            <h2>Perché Scegliere Meal Prep Planner?</h2>
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <div class="benefit-icon">⏰</div>
-                    <h3>Risparmia Tempo</h3>
-                    <p>Pianifica i tuoi pasti in anticipo e libera tempo prezioso durante la settimana</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">💰</div>
-                    <h3>Risparmia Denaro</h3>
-                    <p>Lista della spesa ottimizzata per evitare sprechi e acquisti impulsivi</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🎯</div>
-                    <h3>Raggiungi i Tuoi Obiettivi</h3>
-                    <p>Piani personalizzati per dimagrire, aumentare massa o mantenere il peso</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🥗</div>
-                    <h3>Mangia Sano</h3>
-                    <p>Ricette bilanciate e nutrienti adatte alle tue esigenze alimentari</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">📱</div>
-                    <h3>Tutto Digitale</h3>
-                    <p>Ricevi il tuo piano direttamente via email o WhatsApp</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🔄</div>
-                    <h3>Personalizzabile</h3>
-                    <p>Adatta il piano alle tue preferenze, allergie e disponibilità</p>
+    <!-- Landing Page -->
+    <div id="landing-page">
+        <!-- Hero Section -->
+        <section class="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-20 md:py-32 flex items-center justify-center min-h-screen-75 rounded-b-lg shadow-lg">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4 animate-fade-in-down">
+                    Rivoluziona la Tua Alimentazione con <br class="hidden md:inline">Meal Prep Planner
+                </h1>
+                <p class="text-lg md:text-xl mb-8 opacity-90 animate-fade-in-up">
+                    Piani Pasti Personalizzati, Lista Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.
+                </p>
+                <a href="#meal-prep-form" class="bg-white text-orange-500 hover:bg-gray-100 font-bold py-3 px-8 rounded-full text-lg md:text-xl shadow-lg transition duration-300 transform hover:scale-105 animate-bounce-in">
+                    Inizia Ora!
+                </a>
+            </div>
+        </section>
+
+        <!-- Why Meal Prep Planner Section -->
+        <section class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Perché Scegliere Meal Prep Planner?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">💡</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Risparmio di Tempo</h3>
+                        <p class="text-gray-700 text-center">Prepara i tuoi pasti per più giorni in una sola sessione, liberando tempo prezioso durante la settimana.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">💰</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Riduzione degli Sprechi</h3>
+                        <p class="text-gray-700 text-center">Una lista spesa precisa ti aiuta a comprare solo ciò che serve, riducendo gli sprechi alimentari e il budget.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-green-500 text-4xl mb-4 text-center">💪</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Obiettivi Raggiungibili</h3>
+                        <p class="text-gray-700 text-center">Piani personalizzati per perdita peso, aumento massa o mantenimento, con calcolo calorico dettagliato.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">🍽️</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Ricette Varie e Gustose</h3>
+                        <p class="text-gray-700 text-center">Scopri nuove ricette adatte alle tue preferenze e restrizioni alimentari.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-green-500 text-4xl mb-4 text-center">📱</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Mobile-Friendly</h3>
+                        <p class="text-gray-700 text-center">Accedi ai tuoi piani e ricette ovunque, dal tuo smartphone o tablet.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">✨</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Semplice e Intuitivo</h3>
+                        <p class="text-gray-700 text-center">Un'interfaccia chiara e facile da usare per tutti.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- How It Works -->
-    <section class="how-it-works" id="come-funziona">
-        <div class="container">
-            <h2>Come Funziona</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Compila il Form</h3>
-                    <p>Inserisci i tuoi dati, obiettivi e preferenze alimentari</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Calcolo Personalizzato</h3>
-                    <p>Il nostro sistema calcola il tuo fabbisogno calorico e crea il piano perfetto</p>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Ricevi il Tuo Piano</h3>
-                    <p>Ottieni ricette dettagliate, calcoli nutrizionali e lista della spesa</p>
+        <!-- How It Works Section -->
+        <section class="py-16 md:py-24 bg-gray-100">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Come Funziona in 3 Semplici Passi</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">1</div>
+                        <h3 class="text-xl font-semibold mb-2">Compila il Form</h3>
+                        <p class="text-gray-700">Inserisci i tuoi dati, obiettivi e preferenze alimentari.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
+                        <h3 class="text-xl font-semibold mb-2">Ricevi il Tuo Piano</h3>
+                        <p class="text-gray-700">Il nostro sistema genera un piano pasti personalizzato con ricette e lista spesa.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">3</div>
+                        <h3 class="text-xl font-semibold mb-2">Inizia a Preparare!</h3>
+                        <p class="text-gray-700">Segui le istruzioni e goditi pasti sani e deliziosi per tutta la settimana.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Form Section -->
-    <section class="form-section" id="form">
-        <div class="container">
-            <div class="form-container">
-                <h2>Crea il Tuo Piano Personalizzato</h2>
-                <form id="mealPlanForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="nome">Nome</label>
-                            <input type="text" id="nome" name="nome" required>
+        <!-- Meal Prep Form Section -->
+        <section id="meal-prep-form" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4 max-w-2xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Crea il Tuo Piano Personalizzato</h2>
+                <form id="meal-prep-form-element" class="bg-gray-50 p-8 rounded-lg shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="duration" class="block text-gray-700 text-sm font-bold mb-2">Durata del Meal Prep (giorni):</label>
+                            <input type="number" id="duration" name="duration" min="1" max="7" value="5" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="telefono">Telefono (opzionale)</label>
-                            <input type="tel" id="telefono" name="telefono">
-                        </div>
-                        <div class="form-group">
-                            <label for="eta">Età</label>
-                            <input type="number" id="eta" name="eta" min="16" max="80" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="peso">Peso (kg)</label>
-                            <input type="number" id="peso" name="peso" min="40" max="200" step="0.1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="altezza">Altezza (cm)</label>
-                            <input type="number" id="altezza" name="altezza" min="140" max="220" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="obiettivo">Obiettivo</label>
-                            <select id="obiettivo" name="obiettivo" required>
-                                <option value="">Seleziona obiettivo</option>
-                                <option value="dimagrimento">Dimagrimento</option>
-                                <option value="mantenimento">Mantenimento</option>
-                                <option value="massa">Aumento massa</option>
+                        <div>
+                            <label for="goal" class="block text-gray-700 text-sm font-bold mb-2">Obiettivo:</label>
+                            <select id="goal" name="goal" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona un obiettivo</option>
+                                <option value="weight_loss">Perdita Peso</option>
+                                <option value="muscle_gain">Aumento Massa Muscolare</option>
+                                <option value="maintenance">Mantenimento</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="durata">Durata piano (giorni)</label>
-                            <select id="durata" name="durata" required>
-                                <option value="">Seleziona durata</option>
-                                <option value="2">2 giorni</option>
-                                <option value="3">3 giorni</option>
-                                <option value="5">5 giorni</option>
-                                <option value="7">7 giorni</option>
+                        <div>
+                            <label for="age" class="block text-gray-700 text-sm font-bold mb-2">Età (anni):</label>
+                            <input type="number" id="age" name="age" min="18" max="100" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="weight" class="block text-gray-700 text-sm font-bold mb-2">Peso (kg):</label>
+                            <input type="number" id="weight" name="weight" min="30" max="300" step="0.1" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="height" class="block text-gray-700 text-sm font-bold mb-2">Altezza (cm):</label>
+                            <input type="number" id="height" name="height" min="100" max="250" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="gender" class="block text-gray-700 text-sm font-bold mb-2">Sesso:</label>
+                            <select id="gender" name="gender" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona il sesso</option>
+                                <option value="male">Uomo</option>
+                                <option value="female">Donna</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="dieta">Tipo di dieta</label>
-                            <select id="dieta" name="dieta" required>
-                                <option value="">Seleziona dieta</option>
-                                <option value="onnivora">Onnivora</option>
-                                <option value="vegetariana">Vegetariana</option>
-                                <option value="vegana">Vegana</option>
-                                <option value="mediterranea">Mediterranea</option>
-                                <option value="low-carb">Low Carb</option>
-                                <option value="proteica">Proteica</option>
+                        <div>
+                            <label for="activity_level" class="block text-gray-700 text-sm font-bold mb-2">Livello di Attività Fisica:</label>
+                            <select id="activity_level" name="activity_level" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona livello</option>
+                                <option value="sedentary">Sedentario (poco o nessun esercizio)</option>
+                                <option value="lightly_active">Leggermente attivo (esercizio leggero 1-3 giorni/settimana)</option>
+                                <option value="moderately_active">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
+                                <option value="very_active">Molto attivo (esercizio intenso 6-7 giorni/settimana)</option>
+                                <option value="extra_active">Estremamente attivo (esercizio molto intenso, lavoro fisico)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="pasti">Pasti al giorno</label>
-                            <select id="pasti" name="pasti" required>
-                                <option value="">Seleziona numero pasti</option>
-                                <option value="3">3 pasti</option>
-                                <option value="4">4 pasti</option>
-                                <option value="5">5 pasti</option>
-                                <option value="6">6 pasti</option>
-                            </select>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="esclusioni">Allergie/Intolleranze (opzionale)</label>
-                            <textarea id="esclusioni" name="esclusioni" placeholder="Es: glutine, lattosio, frutta secca..."></textarea>
-                        </div>
-                        <div class="form-group full-width">
-                            <label for="cibi-casa">Cibi che hai già in casa (opzionale)</label>
-                            <textarea id="cibi-casa" name="cibi-casa" placeholder="Es: riso, pasta, pollo, verdure..."></textarea>
+                        <div>
+                            <label for="meals_per_day" class="block text-gray-700 text-sm font-bold mb-2">Pasti al Giorno:</label>
+                            <input type="number" id="meals_per_day" name="meals_per_day" min="1" max="6" value="3" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                     </div>
-                    <button type="submit" class="submit-btn">Genera il Mio Piano Alimentare</button>
-                    <div class="success-message" id="successMessage">
-                        Perfetto! Il tuo piano alimentare è stato creato e ti sarà inviato a breve via email. Controlla anche la cartella spam!
+
+                    <div class="mb-6">
+                        <label for="diet" class="block text-gray-700 text-sm font-bold mb-2">Tipo di Dieta:</label>
+                        <select id="diet" name="diet" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="">Seleziona tipo di dieta</option>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Vegetariana</option>
+                            <option value="vegan">Vegana</option>
+                            <option value="keto">Keto</option>
+                            <option value="paleo">Paleo</option>
+                            <option value="gluten_free">Senza Glutine</option>
+                            <option value="dairy_free">Senza Lattosio</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="exclusions" class="block text-gray-700 text-sm font-bold mb-2">Esclusioni Alimentari (es. noci, frutti di mare, glutine):</label>
+                        <textarea id="exclusions" name="exclusions" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="foods_at_home" class="block text-gray-700 text-sm font-bold mb-2">Cibi che hai già a casa (opzionale, es. pollo, riso, broccoli):</label>
+                        <textarea id="foods_at_home" name="foods_at_home" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                            <input type="email" id="email" name="email" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="tua@email.com">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-gray-700 text-sm font-bold mb-2">Telefono (opzionale, per WhatsApp):</label>
+                            <input type="tel" id="phone" name="phone" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="+39 333 1234567">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center">
+                        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105">
+                            Genera il Mio Piano Pasti!
+                        </button>
                     </div>
                 </form>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Contatti</h3>
-                    <p>Email: info@mealprepplanner.com</p>
-                    <p>Tel: +39 123 456 7890</p>
-                </div>
-                <div class="footer-section">
-                    <h3>Link Utili</h3>
-                    <p><a href="dashboard.html">📊 Dashboard Admin</a></p>
-                    <p><a href="#privacy">Privacy Policy</a></p>
-                    <p><a href="#termini">Termini di Servizio</a></p>
-                </div>
-                <div class="footer-section">
-                    <h3>Seguici</h3>
-                    <p><a href="#">Instagram</a></p>
-                    <p><a href="#">Facebook</a></p>
+        <!-- FAQ Section (Optional) -->
+        <section class="py-16 md:py-24 bg-gray-100">
+            <div class="container mx-auto px-4 max-w-3xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Domande Frequenti</h2>
+                <div class="space-y-4">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Cos'è il meal prep?</h3>
+                        <p class="text-gray-700">Il meal prep è l'atto di preparare pasti o ricette in anticipo, solitamente per 3-7 giorni, per avere pasti pronti da consumare in seguito. Aiuta a risparmiare tempo, denaro e a mantenere una dieta equilibrata.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Per chi è il meal prep?</h3>
+                        <p class="text-gray-700">È ideale per chi valuta la comodità e l'efficienza più della varietà quotidiana. Se non ti dispiace mangiare la stessa cosa per qualche giorno di seguito e vuoi massimizzare il tuo tempo o budget, il meal prep fa per te.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Posso personalizzare il mio piano?</h3>
+                        <p class="text-gray-700">Assolutamente sì! Il nostro form ti permette di specificare obiettivi, preferenze dietetiche, esclusioni e persino cibi che hai già a casa per un piano veramente su misura.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Come riceverò il mio piano?</h3>
+                        <p class="text-gray-700">Una volta generato, il piano ti verrà inviato via email come PDF, oppure potrai scaricarlo direttamente dalla dashboard (se sei l'amministratore).</p>
+                    </div>
                 </div>
             </div>
-            <p>&copy; 2025 Meal Prep Planner. Tutti i diritti riservati.</p>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-10">
+            <div class="container mx-auto px-4 text-center">
+                <p class="mb-4">&copy; 2024 Meal Prep Planner. Tutti i diritti riservati.</p>
+                <div class="flex justify-center space-x-6">
+                    <a href="#" class="hover:text-orange-500 transition duration-300">Privacy Policy</a>
+                    <a href="#" class="hover:text-orange-500 transition duration-300">Termini di Servizio</a>
+                    <a href="mailto:info@mealprepplanner.com" class="hover:text-orange-500 transition duration-300">Contatti</a>
+                </div>
+                <p class="mt-4 text-sm text-gray-400">
+                    <a href="#dashboard" class="hover:text-orange-500 transition duration-300">Dashboard Admin</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-container" class="min-h-screen bg-gray-100 p-4 hidden">
+        <header class="bg-white shadow-md rounded-lg p-6 mb-6 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-orange-500">Dashboard Amministratore</h1>
+            <div class="flex items-center space-x-4">
+                <span id="dashboard-user-id" class="text-gray-600 text-sm">ID Utente: Caricamento...</span>
+                <button id="dashboard-logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">Logout</button>
+            </div>
+        </header>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Richieste Ricevute</h2>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex space-x-2 w-full md:w-auto">
+                    <input type="date" id="filter-date" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto">
+                    <select id="filter-status" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto">
+                        <option value="">Tutti gli Stati</option>
+                        <option value="Da elaborare">Da elaborare</option>
+                        <option value="Inviato">Inviato</option>
+                    </select>
+                    <button id="clear-filters" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">Azzera</button>
+                </div>
+                <button id="export-csv" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 w-full md:w-auto">Esporta CSV</button>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg shadow-inner">
+                <table class="min-w-full bg-white border border-gray-200">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tl-lg">ID Richiesta</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Data Richiesta</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Stato</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tr-lg">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-table-body" class="divide-y divide-gray-200">
+                        <!-- Requests will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </footer>
+    </div>
 
-    <script>
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+    <!-- Request Details Modal -->
+    <div id="request-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-orange-500">Dettagli Richiesta</h3>
+                <button id="request-details-close-button" class="text-gray-600 hover:text-gray-900 text-3xl font-bold">&times;</button>
+            </div>
+            <div id="request-details-content" class="text-gray-700 space-y-4">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="mt-8 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="generate-plan-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Genera Piano</button>
+                <button id="view-plan-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition duration-300 hidden">Vedi Piano</button>
+                <button id="mark-completed-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Segna come Completato</button>
+            </div>
+        </div>
+    </div>
 
-        // Form handling
-        document.getElementById('mealPlanForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Get form data
-            const formData = new FormData(this);
-            const data = {};
-            for (let [key, value] of formData.entries()) {
-                data[key] = value;
+
+    <script type="module">
+        // Import Firebase modules from global window object
+        const db = window.firebaseDb;
+        const auth = window.firebaseAuth;
+        const collection = window.collection;
+        const addDoc = window.addDoc;
+        const onSnapshot = window.onSnapshot;
+        const doc = window.doc;
+        const updateDoc = window.updateDoc;
+        const query = window.query;
+        const where = window.where;
+        const getDocs = window.getDocs;
+        const appId = window.appId;
+
+        // Global variable to store the currently viewed request ID in the dashboard modal
+        let currentRequestId = null;
+
+        // --- Utility Functions ---
+
+        /**
+         * Shows a custom modal message.
+         * @param {string} title - The title of the message.
+         * @param {string} message - The content of the message.
+         */
+        function showMessage(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom modal message.
+         */
+        function hideMessage() {
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+
+        /**
+         * Shows the loading overlay.
+         */
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        /**
+         * Hides the loading overlay.
+         */
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        /**
+         * Calculates Basal Metabolic Rate (BMR) using Mifflin-St Jeor Equation.
+         * @param {number} weightKg - Weight in kilograms.
+         * @param {number} heightCm - Height in centimeters.
+         * @param {number} ageYears - Age in years.
+         * @param {string} gender - 'male' or 'female'.
+         * @returns {number} BMR in calories.
+         */
+        function calculateBMR(weightKg, heightCm, ageYears, gender) {
+            if (gender === 'male') {
+                return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) + 5;
+            } else if (gender === 'female') {
+                return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 161;
             }
-            
-            // Calculate calories
-            const calories = calculateCalories(data);
-            data.calories = calories;
-            
-            // Generate meal plan
-            const mealPlan = generateMealPlan(data);
-            data.mealPlan = mealPlan;
-            
-            // Generate shopping list
-            const shoppingList = generateShoppingList(data);
-            data.shoppingList = shoppingList;
-            
-            // Save to Google Sheets (placeholder)
-            saveToGoogleSheets(data);
-            
-            // Show success message
-            document.getElementById('successMessage').style.display = 'block';
-            
-            // Generate and offer PDF download
-            setTimeout(() => {
-                if (confirm('Vuoi scaricare il tuo piano in formato PDF?')) {
-                    exportToPDF(data);
-                }
-            }, 1000);
-            
-            // Reset form
-            this.reset();
-            
-            // Scroll to success message
-            document.getElementById('successMessage').scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-        });
+            return 0;
+        }
 
-        // Calculate daily calorie needs
-        function calculateCalories(data) {
-            const { eta, peso, altezza, obiettivo } = data;
-            
-            // Basic BMR calculation (Harris-Benedict)
-            let bmr = 88.362 + (13.397 * peso) + (4.799 * altezza) - (5.677 * eta);
-            
-            // Activity factor (assuming moderate activity)
-            let tdee = bmr * 1.5;
-            
-            // Adjust based on goal
-            switch(obiettivo) {
-                case 'dimagrimento':
-                    return Math.round(tdee * 0.8); // 20% deficit
-                case 'massa':
-                    return Math.round(tdee * 1.2); // 20% surplus
+        /**
+         * Calculates Total Daily Energy Expenditure (TDEE) based on BMR and activity level.
+         * @param {number} bmr - Basal Metabolic Rate.
+         * @param {string} activityLevel - Activity level ('sedentary', 'lightly_active', etc.).
+         * @returns {number} TDEE in calories.
+         */
+        function calculateTDEE(bmr, activityLevel) {
+            const activityMultipliers = {
+                sedentary: 1.2,
+                lightly_active: 1.375,
+                moderately_active: 1.55,
+                very_active: 1.725,
+                extra_active: 1.9
+            };
+            return bmr * (activityMultipliers[activityLevel] || 1.2);
+        }
+
+        /**
+         * Adjusts TDEE based on the user's goal.
+         * @param {number} tdee - Total Daily Energy Expenditure.
+         * @param {string} goal - User's goal ('weight_loss', 'muscle_gain', 'maintenance').
+         * @returns {number} Adjusted daily calorie intake.
+         */
+        function adjustCaloriesForGoal(tdee, goal) {
+            switch (goal) {
+                case 'weight_loss':
+                    return tdee - 500; // Deficit for weight loss
+                case 'muscle_gain':
+                    return tdee + 300; // Surplus for muscle gain
+                case 'maintenance':
                 default:
-                    return Math.round(tdee);
+                    return tdee;
             }
         }
 
-        // Enhanced meal plan generation
-        function generateMealPlan(data) {
-            const { dieta, pasti, durata, calories, obiettivo, peso, esclusioni } = data;
-            
-            // Detailed meal templates by diet type
-            const mealDatabase = {
-                'onnivora': {
-                    colazione: [
-                        'Avena con banana e miele (300 kcal)',
-                        'Yogurt greco con frutti di bosco (250 kcal)',
-                        'Uova strapazzate con pane integrale (350 kcal)',
-                        'Smoothie proteico con frutta (280 kcal)'
-                    ],
-                    pranzo: [
-                        'Pollo alla griglia con quinoa e verdure (450 kcal)',
-                        'Salmone al forno con patate dolci (500 kcal)',
-                        'Pasta integrale con pomodoro e basilico (400 kcal)',
-                        'Insalata di tonno con avocado (380 kcal)'
-                    ],
-                    cena: [
-                        'Merluzzo con broccoli al vapore (350 kcal)',
-                        'Petto di tacchino con zucchine grigliate (320 kcal)',
-                        'Zuppa di legumi con verdure (300 kcal)',
-                        'Omelette con spinaci e formaggio (280 kcal)'
-                    ],
-                    spuntino: [
-                        'Frutta secca mista (150 kcal)',
-                        'Yogurt con granola (120 kcal)',
-                        'Frutta fresca (80 kcal)',
-                        'Barretta proteica (140 kcal)'
-                    ]
-                },
-                'vegetariana': {
-                    colazione: [
-                        'Porridge di avena con semi (320 kcal)',
-                        'Toast integrale con avocado (280 kcal)',
-                        'Smoothie verde con spinaci (250 kcal)',
-                        'Pancake proteici con frutti di bosco (350 kcal)'
-                    ],
-                    pranzo: [
-                        'Buddha bowl con quinoa e verdure (420 kcal)',
-                        'Pasta con pesto di basilico (450 kcal)',
-                        'Insalata di ceci con verdure (380 kcal)',
-                        'Risotto ai funghi porcini (480 kcal)'
-                    ],
-                    cena: [
-                        'Tofu saltato con verdure (340 kcal)',
-                        'Zuppa di lenticchie rosse (300 kcal)',
-                        'Melanzane alla parmigiana (360 kcal)',
-                        'Frittata di verdure (320 kcal)'
-                    ],
-                    spuntino: [
-                        'Hummus con verdure crude (130 kcal)',
-                        'Frutta con yogurt (110 kcal)',
-                        'Semi di zucca tostati (140 kcal)',
-                        'Smoothie proteico (120 kcal)'
-                    ]
-                },
-                'vegana': {
-                    colazione: [
-                        'Chia pudding con latte di mandorle (280 kcal)',
-                        'Avocado toast con semi (320 kcal)',
-                        'Smoothie bowl con frutti (300 kcal)',
-                        'Porridge con burro di arachidi (350 kcal)'
-                    ],
-                    pranzo: [
-                        'Curry di ceci con riso (450 kcal)',
-                        'Insalata di quinoa con verdure (400 kcal)',
-                        'Pasta integrale con sugo di pomodoro (420 kcal)',
-                        'Bowl di riso con tofu e verdure (480 kcal)'
-                    ],
-                    cena: [
-                        'Zuppa di lenticchie e verdure (320 kcal)',
-                        'Tempeh con broccoli (340 kcal)',
-                        'Ratatouille con quinoa (300 kcal)',
-                        'Burger di fagioli con patate (380 kcal)'
-                    ],
-                    spuntino: [
-                        'Frutta secca e datteri (160 kcal)',
-                        'Smoothie verde (100 kcal)',
-                        'Hummus con carote (120 kcal)',
-                        'Energy balls fatti in casa (140 kcal)'
-                    ]
-                }
-            };
-
-            const meals = mealDatabase[dieta] || mealDatabase['onnivora'];
-            const caloriesPerMeal = Math.floor(calories / parseInt(pasti));
-            
-            // Generate daily meal plan
-            const dailyPlan = [];
-            for (let day = 1; day <= parseInt(durata); day++) {
-                const dayMeals = {
-                    giorno: day,
-                    pasti: []
-                };
-
-                // Distribute meals based on number of meals per day
-                const mealTypes = ['colazione', 'spuntino', 'pranzo', 'spuntino', 'cena', 'spuntino'];
-                for (let i = 0; i < parseInt(pasti); i++) {
-                    const mealType = mealTypes[i] || 'spuntino';
-                    const randomMeal = meals[mealType][Math.floor(Math.random() * meals[mealType].length)];
-                    dayMeals.pasti.push({
-                        tipo: mealType,
-                        ricetta: randomMeal,
-                        orario: getMealTime(i)
-                    });
-                }
-                dailyPlan.push(dayMeals);
-            }
-
-            return {
-                calories_per_day: calories,
-                meals_per_day: pasti,
-                duration: durata,
-                objective: obiettivo,
-                diet_type: dieta,
-                daily_plan: dailyPlan,
-                notes: generateNotes(obiettivo, peso, esclusioni)
-            };
-        }
-
-        // Get meal time based on meal index
-        function getMealTime(mealIndex) {
-            const times = ['08:00', '10:30', '13:00', '16:00', '19:30', '21:00'];
-            return times[mealIndex] || '12:00';
-        }
-
-        // Generate personalized notes
-        function generateNotes(obiettivo, peso, esclusioni) {
-            let notes = [];
-            
-            if (obiettivo === 'dimagrimento') {
-                notes.push('💡 Bevi almeno 2L di acqua al giorno');
-                notes.push('🏃‍♂️ Combina il piano con 30 min di attività fisica');
-                notes.push('⏰ Evita spuntini dopo le 21:00');
-            } else if (obiettivo === 'massa') {
-                notes.push('💪 Assicurati di assumere proteine ad ogni pasto');
-                notes.push('🥛 Considera l\'aggiunta di shake proteici');
-                notes.push('🔥 Mantieni un surplus calorico costante');
-            } else {
-                notes.push('⚖️ Mantieni porzioni equilibrate');
-                notes.push('🥗 Varia il più possibile gli alimenti');
-                notes.push('📊 Monitora il peso settimanalmente');
-            }
-
-            if (esclusioni) {
-                notes.push(`⚠️ Ricorda: evita ${esclusioni.toLowerCase()}`);
-            }
-
-            return notes;
-        }
-
-        // Enhanced shopping list generation
-        function generateShoppingList(data) {
-            const { dieta, durata, pasti, 'cibi-casa': cibiCasa } = data;
-            
-            const shoppingDatabase = {
-                'onnivora': {
-                    proteine: ['Pollo (1kg)', 'Salmone (800g)', 'Uova (12pz)', 'Tonno in scatola (4 scatole)', 'Tacchino (600g)', 'Merluzzo (500g)'],
-                    carboidrati: ['Quinoa (500g)', 'Riso integrale (1kg)', 'Pasta integrale (500g)', 'Avena (1kg)', 'Patate dolci (1kg)', 'Pane integrale'],
-                    verdure: ['Broccoli (800g)', 'Spinaci (500g)', 'Zucchine (1kg)', 'Pomodori (1kg)', 'Carote (500g)', 'Peperoni (500g)'],
-                    frutta: ['Banane (1kg)', 'Mele (1kg)', 'Frutti di bosco (300g)', 'Avocado (4pz)', 'Limoni (6pz)'],
-                    latticini: ['Yogurt greco (1kg)', 'Latte (1L)', 'Formaggio fresco (200g)', 'Mozzarella (250g)'],
-                    altro: ['Olio EVO (500ml)', 'Miele (250g)', 'Frutta secca mista (300g)', 'Semi vari (200g)']
-                },
-                'vegetariana': {
-                    proteine: ['Uova (18pz)', 'Legumi misti (1kg)', 'Tofu (400g)', 'Tempeh (300g)', 'Formaggio (300g)'],
-                    carboidrati: ['Quinoa (700g)', 'Riso integrale (1kg)', 'Pasta integrale (750g)', 'Avena (1kg)', 'Pane integrale'],
-                    verdure: ['Spinaci (600g)', 'Broccoli (1kg)', 'Zucchine (1kg)', 'Melanzane (800g)', 'Pomodori (1.5kg)', 'Funghi (500g)'],
-                    frutta: ['Banane (1.2kg)', 'Mele (1kg)', 'Frutti di bosco (400g)', 'Avocado (6pz)', 'Datteri (300g)'],
-                    latticini: ['Yogurt (1.5kg)', 'Latte (1.5L)', 'Formaggi vari (400g)', 'Burro (250g)'],
-                    altro: ['Olio EVO (500ml)', 'Tahini (200g)', 'Frutta secca (500g)', 'Semi (300g)', 'Spezie varie']
-                },
-                'vegana': {
-                    proteine: ['Legumi vari (1.5kg)', 'Tofu (600g)', 'Tempeh (400g)', 'Seitan (300g)', 'Lievito nutrizionale (100g)'],
-                    carboidrati: ['Quinoa (800g)', 'Riso integrale (1.2kg)', 'Pasta integrale (800g)', 'Avena (1.2kg)', 'Miglio (500g)'],
-                    verdure: ['Verdure a foglia verde (800g)', 'Broccoli (1kg)', 'Cavolfiore (800g)', 'Zucchine (1.2kg)', 'Carote (800g)'],
-                    frutta: ['Banane (1.5kg)', 'Mele (1.2kg)', 'Frutti di bosco (500g)', 'Avocado (8pz)', 'Datteri (400g)'],
-                    latti_vegetali: ['Latte di mandorle (2L)', 'Latte di soia (1L)', 'Latte di avena (1L)', 'Yogurt di soia (500g)'],
-                    altro: ['Olio EVO (750ml)', 'Burro di arachidi (300g)', 'Frutta secca (600g)', 'Semi vari (400g)', 'Alghe (50g)']
-                }
-            };
-
-            const baseList = shoppingDatabase[dieta] || shoppingDatabase['onnivora'];
-            const multiplier = Math.max(1, parseInt(durata) / 7); // Adjust quantities based on duration
-            
-            let shoppingList = {};
-            
-            // Generate shopping list with adjusted quantities
-            Object.keys(baseList).forEach(category => {
-                shoppingList[category] = baseList[category].map(item => {
-                    // Adjust quantities based on duration and number of meals
-                    return adjustQuantity(item, multiplier, parseInt(pasti));
-                });
-            });
-
-            // Remove items already at home
-            if (cibiCasa) {
-                shoppingList = filterExistingItems(shoppingList, cibiCasa);
-            }
-
-            return shoppingList;
-        }
-
-        // Adjust quantities based on plan duration and meals
-        function adjustQuantity(item, multiplier, meals) {
-            // Simple quantity adjustment logic
-            if (multiplier > 1.5) {
-                return item.replace(/\((\d+)([^)]+)\)/, (match, num, unit) => {
-                    const newNum = Math.ceil(parseInt(num) * multiplier);
-                    return `(${newNum}${unit})`;
-                });
-            }
-            return item;
-        }
-
-        // Filter out items already available at home
-        function filterExistingItems(shoppingList, cibiCasa) {
-            const availableItems = cibiCasa.toLowerCase().split(',').map(item => item.trim());
-            
-            Object.keys(shoppingList).forEach(category => {
-                shoppingList[category] = shoppingList[category].filter(item => {
-                    const itemName = item.toLowerCase().split('(')[0].trim();
-                    return !availableItems.some(available => 
-                        itemName.includes(available) || available.includes(itemName)
-                    );
-                });
-            });
-            
-            return shoppingList;
-        }
-
-        // Export plan as PDF
-        function exportToPDF(data) {
+        /**
+         * Generates a PDF document from meal plan data.
+         * @param {object} planData - The meal plan data including recipes and shopping list.
+         * @param {object} userInfo - User information for the PDF header.
+         */
+        function generatePdf(planData, userInfo) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            // Title
-            doc.setFontSize(20);
-            doc.setTextColor(255, 127, 0);
-            doc.text('🍎 Il Tuo Piano Meal Prep Personalizzato', 20, 30);
-            
-            // User info
+
+            let y = 20;
+
+            // Header
+            doc.setFontSize(24);
+            doc.setTextColor(255, 127, 0); // Orange
+            doc.text("Il Tuo Piano Pasti Personalizzato", 105, y, { align: 'center' });
+            y += 10;
             doc.setFontSize(12);
-            doc.setTextColor(0, 0, 0);
-            doc.text(`Nome: ${data.nome}`, 20, 50);
-            doc.text(`Obiettivo: ${data.obiettivo}`, 20, 60);
-            doc.text(`Durata: ${data.durata} giorni`, 20, 70);
-            doc.text(`Calorie giornaliere: ${data.calories} kcal`, 20, 80);
-            doc.text(`Pasti al giorno: ${data.pasti}`, 20, 90);
-            
-            // Meal plan
-            let yPosition = 110;
-            doc.setFontSize(16);
-            doc.setTextColor(255, 127, 0);
-            doc.text('Piano Alimentare:', 20, yPosition);
-            
-            yPosition += 20;
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            
-            if (data.mealPlan && data.mealPlan.daily_plan) {
-                data.mealPlan.daily_plan.forEach(day => {
-                    if (yPosition > 250) {
+            doc.setTextColor(100, 100, 100); // Gray
+            doc.text(`Generato per: ${userInfo.email || 'N/A'}`, 105, y, { align: 'center' });
+            y += 7;
+            doc.text(`Obiettivo: ${userInfo.goal || 'N/A'} | Durata: ${userInfo.duration || 'N/A'} giorni`, 105, y, { align: 'center' });
+            y += 15;
+
+            // Shopping List
+            doc.setFontSize(18);
+            doc.setTextColor(255, 127, 0); // Orange
+            doc.text("Lista della Spesa", 14, y);
+            y += 10;
+            doc.setFontSize(12);
+            doc.setTextColor(50, 50, 50); // Dark Gray
+
+            if (planData.shoppingList && planData.shoppingList.length > 0) {
+                planData.shoppingList.forEach(item => {
+                    if (y > 280) { // Check for page break
                         doc.addPage();
-                        yPosition = 30;
+                        y = 20;
                     }
-                    
-                    doc.setFontSize(12);
-                    doc.setTextColor(255, 127, 0);
-                    doc.text(`Giorno ${day.giorno}:`, 20, yPosition);
-                    yPosition += 15;
-                    
-                    doc.setFontSize(10);
-                    doc.setTextColor(0, 0, 0);
-                    day.pasti.forEach(pasto => {
-                        doc.text(`${pasto.orario} - ${pasto.tipo}: ${pasto.ricetta}`, 25, yPosition);
-                        yPosition += 12;
-                    });
-                    yPosition += 10;
+                    doc.text(`- ${item}`, 20, y);
+                    y += 7;
                 });
+            } else {
+                doc.text("Nessun articolo nella lista della spesa.", 20, y);
+                y += 7;
             }
-            
-            // Shopping list
-            if (yPosition > 200) {
-                doc.addPage();
-                yPosition = 30;
-            }
-            
-            doc.setFontSize(16);
-            doc.setTextColor(255, 127, 0);
-            doc.text('Lista della Spesa:', 20, yPosition);
-            yPosition += 20;
-            
-            doc.setFontSize(10);
-            doc.setTextColor(0, 0, 0);
-            
-            if (data.shoppingList) {
-                Object.keys(data.shoppingList).forEach(category => {
-                    if (data.shoppingList[category].length > 0) {
+            y += 10;
+
+            // Recipes
+            doc.setFontSize(18);
+            doc.setTextColor(255, 127, 0); // Orange
+            doc.text("Ricette Dettagliate", 14, y);
+            y += 10;
+
+            if (planData.recipes && planData.recipes.length > 0) {
+                planData.recipes.forEach(dayPlan => {
+                    if (y > 270) { // Check for page break before a new day
+                        doc.addPage();
+                        y = 20;
+                    }
+                    doc.setFontSize(14);
+                    doc.setTextColor(0, 0, 0); // Black
+                    doc.text(`Giorno: ${dayPlan.day}`, 14, y);
+                    y += 8;
+
+                    dayPlan.meals.forEach(meal => {
+                        if (y > 260) { // Check for page break before a new meal
+                            doc.addPage();
+                            y = 20;
+                        }
                         doc.setFontSize(12);
-                        doc.setTextColor(76, 175, 80);
-                        doc.text(category.toUpperCase() + ':', 20, yPosition);
-                        yPosition += 15;
-                        
+                        doc.setTextColor(50, 50, 50); // Dark Gray
+                        doc.text(`${meal.type}: ${meal.name}`, 20, y);
+                        y += 7;
+
                         doc.setFontSize(10);
-                        doc.setTextColor(0, 0, 0);
-                        data.shoppingList[category].forEach(item => {
-                            doc.text(`• ${item}`, 25, yPosition);
-                            yPosition += 12;
-                            
-                            if (yPosition > 270) {
-                                doc.addPage();
-                                yPosition = 30;
-                            }
+                        doc.setTextColor(80, 80, 80); // Lighter Gray
+                        doc.text("Ingredienti:", 25, y);
+                        y += 5;
+                        meal.ingredients.forEach(ingredient => {
+                            if (y > 280) { doc.addPage(); y = 20; }
+                            doc.text(`- ${ingredient}`, 30, y);
+                            y += 5;
                         });
-                        yPosition += 10;
-                    }
+                        y += 3;
+                        doc.text("Istruzioni:", 25, y);
+                        y += 5;
+                        const instructionsLines = doc.splitTextToSize(meal.instructions, 170); // Max width for text
+                        instructionsLines.forEach(line => {
+                            if (y > 280) { doc.addPage(); y = 20; }
+                            doc.text(line, 30, y);
+                            y += 5;
+                        });
+                        y += 8;
+                    });
                 });
+            } else {
+                doc.setFontSize(12);
+                doc.setTextColor(50, 50, 50);
+                doc.text("Nessuna ricetta disponibile.", 20, y);
             }
-            
-            // Notes
-            if (data.mealPlan && data.mealPlan.notes) {
-                if (yPosition > 200) {
-                    doc.addPage();
-                    yPosition = 30;
-                }
-                
-                doc.setFontSize(16);
-                doc.setTextColor(255, 127, 0);
-                doc.text('Note Importanti:', 20, yPosition);
-                yPosition += 20;
-                
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                data.mealPlan.notes.forEach(note => {
-                    doc.text(note, 20, yPosition);
-                    yPosition += 15;
-                });
-            }
-            
-            // Save PDF
-            doc.save(`piano-meal-prep-${data.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+
+            const pdfDataUri = doc.output('datauristring');
+            document.getElementById('pdf-frame').src = pdfDataUri;
+            document.getElementById('pdf-download-link').href = pdfDataUri;
+            document.getElementById('pdf-viewer-modal').classList.remove('hidden');
         }
 
-        // Google Sheets integration (enhanced placeholder)
-        function saveToGoogleSheets(data) {
-            // This is where you would integrate with Google Sheets API
-            // For now, we'll create a more detailed structure for the sheets integration
-            
-            const sheetData = {
+        // --- Landing Page Logic ---
+
+        document.getElementById('meal-prep-form-element').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            showLoading();
+
+            // Collect form data
+            const formData = {
+                duration: parseInt(document.getElementById('duration').value),
+                goal: document.getElementById('goal').value,
+                age: parseInt(document.getElementById('age').value),
+                weight: parseFloat(document.getElementById('weight').value),
+                height: parseFloat(document.getElementById('height').value),
+                gender: document.getElementById('gender').value,
+                activity_level: document.getElementById('activity_level').value,
+                meals_per_day: parseInt(document.getElementById('meals_per_day').value),
+                diet: document.getElementById('diet').value,
+                exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s),
+                foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
                 timestamp: new Date().toISOString(),
-                nome: data.nome,
-                email: data.email,
-                telefono: data.telefono || '',
-                eta: data.eta,
-                peso: data.peso,
-                altezza: data.altezza,
-                obiettivo: data.obiettivo,
-                durata: data.durata,
-                dieta: data.dieta,
-                pasti: data.pasti,
-                esclusioni: data.esclusioni || '',
-                cibi_casa: data['cibi-casa'] || '',
-                calories: data.calories,
-                status: 'pending',
-                meal_plan: JSON.stringify(data.mealPlan),
-                shopping_list: JSON.stringify(data.shoppingList)
+                status: 'Da elaborare', // Initial status
+                mealPlan: null // Placeholder for generated plan
             };
-            
-            console.log('Data ready for Google Sheets:', sheetData);
-            
-            // Save to localStorage for now
-            const requests = JSON.parse(localStorage.getItem('mealPrepRequests') || '[]');
-            requests.push({
-                id: Date.now(),
-                ...sheetData
+
+            // Basic validation
+            if (!formData.duration || !formData.goal || !formData.age || !formData.weight || !formData.height || !formData.gender || !formData.activity_level || !formData.meals_per_day || !formData.diet || !formData.email) {
+                hideLoading();
+                showMessage('Errore di Validazione', 'Per favore, compila tutti i campi obbligatori.');
+                return;
+            }
+
+            // Calculate calories
+            const bmr = calculateBMR(formData.weight, formData.height, formData.age, formData.gender);
+            const tdee = calculateTDEE(bmr, formData.activity_level);
+            const dailyCalories = adjustCaloriesForGoal(tdee, formData.goal);
+            formData.calories = Math.round(dailyCalories); // Store calculated calories
+
+            try {
+                // Save request to Firestore
+                // Use the private collection path for user-specific data
+                const requestsCollectionRef = collection(db, `artifacts/${appId}/users/${window.userId || 'anonymous'}/requests`);
+                const docRef = await addDoc(requestsCollectionRef, formData);
+                console.log("Document written with ID: ", docRef.id);
+
+                showMessage('Richiesta Inviata!', 'La tua richiesta di piano pasti è stata inviata con successo. Riceverai il tuo piano via email a breve!');
+                document.getElementById('meal-prep-form-element').reset(); // Clear the form
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessage('Errore', 'Si è verificato un errore durante l\'invio della richiesta. Riprova più tardi.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('modal-close-button').addEventListener('click', hideMessage);
+
+        // --- Dashboard Logic ---
+
+        // Handle URL hash for dashboard access
+        window.addEventListener('hashchange', () => {
+            if (window.location.hash === '#dashboard') {
+                if (window.isAuthReady && window.userId) {
+                    document.getElementById('landing-page').classList.add('hidden');
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('dashboard-container').classList.remove('hidden');
+                    document.getElementById('dashboard-user-id').textContent = `ID Utente: ${window.userId}`;
+                    loadRequests();
+                } else {
+                    // If auth not ready or not logged in, show auth section
+                    document.getElementById('landing-page').classList.add('hidden');
+                    document.getElementById('dashboard-container').classList.add('hidden');
+                    document.getElementById('auth-section').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('dashboard-container').classList.add('hidden');
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('landing-page').classList.remove('hidden');
+            }
+        });
+
+        // Initial check on page load
+        window.addEventListener('load', () => {
+            if (window.location.hash === '#dashboard') {
+                // Wait for Firebase auth to be ready
+                const checkAuthAndLoadDashboard = setInterval(() => {
+                    if (window.isAuthReady) {
+                        clearInterval(checkAuthAndLoadDashboard);
+                        if (window.userId) {
+                            document.getElementById('landing-page').classList.add('hidden');
+                            document.getElementById('auth-section').classList.add('hidden');
+                            document.getElementById('dashboard-container').classList.remove('hidden');
+                            document.getElementById('dashboard-user-id').textContent = `ID Utente: ${window.userId}`;
+                            loadRequests();
+                        } else {
+                            document.getElementById('landing-page').classList.add('hidden');
+                            document.getElementById('dashboard-container').classList.add('hidden');
+                            document.getElementById('auth-section').classList.remove('hidden');
+                        }
+                    }
+                }, 100); // Check every 100ms
+            }
+        });
+
+        document.getElementById('dashboard-logout-button').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                window.location.hash = ''; // Go back to landing page
+                showMessage('Logout', 'Sei stato disconnesso dalla dashboard.');
+            } catch (error) {
+                console.error("Error logging out:", error);
+                showMessage('Errore Logout', 'Si è verificato un errore durante il logout.');
+            }
+        });
+
+        /**
+         * Loads and displays requests in the dashboard table.
+         */
+        function loadRequests() {
+            if (!db || !window.userId) {
+                console.warn("Firestore DB or User ID not available for loading requests.");
+                return;
+            }
+
+            const requestsCollectionRef = collection(db, `artifacts/${appId}/users/${window.userId}/requests`);
+            let q = requestsCollectionRef;
+
+            // Apply filters
+            const filterDate = document.getElementById('filter-date').value;
+            const filterStatus = document.getElementById('filter-status').value;
+
+            if (filterDate) {
+                // Filter by date (start of day to end of day)
+                const startOfDay = new Date(filterDate);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(filterDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                q = query(q, where('timestamp', '>=', startOfDay.toISOString()), where('timestamp', '<=', endOfDay.toISOString()));
+            }
+            if (filterStatus) {
+                q = query(q, where('status', '==', filterStatus));
+            }
+
+            // Real-time listener for requests
+            onSnapshot(q, (snapshot) => {
+                const requestsTableBody = document.getElementById('requests-table-body');
+                requestsTableBody.innerHTML = ''; // Clear existing rows
+
+                if (snapshot.empty) {
+                    requestsTableBody.innerHTML = `<tr><td colspan="5" class="py-4 px-4 text-center text-gray-500">Nessuna richiesta trovata.</td></tr>`;
+                    return;
+                }
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const row = document.createElement('tr');
+                    row.classList.add('hover:bg-gray-50');
+
+                    const timestampDate = new Date(data.timestamp);
+                    const formattedDate = timestampDate.toLocaleDateString('it-IT', {
+                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+
+                    row.innerHTML = `
+                        <td class="py-3 px-4 whitespace-nowrap text-sm font-medium text-gray-900 rounded-bl-lg">${doc.id.substring(0, 8)}...</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-700">${formattedDate}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-700">${data.email}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${data.status === 'Inviato' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${data.status}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm font-medium rounded-br-lg">
+                            <button data-id="${doc.id}" class="view-details-btn bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded-full text-xs transition duration-300 mr-2">Dettagli</button>
+                        </td>
+                    `;
+                    requestsTableBody.appendChild(row);
+                });
+
+                // Add event listeners for view details buttons
+                document.querySelectorAll('.view-details-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const requestId = e.target.dataset.id;
+                        currentRequestId = requestId; // Store for modal actions
+                        showRequestDetails(requestId);
+                    });
+                });
+            }, (error) => {
+                console.error("Error fetching requests: ", error);
+                showMessage('Errore Caricamento', 'Impossibile caricare le richieste. Riprova più tardi.');
             });
-            localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
-            
-            // Here you would normally send to Google Sheets:
-            /*
-            fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
-                method: 'POST',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(sheetData)
-            }).then(response => response.json())
-              .then(data => console.log('Success:', data))
-              .catch(error => console.error('Error:', error));
-            */
         }
+
+        // Filter event listeners
+        document.getElementById('filter-date').addEventListener('change', loadRequests);
+        document.getElementById('filter-status').addEventListener('change', loadRequests);
+        document.getElementById('clear-filters').addEventListener('click', () => {
+            document.getElementById('filter-date').value = '';
+            document.getElementById('filter-status').value = '';
+            loadRequests();
+        });
+
+        /**
+         * Shows the details of a specific request in a modal.
+         * @param {string} requestId - The ID of the request document.
+         */
+        async function showRequestDetails(requestId) {
+            if (!db || !window.userId) {
+                showMessage('Errore', 'Database non disponibile.');
+                return;
+            }
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${window.userId}/requests`, requestId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const detailsContent = document.getElementById('request-details-content');
+                    detailsContent.innerHTML = `
+                        <p><strong>ID Richiesta:</strong> ${requestId}</p>
+                        <p><strong>Data Richiesta:</strong> ${new Date(data.timestamp).toLocaleString('it-IT')}</p>
+                        <p><strong>Stato:</strong> <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${data.status === 'Inviato' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${data.status}</span></p>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                        <p><strong>Telefono:</strong> ${data.phone || 'N/A'}</p>
+                        <p><strong>Età:</strong> ${data.age} anni</p>
+                        <p><strong>Peso:</strong> ${data.weight} kg</p>
+                        <p><strong>Altezza:</strong> ${data.height} cm</p>
+                        <p><strong>Sesso:</strong> ${data.gender === 'male' ? 'Uomo' : 'Donna'}</p>
+                        <p><strong>Livello Attività:</strong> ${data.activity_level}</p>
+                        <p><strong>Obiettivo:</strong> ${data.goal}</p>
+                        <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
+                        <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
+                        <p><strong>Esclusioni:</strong> ${data.exclusions.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
+                        <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
+                        <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
+                    `;
+
+                    // Show/hide buttons based on plan existence
+                    const generateBtn = document.getElementById('generate-plan-button');
+                    const viewBtn = document.getElementById('view-plan-button');
+                    const markCompletedBtn = document.getElementById('mark-completed-button');
+
+                    generateBtn.classList.remove('hidden');
+                    viewBtn.classList.add('hidden');
+                    markCompletedBtn.classList.remove('hidden');
+
+                    if (data.mealPlan) {
+                        generateBtn.classList.add('hidden');
+                        viewBtn.classList.remove('hidden');
+                    }
+
+                    document.getElementById('request-details-modal').classList.remove('hidden');
+                } else {
+                    showMessage('Errore', 'Richiesta non trovata.');
+                }
+            } catch (error) {
+                console.error("Error fetching request details: ", error);
+                showMessage('Errore', 'Impossibile caricare i dettagli della richiesta.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        document.getElementById('request-details-close-button').addEventListener('click', () => {
+            document.getElementById('request-details-modal').classList.add('hidden');
+            currentRequestId = null; // Clear current request ID
+        });
+
+        document.getElementById('pdf-viewer-close-button').addEventListener('click', () => {
+            document.getElementById('pdf-viewer-modal').classList.add('hidden');
+            document.getElementById('pdf-frame').src = ''; // Clear PDF content
+        });
+
+        // --- Dashboard Action Buttons ---
+
+        document.getElementById('generate-plan-button').addEventListener('click', async () => {
+            if (!currentRequestId) return;
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${window.userId}/requests`, currentRequestId);
+                const docSnap = await getDoc(docRef);
+                if (!docSnap.exists()) {
+                    showMessage('Errore', 'Richiesta non trovata per la generazione del piano.');
+                    hideLoading();
+                    return;
+                }
+                const requestData = docSnap.data();
+
+                // Construct prompt for LLM
+                const prompt = `Genera un piano pasti dettagliato per ${requestData.duration} giorni.
+                Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
+                Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
+                Dieta: ${requestData.diet}.
+                Esclusioni alimentari: ${requestData.exclusions.join(', ') || 'Nessuna'}.
+                Cibi già a casa: ${requestData.foods_at_home.join(', ') || 'Nessuno'}.
+                Pasti al giorno: ${requestData.meals_per_day}.
+
+                Per ogni giorno, includi ${requestData.meals_per_day} pasti (Colazione, Pranzo, Cena, Spuntino, etc. a seconda del numero di pasti).
+                Per ogni pasto, fornisci:
+                - Nome del pasto
+                - Lista ingredienti (con quantità stimate, es. "100g petto di pollo")
+                - Istruzioni passo-passo per la preparazione.
+
+                Alla fine, fornisci una lista della spesa consolidata per tutti i giorni, raggruppando gli ingredienti.
+                Assicurati che le ricette siano adatte all'obiettivo calorico e alle preferenze/esclusioni.
+                Formato di output richiesto (JSON):
+                {
+                    "recipes": [
+                        {
+                            "day": "Lunedì",
+                            "meals": [
+                                {
+                                    "type": "Colazione",
+                                    "name": "Nome Ricetta",
+                                    "ingredients": ["ingrediente 1", "ingrediente 2"],
+                                    "instructions": "Istruzioni passo-passo"
+                                },
+                                // ... altri pasti per Lunedì
+                            ]
+                        },
+                        // ... altri giorni
+                    ],
+                    "shoppingList": ["ingrediente A", "ingrediente B", "ingrediente C"]
+                }`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "recipes": {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            "day": { "type": "STRING" },
+                                            "meals": {
+                                                type: "ARRAY",
+                                                items: {
+                                                    type: "OBJECT",
+                                                    properties: {
+                                                        "type": { "type": "STRING" },
+                                                        "name": { "type": "STRING" },
+                                                        "ingredients": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                                        "instructions": { "type": "STRING" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "shoppingList": { "type": "ARRAY", "items": { "type": "STRING" } }
+                            },
+                            "propertyOrdering": ["recipes", "shoppingList"]
+                        }
+                    }
+                };
+
+                const apiKey = ""; // Canvas will automatically provide this
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const generatedPlan = JSON.parse(jsonString);
+
+                    // Update Firestore document with the generated plan and status
+                    await updateDoc(docRef, {
+                        mealPlan: generatedPlan,
+                        status: 'Inviato' // Mark as sent/processed
+                    });
+
+                    showMessage('Piano Generato!', 'Il piano pasti è stato generato e salvato. Puoi visualizzarlo ora.');
+                    document.getElementById('generate-plan-button').classList.add('hidden');
+                    document.getElementById('view-plan-button').classList.remove('hidden');
+                    showRequestDetails(currentRequestId); // Refresh details to reflect changes
+                } else {
+                    console.error("LLM response structure unexpected:", result);
+                    showMessage('Errore Generazione', 'Impossibile generare il piano pasti. Struttura della risposta inattesa.');
+                }
+
+            } catch (error) {
+                console.error("Error generating meal plan:", error);
+                showMessage('Errore Generazione', `Si è verificato un errore: ${error.message}. Riprova.`);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('view-plan-button').addEventListener('click', async () => {
+            if (!currentRequestId) return;
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${window.userId}/requests`, currentRequestId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().mealPlan) {
+                    const data = docSnap.data();
+                    generatePdf(data.mealPlan, data); // Pass user info for PDF header
+                } else {
+                    showMessage('Errore', 'Nessun piano pasti trovato per questa richiesta.');
+                }
+            } catch (error) {
+                console.error("Error viewing meal plan:", error);
+                showMessage('Errore', 'Impossibile visualizzare il piano pasti.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('mark-completed-button').addEventListener('click', async () => {
+            if (!currentRequestId) return;
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${window.userId}/requests`, currentRequestId);
+                await updateDoc(docRef, {
+                    status: 'Inviato' // Or 'Completato' as per your preference
+                });
+                showMessage('Stato Aggiornato', 'Richiesta segnata come "Inviato".');
+                document.getElementById('request-details-modal').classList.add('hidden'); // Close modal
+                loadRequests(); // Refresh table
+            } catch (error) {
+                console.error("Error marking as completed:", error);
+                showMessage('Errore Aggiornamento', 'Impossibile aggiornare lo stato della richiesta.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('export-csv').addEventListener('click', async () => {
+            if (!db || !window.userId) {
+                showMessage('Errore', 'Database non disponibile per l\'esportazione.');
+                return;
+            }
+            showLoading();
+            try {
+                const requestsCollectionRef = collection(db, `artifacts/${appId}/users/${window.userId}/requests`);
+                const querySnapshot = await getDocs(requestsCollectionRef);
+
+                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Esclusioni,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const row = [
+                        doc.id,
+                        new Date(data.timestamp).toLocaleString('it-IT'),
+                        data.email,
+                        data.phone || '',
+                        data.age,
+                        data.weight,
+                        data.height,
+                        data.gender,
+                        data.activity_level,
+                        data.goal,
+                        data.duration,
+                        data.diet,
+                        data.exclusions.join('; '),
+                        data.foods_at_home.join('; '),
+                        data.meals_per_day,
+                        data.calories,
+                        data.status,
+                        data.mealPlan ? 'Generato' : 'Non Generato'
+                    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','); // Handle commas and quotes
+
+                    csvContent += row + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) { // Feature detection for download attribute
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'richieste_meal_prep.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    showMessage('Esporta CSV', 'Il tuo browser non supporta il download diretto. Copia il testo qui sotto:\n\n' + csvContent);
+                }
+                showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
+            } catch (error) {
+                console.error("Error exporting CSV:", error);
+                showMessage('Errore Esportazione', 'Impossibile esportare i dati in CSV.');
+            } finally {
+                hideLoading();
+            }
+        });
+
     </script>
 </body>
 </html>
