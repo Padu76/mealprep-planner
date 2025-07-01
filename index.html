@@ -29,7 +29,7 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // Check if firebaseConfig is not empty before initializing
-        if (Object.keys(firebaseConfig).length > 0) {
+        if (Object.keys(firebaseConfig).length > 0 && firebaseConfig.apiKey) { // Added check for apiKey
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
@@ -38,41 +38,55 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
-                    console.log("User authenticated:", userId);
-                    // If the user is authenticated, check if they are an admin
-                    // For this demo, we'll assume any authenticated user can view the dashboard
-                    // In a real app, you'd check roles/permissions
+                    console.log("Utente autenticato:", userId);
+                    window.userId = userId; // Update global userId
+                    isAuthReady = true; // Mark auth as ready
+                    window.isAuthReady = isAuthReady; // Update global isAuthReady
+
+                    // Determine which section to show based on hash
                     if (window.location.hash === '#dashboard') {
                         document.getElementById('dashboard-container').classList.remove('hidden');
                         document.getElementById('landing-page').classList.add('hidden');
-                        document.getElementById('auth-section').classList.add('hidden'); // Hide auth section if logged in
+                        document.getElementById('auth-section').classList.add('hidden');
+                        document.getElementById('dashboard-user-id').textContent = `ID Utente: ${userId}`;
                         loadRequests(); // Load requests only if authenticated and on dashboard
                     } else {
                         document.getElementById('auth-section').classList.add('hidden');
+                        document.getElementById('landing-page').classList.remove('hidden');
+                        document.getElementById('dashboard-container').classList.add('hidden');
                     }
                 } else {
                     userId = null;
-                    console.log("User not authenticated.");
-                    // Attempt to sign in anonymously if no initial token or if token fails
+                    window.userId = userId; // Update global userId
+                    console.log("Utente non autenticato. Tentativo di accesso...");
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
-                            console.log("Signed in with custom token.");
+                            console.log("Accesso effettuato con token personalizzato.");
                         } else {
                             await signInAnonymously(auth);
-                            console.log("Signed in anonymously.");
+                            console.log("Accesso effettuato in modo anonimo.");
                         }
                     } catch (error) {
-                        console.error("Firebase authentication error:", error);
+                        console.error("Errore di autenticazione Firebase:", error);
                         // Show login form if anonymous sign-in fails or no token
                         document.getElementById('auth-section').classList.remove('hidden');
+                        document.getElementById('landing-page').classList.add('hidden');
+                        document.getElementById('dashboard-container').classList.add('hidden');
+                        showMessage('Errore di Autenticazione', 'Impossibile accedere alla dashboard. Riprova o contatta l\'assistenza.');
+                    } finally {
+                        isAuthReady = true; // Mark auth as ready even if failed, to stop waiting
+                        window.isAuthReady = isAuthReady; // Update global isAuthReady
                     }
                 }
-                isAuthReady = true; // Mark auth as ready
             });
         } else {
-            console.error("Firebase configuration is missing. Please ensure __firebase_config is provided.");
+            console.error("Configurazione Firebase mancante o incompleta. Assicurati che __firebase_config sia fornito e contenga una chiave API valida.");
             document.getElementById('auth-section').classList.remove('hidden'); // Show auth section if Firebase isn't configured
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('dashboard-container').classList.add('hidden');
+            // Show a message to the user about the configuration issue
+            window.onload = () => showMessage('Errore di Configurazione', 'L\'applicazione non è configurata correttamente. Contatta l\'amministratore.');
         }
 
 
@@ -89,8 +103,7 @@
         window.query = query;
         window.where = where;
         window.getDocs = getDocs;
-        window.userId = userId; // This will be updated by onAuthStateChanged
-        window.isAuthReady = isAuthReady; // This will be updated by onAuthStateChanged
+        // userId and isAuthReady are already updated directly in onAuthStateChanged
         window.appId = appId; // Expose appId globally
     </script>
     <style>
@@ -112,6 +125,39 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #e67300;
+        }
+
+        /* Ensure dashboard header elements are properly aligned */
+        #dashboard-container header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        #dashboard-container header h1 {
+            flex-grow: 1; /* Allow title to take available space */
+            min-width: 200px; /* Ensure title doesn't shrink too much */
+        }
+        #dashboard-container header div {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Space between user ID and logout button */
+        }
+        @media (max-width: 768px) {
+            #dashboard-container header {
+                flex-direction: column;
+                text-align: center;
+            }
+            #dashboard-container header h1 {
+                margin-bottom: 1rem;
+            }
+            #dashboard-container header div {
+                flex-direction: column;
+                width: 100%;
+            }
+            #dashboard-container header span, #dashboard-container header button {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -284,7 +330,7 @@
                                 <option value="">Seleziona livello</option>
                                 <option value="sedentary">Sedentario (poco o nessun esercizio)</option>
                                 <option value="lightly_active">Leggermente attivo (esercizio leggero 1-3 giorni/settimana)</option>
-                                <option value="moderately_active">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
+                                <option value="moderatamente_active">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
                                 <option value="very_active">Molto attivo (esercizio intenso 6-7 giorni/settimana)</option>
                                 <option value="extra_active">Estremamente attivo (esercizio molto intenso, lavoro fisico)</option>
                             </select>
@@ -521,7 +567,7 @@
             const activityMultipliers = {
                 sedentary: 1.2,
                 lightly_active: 1.375,
-                moderately_active: 1.55,
+                moderatamente_active: 1.55, // Corrected typo
                 very_active: 1.725,
                 extra_active: 1.9
             };
@@ -691,17 +737,25 @@
             const dailyCalories = adjustCaloriesForGoal(tdee, formData.goal);
             formData.calories = Math.round(dailyCalories); // Store calculated calories
 
+            // Ensure Firebase is initialized and user is authenticated before saving
+            if (!db || !window.userId) {
+                console.error("Firebase non inizializzato o utente non autenticato. Impossibile salvare la richiesta.");
+                hideLoading();
+                showMessage('Errore di Sistema', 'L\'applicazione non è pronta. Riprova tra qualche secondo o ricarica la pagina.');
+                return;
+            }
+
             try {
                 // Save request to Firestore
                 // Use the private collection path for user-specific data
-                const requestsCollectionRef = collection(db, `artifacts/${appId}/users/${window.userId || 'anonymous'}/requests`);
+                const requestsCollectionRef = collection(db, `artifacts/${appId}/users/${window.userId}/requests`);
                 const docRef = await addDoc(requestsCollectionRef, formData);
-                console.log("Document written with ID: ", docRef.id);
+                console.log("Documento scritto con ID: ", docRef.id);
 
                 showMessage('Richiesta Inviata!', 'La tua richiesta di piano pasti è stata inviata con successo. Riceverai il tuo piano via email a breve!');
                 document.getElementById('meal-prep-form-element').reset(); // Clear the form
             } catch (e) {
-                console.error("Error adding document: ", e);
+                console.error("Errore nell'aggiunta del documento a Firestore: ", e);
                 showMessage('Errore', 'Si è verificato un errore durante l\'invio della richiesta. Riprova più tardi.');
             } finally {
                 hideLoading();
@@ -715,28 +769,6 @@
         // Handle URL hash for dashboard access
         window.addEventListener('hashchange', () => {
             if (window.location.hash === '#dashboard') {
-                if (window.isAuthReady && window.userId) {
-                    document.getElementById('landing-page').classList.add('hidden');
-                    document.getElementById('auth-section').classList.add('hidden');
-                    document.getElementById('dashboard-container').classList.remove('hidden');
-                    document.getElementById('dashboard-user-id').textContent = `ID Utente: ${window.userId}`;
-                    loadRequests();
-                } else {
-                    // If auth not ready or not logged in, show auth section
-                    document.getElementById('landing-page').classList.add('hidden');
-                    document.getElementById('dashboard-container').classList.add('hidden');
-                    document.getElementById('auth-section').classList.remove('hidden');
-                }
-            } else {
-                document.getElementById('dashboard-container').classList.add('hidden');
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('landing-page').classList.remove('hidden');
-            }
-        });
-
-        // Initial check on page load
-        window.addEventListener('load', () => {
-            if (window.location.hash === '#dashboard') {
                 // Wait for Firebase auth to be ready
                 const checkAuthAndLoadDashboard = setInterval(() => {
                     if (window.isAuthReady) {
@@ -748,12 +780,26 @@
                             document.getElementById('dashboard-user-id').textContent = `ID Utente: ${window.userId}`;
                             loadRequests();
                         } else {
+                            // If auth ready but not logged in, show auth section
                             document.getElementById('landing-page').classList.add('hidden');
                             document.getElementById('dashboard-container').classList.add('hidden');
                             document.getElementById('auth-section').classList.remove('hidden');
                         }
                     }
                 }, 100); // Check every 100ms
+            } else {
+                document.getElementById('dashboard-container').classList.add('hidden');
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('landing-page').classList.remove('hidden');
+            }
+        });
+
+        // Initial check on page load
+        window.addEventListener('load', () => {
+            if (window.location.hash === '#dashboard') {
+                // The onAuthStateChanged listener will handle showing the correct section
+                // No need for a separate interval here, as onAuthStateChanged is asynchronous
+                // and will eventually update window.isAuthReady and window.userId
             }
         });
 
@@ -763,7 +809,7 @@
                 window.location.hash = ''; // Go back to landing page
                 showMessage('Logout', 'Sei stato disconnesso dalla dashboard.');
             } catch (error) {
-                console.error("Error logging out:", error);
+                console.error("Errore durante il logout:", error);
                 showMessage('Errore Logout', 'Si è verificato un errore durante il logout.');
             }
         });
@@ -773,7 +819,8 @@
          */
         function loadRequests() {
             if (!db || !window.userId) {
-                console.warn("Firestore DB or User ID not available for loading requests.");
+                console.warn("Database Firestore o ID Utente non disponibile per il caricamento delle richieste.");
+                document.getElementById('requests-table-body').innerHTML = `<tr><td colspan="5" class="py-4 px-4 text-center text-gray-500">Impossibile caricare le richieste. Assicurati che Firebase sia configurato e che tu sia autenticato.</td></tr>`;
                 return;
             }
 
@@ -841,7 +888,7 @@
                     });
                 });
             }, (error) => {
-                console.error("Error fetching requests: ", error);
+                console.error("Errore nel recupero delle richieste: ", error);
                 showMessage('Errore Caricamento', 'Impossibile caricare le richieste. Riprova più tardi.');
             });
         }
@@ -897,13 +944,14 @@
                     const viewBtn = document.getElementById('view-plan-button');
                     const markCompletedBtn = document.getElementById('mark-completed-button');
 
-                    generateBtn.classList.remove('hidden');
-                    viewBtn.classList.add('hidden');
-                    markCompletedBtn.classList.remove('hidden');
-
                     if (data.mealPlan) {
                         generateBtn.classList.add('hidden');
                         viewBtn.classList.remove('hidden');
+                        markCompletedBtn.classList.remove('hidden'); // Always show mark completed if plan exists
+                    } else {
+                        generateBtn.classList.remove('hidden');
+                        viewBtn.classList.add('hidden');
+                        markCompletedBtn.classList.add('hidden'); // Hide mark completed if no plan yet
                     }
 
                     document.getElementById('request-details-modal').classList.remove('hidden');
@@ -911,7 +959,7 @@
                     showMessage('Errore', 'Richiesta non trovata.');
                 }
             } catch (error) {
-                console.error("Error fetching request details: ", error);
+                console.error("Errore nel recupero dei dettagli della richiesta: ", error);
                 showMessage('Errore', 'Impossibile caricare i dettagli della richiesta.');
             } finally {
                 hideLoading();
@@ -931,7 +979,10 @@
         // --- Dashboard Action Buttons ---
 
         document.getElementById('generate-plan-button').addEventListener('click', async () => {
-            if (!currentRequestId) return;
+            if (!currentRequestId) {
+                showMessage('Errore', 'Nessuna richiesta selezionata per la generazione del piano.');
+                return;
+            }
 
             showLoading();
             try {
@@ -1029,6 +1080,7 @@
                 });
 
                 const result = await response.json();
+                console.log("Risposta LLM:", result); // Log the full LLM response
 
                 if (result.candidates && result.candidates.length > 0 &&
                     result.candidates[0].content && result.candidates[0].content.parts &&
@@ -1043,24 +1095,26 @@
                     });
 
                     showMessage('Piano Generato!', 'Il piano pasti è stato generato e salvato. Puoi visualizzarlo ora.');
-                    document.getElementById('generate-plan-button').classList.add('hidden');
-                    document.getElementById('view-plan-button').classList.remove('hidden');
-                    showRequestDetails(currentRequestId); // Refresh details to reflect changes
+                    // Refresh details to reflect changes
+                    showRequestDetails(currentRequestId);
                 } else {
-                    console.error("LLM response structure unexpected:", result);
-                    showMessage('Errore Generazione', 'Impossibile generare il piano pasti. Struttura della risposta inattesa.');
+                    console.error("Struttura della risposta LLM inattesa:", result);
+                    showMessage('Errore Generazione', 'Impossibile generare il piano pasti. Struttura della risposta inattesa dall\'AI.');
                 }
 
             } catch (error) {
-                console.error("Error generating meal plan:", error);
-                showMessage('Errore Generazione', `Si è verificato un errore: ${error.message}. Riprova.`);
+                console.error("Errore durante la generazione del piano pasti:", error);
+                showMessage('Errore Generazione', `Si è verificato un errore: ${error.message}. Controlla la console per maggiori dettagli e riprova.`);
             } finally {
                 hideLoading();
             }
         });
 
         document.getElementById('view-plan-button').addEventListener('click', async () => {
-            if (!currentRequestId) return;
+            if (!currentRequestId) {
+                showMessage('Errore', 'Nessuna richiesta selezionata per la visualizzazione del piano.');
+                return;
+            }
 
             showLoading();
             try {
@@ -1070,10 +1124,10 @@
                     const data = docSnap.data();
                     generatePdf(data.mealPlan, data); // Pass user info for PDF header
                 } else {
-                    showMessage('Errore', 'Nessun piano pasti trovato per questa richiesta.');
+                    showMessage('Errore', 'Nessun piano pasti trovato per questa richiesta. Genera prima il piano.');
                 }
             } catch (error) {
-                console.error("Error viewing meal plan:", error);
+                console.error("Errore durante la visualizzazione del piano pasti:", error);
                 showMessage('Errore', 'Impossibile visualizzare il piano pasti.');
             } finally {
                 hideLoading();
@@ -1081,7 +1135,10 @@
         });
 
         document.getElementById('mark-completed-button').addEventListener('click', async () => {
-            if (!currentRequestId) return;
+            if (!currentRequestId) {
+                showMessage('Errore', 'Nessuna richiesta selezionata per l\'aggiornamento dello stato.');
+                return;
+            }
 
             showLoading();
             try {
@@ -1093,7 +1150,7 @@
                 document.getElementById('request-details-modal').classList.add('hidden'); // Close modal
                 loadRequests(); // Refresh table
             } catch (error) {
-                console.error("Error marking as completed:", error);
+                console.error("Errore durante l'aggiornamento dello stato:", error);
                 showMessage('Errore Aggiornamento', 'Impossibile aggiornare lo stato della richiesta.');
             } finally {
                 hideLoading();
@@ -1153,7 +1210,7 @@
                 }
                 showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
             } catch (error) {
-                console.error("Error exporting CSV:", error);
+                console.error("Errore durante l'esportazione CSV:", error);
                 showMessage('Errore Esportazione', 'Impossibile esportare i dati in CSV.');
             } finally {
                 hideLoading();
