@@ -249,13 +249,125 @@
                     </div>
 
                     <div class="mb-6">
-                        <label for="exclusions" class="block text-gray-700 text-sm font-bold mb-2">Esclusioni Alimentari (es. noci, frutti di mare, glutine):</label>
-                        <textarea id="exclusions" name="exclusions" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                        <label for="allergies" class="block text-gray-700 text-sm font-bold mb-2">Allergie Alimentari (se presenti):</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="arachidi" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Arachidi</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="lattosio" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Lattosio</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="glutine" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Glutine</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="uova" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Uova</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="noci" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Noci</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="pesce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pesce</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="crostacei" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Crostacei</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="soia" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Soia</span>
+                            </label>
+                        </div>
+                        <textarea id="other_allergies" name="other_allergies" rows="1" class="mt-2 shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Altre allergie (es. sesamo, senape)"></textarea>
                     </div>
 
                     <div class="mb-6">
-                        <label for="foods_at_home" class="block text-gray-700 text-sm font-bold mb-2">Cibi che hai già a casa (opzionale, es. pollo, riso, broccoli):</label>
-                        <textarea id="foods_at_home" name="foods_at_home" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                        <label for="preferences" class="block text-gray-700 text-sm font-bold mb-2">Preferenze Alimentari:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="piccante" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Piccante</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="dolce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Dolce</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="salato" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Salato</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="vegetali_freschi" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Vegetali freschi</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="carne_bianca" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Carne bianca</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="pesce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pesce</span>
+                            </label>
+                        </div>
+                        <textarea id="other_preferences" name="other_preferences" rows="1" class="mt-2 shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Altre preferenze (es. cucina asiatica, mediterranea)"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="cooking_skill_level" class="block text-gray-700 text-sm font-bold mb-2">Livello di Abilità in Cucina:</label>
+                        <select id="cooking_skill_level" name="cooking_skill_level" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="">Seleziona livello</option>
+                            <option value="principiante">Principiante</option>
+                            <option value="intermedio">Intermedio</option>
+                            <option value="avanzato">Avanzato</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="equipment_available" class="block text-gray-700 text-sm font-bold mb-2">Attrezzatura da Cucina Disponibile (es. forno, microonde, frullatore):</label>
+                        <textarea id="equipment_available" name="equipment_available" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="family_members" class="block text-gray-700 text-sm font-bold mb-2">Numero di Persone per il Piano:</label>
+                        <input type="number" id="family_members" name="family_members" min="1" value="1" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="specific_goals" class="block text-gray-700 text-sm font-bold mb-2">Obiettivi Specifici (es. ridurre il colesterolo, aumentare l'energia):</label>
+                        <textarea id="specific_goals" name="specific_goals" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Descrivi qui i tuoi obiettivi specifici"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="meal_types_to_include" class="block text-gray-700 text-sm font-bold mb-2">Tipi di Pasti da Includere:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="colazione" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Colazione</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="pranzo" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pranzo</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="cena" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Cena</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="spuntini" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Spuntini</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="dietary_notes" class="block text-gray-700 text-sm font-bold mb-2">Note Dietetiche Aggiuntive:</label>
+                        <textarea id="dietary_notes" name="dietary_notes" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Qualsiasi altra informazione rilevante per il tuo piano"></textarea>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -323,7 +435,7 @@
     <div id="dashboard-container" class="min-h-screen bg-gray-100 p-4 hidden">
         <header class="bg-white shadow-md rounded-lg p-6 mb-6 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-orange-500">Dashboard Amministratore</h1>
-            <!-- Removed user ID display and logout button as authentication is no longer used -->
+            <a href="#landing-page" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">Torna alla Home</a>
         </header>
 
         <div class="bg-white shadow-md rounded-lg p-6 mb-6">
@@ -609,6 +721,27 @@
             event.preventDefault();
             showLoading();
 
+            // Get selected allergies
+            const selectedAllergies = Array.from(document.querySelectorAll('input[name="allergies"]:checked'))
+                                        .map(cb => cb.value);
+            const otherAllergiesText = document.getElementById('other_allergies').value.trim();
+            if (otherAllergiesText) {
+                selectedAllergies.push(...otherAllergiesText.split(',').map(s => s.trim()).filter(s => s));
+            }
+
+            // Get selected preferences
+            const selectedPreferences = Array.from(document.querySelectorAll('input[name="preferences"]:checked'))
+                                            .map(cb => cb.value);
+            const otherPreferencesText = document.getElementById('other_preferences').value.trim();
+            if (otherPreferencesText) {
+                selectedPreferences.push(...otherPreferencesText.split(',').map(s => s.trim()).filter(s => s));
+            }
+
+            // Get selected meal types
+            const selectedMealTypes = Array.from(document.querySelectorAll('input[name="meal_types_to_include"]:checked'))
+                                            .map(cb => cb.value);
+
+
             // Collect form data
             const formData = {
                 id: crypto.randomUUID(), // Generate a unique ID for the request
@@ -621,7 +754,15 @@
                 activity_level: document.getElementById('activity_level').value,
                 meals_per_day: parseInt(document.getElementById('meals_per_day').value),
                 diet: document.getElementById('diet').value,
-                exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s),
+                allergies: selectedAllergies, // New field
+                preferences: selectedPreferences, // New field
+                cooking_skill_level: document.getElementById('cooking_skill_level').value, // New field
+                equipment_available: document.getElementById('equipment_available').value.split(',').map(s => s.trim()).filter(s => s), // New field
+                family_members: parseInt(document.getElementById('family_members').value), // New field
+                specific_goals: document.getElementById('specific_goals').value.trim(), // New field
+                meal_types_to_include: selectedMealTypes, // New field
+                dietary_notes: document.getElementById('dietary_notes').value.trim(), // New field
+                exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s), // Existing, keep for compatibility
                 foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
@@ -667,6 +808,8 @@
             document.getElementById('landing-page').classList.add('hidden');
             document.getElementById('dashboard-container').classList.add('hidden');
             document.getElementById(sectionId).classList.remove('hidden');
+            // Scroll to top when changing section
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Handle URL hash for dashboard access
@@ -796,9 +939,15 @@
                         <p><strong>Obiettivo:</strong> ${data.goal}</p>
                         <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
                         <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
-                        <p><strong>Esclusioni:</strong> ${data.exclusions.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Allergie:</strong> ${data.allergies.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Preferenze:</strong> ${data.preferences.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Livello Abilità Cucina:</strong> ${data.cooking_skill_level || 'N/A'}</p>
+                        <p><strong>Attrezzatura Disponibile:</strong> ${data.equipment_available.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Persone per il Piano:</strong> ${data.family_members || 'N/A'}</p>
+                        <p><strong>Obiettivi Specifici:</strong> ${data.specific_goals || 'N/A'}</p>
+                        <p><strong>Tipi Pasti Inclusi:</strong> ${data.meal_types_to_include.join(', ') || 'N/A'}</p>
+                        <p><strong>Note Dietetiche Aggiuntive:</strong> ${data.dietary_notes || 'N/A'}</p>
                         <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
-                        <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
                         <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
                     `;
 
@@ -964,7 +1113,7 @@
             try {
                 let requests = getRequestsFromLocalStorage();
 
-                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Esclusioni,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
+                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
 
                 requests.forEach((data) => {
                     const row = [
@@ -980,7 +1129,14 @@
                         data.goal,
                         data.duration,
                         data.diet,
-                        data.exclusions.join('; '),
+                        data.allergies.join('; '), // New field
+                        data.preferences.join('; '), // New field
+                        data.cooking_skill_level || '', // New field
+                        data.equipment_available.join('; '), // New field
+                        data.family_members || '', // New field
+                        data.specific_goals || '', // New field
+                        data.meal_types_to_include.join('; '), // New field
+                        data.dietary_notes || '', // New field
                         data.foods_at_home.join('; '),
                         data.meals_per_day,
                         data.calories,
@@ -1016,4 +1172,5 @@
     </script>
 </body>
 </html>
+
 
