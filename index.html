@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -736,7 +737,7 @@
                 });
 
                 row.innerHTML = `
-                    <td class="py-3 px-4 whitespace-nowrap text-sm font-medium text-gray-900 rounded-bl-lg">${data.id.substring(0, 8)}...</td>
+                    <td class="py-3 px-4 whitespace-nowrap text-sm font-medium text-gray-900 rounded-bl-lg">${String(data.id).substring(0, 8)}...</td>
                     <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-700">${formattedDate}</td>
                     <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-700">${data.email}</td>
                     <td class="py-3 px-4 whitespace-nowrap text-sm">
@@ -783,7 +784,7 @@
                 if (data) {
                     const detailsContent = document.getElementById('request-details-content');
                     detailsContent.innerHTML = `
-                        <p><strong>ID Richiesta:</strong> ${data.id.substring(0, 8)}...</p>
+                        <p><strong>ID Richiesta:</strong> ${String(data.id).substring(0, 8)}...</p>
                         <p><strong>Data Richiesta:</strong> ${new Date(data.timestamp).toLocaleString('it-IT')}</p>
                         <p><strong>Stato:</strong> <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${data.status === 'Inviato' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${data.status}</span></p>
                         <p><strong>Email:</strong> ${data.email}</p>
@@ -1093,4 +1094,3 @@
     </script>
 </body>
 </html>
-
