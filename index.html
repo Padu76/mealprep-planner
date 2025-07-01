@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -380,7 +379,7 @@
     </div>
 
 
-    <script type="module">
+    <script>
         // Global variable to store the currently viewed request ID in the dashboard modal
         let currentRequestId = null;
 
@@ -860,108 +859,31 @@
                 }
                 let requestData = requests[requestIndex];
 
-                // Construct prompt for LLM
-                const prompt = `Genera un piano pasti dettagliato per ${requestData.duration} giorni.
-                Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
-                Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
-                Dieta: ${requestData.diet}.
-                Esclusioni alimentari: ${requestData.exclusions.join(', ') || 'Nessuna'}.
-                Cibi già a casa: ${requestData.foods_at_home.join(', ') || 'Nessuno'}.
-                Pasti al giorno: ${requestData.meals_per_day}.
-
-                Per ogni giorno, includi ${requestData.meals_per_day} pasti (Colazione, Pranzo, Cena, Spuntino, etc. a seconda del numero di pasti).
-                Per ogni pasto, fornisci:
-                - Nome del pasto
-                - Lista ingredienti (con quantità stimate, es. "100g petto di pollo")
-                - Istruzioni passo-passo per la preparazione.
-
-                Alla fine, fornisci una lista della spesa consolidata per tutti i giorni, raggruppando gli ingredienti.
-                Assicurati che le ricette siano adatte all'obiettivo calorico e alle preferenze/esclusioni.
-                Formato di output richiesto (JSON):
-                {
-                    "recipes": [
-                        {
-                            "day": "Lunedì",
-                            "meals": [
-                                {
-                                    "type": "Colazione",
-                                    "name": "Nome Ricetta",
-                                    "ingredients": ["ingrediente 1", "ingrediente 2"],
-                                    "instructions": "Istruzioni passo-passo"
-                                },
-                                // ... altri pasti per Lunedì
-                            ]
-                        },
-                        // ... altri giorni
-                    ],
-                    "shoppingList": ["ingrediente A", "ingrediente B", "ingrediente C"]
-                }`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
-                const payload = {
-                    contents: chatHistory,
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "recipes": {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            "day": { "type": "STRING" },
-                                            "meals": {
-                                                type: "ARRAY",
-                                                items: {
-                                                    type: "OBJECT",
-                                                    properties: {
-                                                        "type": { "type": "STRING" },
-                                                        "name": { "type": "STRING" },
-                                                        "ingredients": { "type": "ARRAY", "items": { "type": "STRING" } },
-                                                        "instructions": { "type": "STRING" }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                "shoppingList": { "type": "ARRAY", "items": { "type": "STRING" } }
-                            },
-                            "propertyOrdering": ["recipes", "shoppingList"]
-                        }
-                    }
+                // Prepare data to send to Netlify Function
+                const payloadToFunction = {
+                    requestData: requestData
                 };
 
-                const apiKey = ""; // Canvas will automatically provide this
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                console.log("Inizio chiamata all'API Gemini...");
-                const response = await fetch(apiUrl, {
+                console.log("Inizio chiamata alla Netlify Function /mealplanner con payload:", payloadToFunction);
+                const response = await fetch('/.netlify/functions/mealplanner', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payloadToFunction)
                 });
 
-                console.log("Risposta HTTP raw dall'API Gemini:", response);
+                console.log("Risposta HTTP raw dalla Netlify Function:", response);
 
                 if (!response.ok) {
-                    const errorBody = await response.text();
-                    throw new Error(`Errore HTTP ${response.status}: ${errorBody}`);
+                    const errorBody = await response.json(); // Assuming Netlify function returns JSON error
+                    throw new Error(`Errore HTTP ${response.status}: ${errorBody.error || 'Errore sconosciuto dalla funzione.'}`);
                 }
 
                 const result = await response.json();
-                console.log("Risposta JSON completa dall'API Gemini:", result); // Log the full LLM response
+                console.log("Risposta JSON completa dalla Netlify Function:", result);
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const jsonString = result.candidates[0].content.parts[0].text;
-                    console.log("Stringa JSON ricevuta dall'AI:", jsonString);
-                    const generatedPlan = JSON.parse(jsonString);
-                    console.log("Piano generato (oggetto JS):", generatedPlan);
+                if (result.mealPlan) {
+                    const generatedPlan = result.mealPlan;
+                    console.log("Piano generato (oggetto JS) dalla funzione:", generatedPlan);
 
                     // Update local storage with the generated plan and status
                     requests[requestIndex].mealPlan = generatedPlan;
@@ -973,8 +895,8 @@
                     showRequestDetails(currentRequestId);
                     loadRequests(); // Refresh dashboard table
                 } else {
-                    console.error("Struttura della risposta LLM inattesa:", result);
-                    showMessage('Errore Generazione', 'Impossibile generare il piano pasti. Struttura della risposta inattesa dall\'AI.');
+                    console.error("Struttura della risposta dalla Netlify Function inattesa:", result);
+                    showMessage('Errore Generazione', 'Impossibile generare il piano pasti. Struttura della risposta inattesa dalla funzione.');
                 }
 
             } catch (error) {
@@ -1094,3 +1016,4 @@
     </script>
 </body>
 </html>
+

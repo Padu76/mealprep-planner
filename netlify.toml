@@ -12,3 +12,4 @@
 # vengano installate automaticamente durante il processo di build.
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
+
