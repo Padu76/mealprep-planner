@@ -1,9 +1,0 @@
-{
-  "name": "mealplanner-function",
-  "version": "1.0.0",
-  "description": "Netlify Function for Meal Prep Planner AI generation",
-  "main": "mealplanner.js",
-  "dependencies": {
-    "openai": "^4.0.0"
-  }
-}
