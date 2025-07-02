@@ -26,34 +26,33 @@ exports.handler = async (event) => {
     const openai = new OpenAI({ apiKey: openaiApiKey });
 
     // Helper function per unire array in modo sicuro
+    // Questa funzione ora gestisce anche il caso in cui l'array sia undefined o non un array
     const safeJoin = (arr, separator = ', ') => {
-        return Array.isArray(arr) && arr.length > 0 ? arr.join(separator) : 'Nessuna';
+        if (Array.isArray(arr) && arr.length > 0) {
+            return arr.join(separator);
+        }
+        return 'Nessuna';
     };
 
-    // Costruisci il prompt dettagliato per l'AI con i nuovi campi, usando safeJoin
+    // Costruisci il prompt dettagliato per l'AI con i campi presenti nel form di index.html
     const prompt = `Genera un piano pasti dettagliato per ${requestData.duration} giorni.
     Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
     Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
     Dieta: ${requestData.diet}.
-    Allergie alimentari: ${safeJoin(requestData.allergies)}.
-    Preferenze alimentari: ${safeJoin(requestData.preferences)}.
-    Livello di abilità in cucina: ${requestData.cooking_skill_level || 'Non specificato'}.
-    Attrezzatura da cucina disponibile: ${safeJoin(requestData.equipment_available)}.
-    Numero di persone per il piano: ${requestData.family_members || '1'}.
-    Obiettivi specifici: ${requestData.specific_goals || 'Nessuno'}.
-    Tipi di pasti da includere: ${safeJoin(requestData.meal_types_to_include)}.
-    Note dietetiche aggiuntive: ${requestData.dietary_notes || 'Nessuna'}.
+    Esclusioni alimentari: ${safeJoin(requestData.exclusions)}.
+    Cibi già a casa: ${safeJoin(requestData.foods_at_home)}.
     Pasti al giorno: ${requestData.meals_per_day}.
 
-    Per ogni giorno, includi ${requestData.meals_per_day} pasti (ad esempio Colazione, Pranzo, Cena, Spuntino, ecc. a seconda del numero di pasti richiesto dall'utente).
+    Per ogni giorno, includi ${requestData.meals_per_day} pasti (Colazione, Pranzo, Cena, Spuntino, etc. a seconda del numero di pasti).
     Per ogni pasto, fornisci:
     - Nome del pasto
     - Lista ingredienti (con quantità stimate, es. "100g petto di pollo")
     - Istruzioni passo-passo per la preparazione.
 
     Alla fine, fornisci una lista della spesa consolidata per tutti i giorni, raggruppando gli ingredienti.
-    Assicurati che le ricette siano adatte all'obiettivo calorico e alle preferenze/esclusioni/allergie specificate.
-    Formato di output richiesto (JSON):
+    Assicurati che le ricette siano adatte all'obiettivo calorico e alle preferenze/esclusioni.
+    Il formato di output deve essere SOLO un oggetto JSON valido, senza testo aggiuntivo prima o dopo.
+    Formato JSON richiesto:
     {
         "recipes": [
             {
@@ -73,9 +72,10 @@ exports.handler = async (event) => {
         "shoppingList": ["ingrediente A", "ingrediente B", "ingrediente C"]
     }`;
 
-    console.log(`Generazione piano per ID: ${requestData.id}`);
+    console.log(`🚀 Chiamata OpenAI in corso per richiesta ID: ${requestData.id}`);
+
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // O "gpt-3.5-turbo"
+      model: "gpt-4o", // Puoi scegliere altri modelli come "gpt-3.5-turbo"
       messages: [
         {
           role: "system",
@@ -114,7 +114,7 @@ exports.handler = async (event) => {
     console.error(`❌ Errore nella funzione mealplanner:`, error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || "Errore interno del server." }),
+      body: JSON.stringify({ error: error.message || "Errore interno nella funzione" }),
     };
   }
 };
