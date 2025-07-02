@@ -11,10 +11,6 @@ exports.handler = async (event) => {
     // Parsa il corpo della richiesta per ottenere i dati
     const { requestData } = JSON.parse(event.body);
 
-    // --- DEBUG LOG: Controlla i dati ricevuti dalla funzione Netlify ---
-    console.log("Dati ricevuti dalla richiesta (requestData):", JSON.stringify(requestData, null, 2));
-    // ------------------------------------------------------------------
-
     // Recupera la chiave API di OpenAI dalle variabili d'ambiente di Netlify
     // NON INSERIRE MAI LA CHIAVE QUI DIRETTAMENTE!
     const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -38,19 +34,13 @@ exports.handler = async (event) => {
         return 'Nessuna';
     };
 
-    // Costruisci il prompt dettagliato per l'AI con i campi presenti nel form di index.html
+    // Costruisci il prompt dettagliato per l'AI
     const prompt = `Genera un piano pasti dettagliato per ${requestData.duration} giorni.
     Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
     Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
     Dieta: ${requestData.diet}.
-    Allergie alimentari: ${safeJoin(requestData.allergies)}.
-    Preferenze alimentari: ${safeJoin(requestData.preferences)}.
-    Livello di abilità in cucina: ${requestData.cooking_skill_level || 'Non specificato'}.
-    Attrezzatura da cucina disponibile: ${safeJoin(requestData.equipment_available)}.
-    Numero di persone per il piano: ${requestData.family_members || '1'}.
-    Obiettivi specifici: ${requestData.specific_goals || 'Nessuno'}.
-    Tipi di pasti da includere: ${safeJoin(requestData.meal_types_to_include)}.
-    Note dietetiche aggiuntive: ${requestData.dietary_notes || 'Nessuna'}.
+    Esclusioni alimentari: ${safeJoin(requestData.exclusions)}.
+    Cibi già a casa: ${safeJoin(requestData.foods_at_home)}.
     Pasti al giorno: ${requestData.meals_per_day}.
 
     Per ogni giorno, includi ${requestData.meals_per_day} pasti (Colazione, Pranzo, Cena, Spuntino, etc. a seconda del numero di pasti).

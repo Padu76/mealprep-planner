@@ -278,6 +278,9 @@ document.addEventListener('DOMContentLoaded', () => {
             specific_goals: document.getElementById('specific_goals').value.trim(),
             meal_types_to_include: selectedMealTypes,
             dietary_notes: document.getElementById('dietary_notes').value.trim(),
+            // Ensure these are collected from the form if they exist in index.html
+            exclusions: document.getElementById('exclusions') ? document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s) : [],
+            foods_at_home: document.getElementById('foods_at_home') ? document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s) : [],
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             timestamp: new Date().toISOString(),
@@ -322,8 +325,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('landing-page').classList.add('hidden');
         document.getElementById('dashboard-container').classList.add('hidden');
         document.getElementById(sectionId).classList.remove('hidden');
-        // Scroll to top when changing section
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // Handle URL hash for dashboard access
@@ -337,13 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial check on page load
-    if (window.location.hash === '#dashboard') {
-        showSection('dashboard-container');
-        loadRequests();
-    } else {
-        showSection('landing-page');
-    }
-
+    window.addEventListener('load', () => {
+        if (window.location.hash === '#dashboard') {
+            showSection('dashboard-container');
+            loadRequests();
+        } else {
+            showSection('landing-page');
+        }
+    });
 
     /**
      * Loads and displays requests in the dashboard table from local storage.
@@ -681,6 +683,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-    }); // End DOMContentLoaded
+    </script>
+</body>
+</html>
 
 
