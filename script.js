@@ -626,7 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let requests = getRequestsFromLocalStorage();
 
-                // Updated CSV headers to match new form fields
                 let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
 
                 requests.forEach((data) => {
@@ -683,4 +682,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     }); // End DOMContentLoaded
+
 

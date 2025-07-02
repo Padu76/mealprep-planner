@@ -11,6 +11,10 @@ exports.handler = async (event) => {
     // Parsa il corpo della richiesta per ottenere i dati
     const { requestData } = JSON.parse(event.body);
 
+    // --- DEBUG LOG: Controlla i dati ricevuti dalla funzione Netlify ---
+    console.log("Dati ricevuti dalla richiesta (requestData):", JSON.stringify(requestData, null, 2));
+    // ------------------------------------------------------------------
+
     // Recupera la chiave API di OpenAI dalle variabili d'ambiente di Netlify
     // NON INSERIRE MAI LA CHIAVE QUI DIRETTAMENTE!
     const openaiApiKey = process.env.OPENAI_API_KEY;
