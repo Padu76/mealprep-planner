@@ -268,16 +268,18 @@ document.addEventListener('DOMContentLoaded', () => {
             activity_level: document.getElementById('activity_level').value,
             meals_per_day: parseInt(document.getElementById('meals_per_day').value),
             diet: document.getElementById('diet').value,
-            allergies: selectedAllergies, // New field
-            preferences: selectedPreferences, // New field
-            cooking_skill_level: document.getElementById('cooking_skill_level').value, // New field
-            equipment_available: document.getElementById('equipment_available').value.split(',').map(s => s.trim()).filter(s => s), // New field
-            family_members: parseInt(document.getElementById('family_members').value), // New field
-            specific_goals: document.getElementById('specific_goals').value.trim(), // New field
-            meal_types_to_include: selectedMealTypes, // New field
-            dietary_notes: document.getElementById('dietary_notes').value.trim(), // New field
-            exclusions: [], // Removed 'exclusions' from HTML, so initialize as empty
-            foods_at_home: [], // Removed 'foods_at_home' from HTML, so initialize as empty
+            // Updated to match current index.html form fields
+            allergies: selectedAllergies, 
+            preferences: selectedPreferences, 
+            cooking_skill_level: document.getElementById('cooking_skill_level').value, 
+            equipment_available: document.getElementById('equipment_available').value.split(',').map(s => s.trim()).filter(s => s), 
+            family_members: parseInt(document.getElementById('family_members').value), 
+            specific_goals: document.getElementById('specific_goals').value.trim(), 
+            meal_types_to_include: selectedMealTypes, 
+            dietary_notes: document.getElementById('dietary_notes').value.trim(), 
+            // Removed these as they are no longer in index.html
+            // exclusions: [], 
+            // foods_at_home: [], 
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             timestamp: new Date().toISOString(),
@@ -460,7 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>Obiettivi Specifici:</strong> ${data.specific_goals || 'N/A'}</p>
                     <p><strong>Tipi Pasti Inclusi:</strong> ${data.meal_types_to_include.join(', ') || 'N/A'}</p>
                     <p><strong>Note Dietetiche Aggiuntive:</strong> ${data.dietary_notes || 'N/A'}</p>
-                    <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
+                    <p><strong>Cibi in Casa:</strong> ${data.foods_at_home ? data.foods_at_home.join(', ') : 'Nessuno'}</p>
+                    <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
                     <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
                 `;
 
@@ -626,7 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             let requests = getRequestsFromLocalStorage();
 
-            let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
+            // Updated CSV headers to match new form fields
+            let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
 
             requests.forEach((data) => {
                 const row = [
@@ -642,15 +646,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.goal,
                     data.duration,
                     data.diet,
-                    data.allergies.join('; '), // New field
-                    data.preferences.join('; '), // New field
-                    data.cooking_skill_level || '', // New field
-                    data.equipment_available.join('; '), // New field
-                    data.family_members || '', // New field
-                    data.specific_goals || '', // New field
-                    data.meal_types_to_include.join('; '), // New field
-                    data.dietary_notes || '', // New field
-                    data.foods_at_home.join('; '),
+                    data.allergies.join('; '), 
+                    data.preferences.join('; '), 
+                    data.cooking_skill_level || '', 
+                    data.equipment_available.join('; '), 
+                    data.family_members || '', 
+                    data.specific_goals || '', 
+                    data.meal_types_to_include.join('; '), 
+                    data.dietary_notes || '', 
+                    // Removed these as they are no longer in index.html
+                    // data.foods_at_home.join('; '),
                     data.meals_per_day,
                     data.calories,
                     data.status,
