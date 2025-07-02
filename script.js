@@ -278,9 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
             specific_goals: document.getElementById('specific_goals').value.trim(),
             meal_types_to_include: selectedMealTypes,
             dietary_notes: document.getElementById('dietary_notes').value.trim(),
-            // These fields were removed from index.html in previous iterations, so they are not collected
-            // exclusions: [],
-            // foods_at_home: [],
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             timestamp: new Date().toISOString(),

@@ -101,7 +101,7 @@ exports.handler = async (event) => {
     // Tenta di parsare il contenuto come JSON
     let mealPlanParsed;
     try {
-        mealPlanParsed = JSON.parse(mealPlanParsed);
+        mealPlanParsed = JSON.parse(mealPlanContent); // CORREZIONE QUI: da mealPlanParsed a mealPlanContent
     } catch (parseError) {
         console.error("Errore nel parsing JSON dalla risposta OpenAI:", parseError);
         // Se il parsing fallisce, restituisci il testo grezzo come errore o un messaggio di errore specifico
