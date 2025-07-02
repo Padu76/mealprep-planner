@@ -39,8 +39,14 @@ exports.handler = async (event) => {
     Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
     Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
     Dieta: ${requestData.diet}.
-    Esclusioni alimentari: ${safeJoin(requestData.exclusions)}.
-    Cibi già a casa: ${safeJoin(requestData.foods_at_home)}.
+    Allergie alimentari: ${safeJoin(requestData.allergies)}.
+    Preferenze alimentari: ${safeJoin(requestData.preferences)}.
+    Livello di abilità in cucina: ${requestData.cooking_skill_level || 'Non specificato'}.
+    Attrezzatura da cucina disponibile: ${safeJoin(requestData.equipment_available)}.
+    Numero di persone per il piano: ${requestData.family_members || '1'}.
+    Obiettivi specifici: ${requestData.specific_goals || 'Nessuno'}.
+    Tipi di pasti da includere: ${safeJoin(requestData.meal_types_to_include)}.
+    Note dietetiche aggiuntive: ${requestData.dietary_notes || 'Nessuna'}.
     Pasti al giorno: ${requestData.meals_per_day}.
 
     Per ogni giorno, includi ${requestData.meals_per_day} pasti (Colazione, Pranzo, Cena, Spuntino, etc. a seconda del numero di pasti).
@@ -95,7 +101,7 @@ exports.handler = async (event) => {
     // Tenta di parsare il contenuto come JSON
     let mealPlanParsed;
     try {
-        mealPlanParsed = JSON.parse(mealPlanContent);
+        mealPlanParsed = JSON.parse(mealPlanParsed);
     } catch (parseError) {
         console.error("Errore nel parsing JSON dalla risposta OpenAI:", parseError);
         // Se il parsing fallisce, restituisci il testo grezzo come errore o un messaggio di errore specifico
@@ -118,5 +124,6 @@ exports.handler = async (event) => {
     };
   }
 };
+
 
 
