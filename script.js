@@ -19,7 +19,8 @@ function showMessage(title, message) {
  * Hides the custom modal message.
  */
 function hideMessage() {
-    document.getElementById('modal-close-button').click(); // Use the button's click handler
+    // Corrected: Directly hide the modal, not trigger button click which causes infinite loop
+    document.getElementById('message-modal').classList.add('hidden');
 }
 
 /**
@@ -231,32 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         showLoading();
 
-        // Get selected allergies
-        const selectedAllergies = Array.from(document.querySelectorAll('input[name="allergies"]:checked'))
-                                    .map(cb => cb.value);
-        const otherAllergiesElement = document.getElementById('other_allergies');
-        const otherAllergiesText = otherAllergiesElement ? otherAllergiesElement.value.trim() : '';
-
-        if (otherAllergiesText) {
-            selectedAllergies.push(...otherAllergiesText.split(',').map(s => s.trim()).filter(s => s));
-        }
-
-        // Get selected preferences
-        const selectedPreferences = Array.from(document.querySelectorAll('input[name="preferences"]:checked'))
-                                        .map(cb => cb.value);
-        const otherPreferencesElement = document.getElementById('other_preferences');
-        const otherPreferencesText = otherPreferencesElement ? otherPreferencesElement.value.trim() : '';
-
-        if (otherPreferencesText) {
-            selectedPreferences.push(...otherPreferencesText.split(',').map(s => s.trim()).filter(s => s));
-        }
-
-        // Get selected meal types
-        const selectedMealTypes = Array.from(document.querySelectorAll('input[name="meal_types_to_include"]:checked'))
-                                        .map(cb => cb.value);
-
-
-        // Collect form data
+        // Collect form data - Synchronized with index.html's current structure
         const formData = {
             id: crypto.randomUUID(), // Generate a unique ID for the request
             duration: parseInt(document.getElementById('duration').value),
@@ -268,18 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activity_level: document.getElementById('activity_level').value,
             meals_per_day: parseInt(document.getElementById('meals_per_day').value),
             diet: document.getElementById('diet').value,
-            // Updated to match current index.html form fields
-            allergies: selectedAllergies, 
-            preferences: selectedPreferences, 
-            cooking_skill_level: document.getElementById('cooking_skill_level').value, 
-            equipment_available: document.getElementById('equipment_available').value.split(',').map(s => s.trim()).filter(s => s), 
-            family_members: parseInt(document.getElementById('family_members').value), 
-            specific_goals: document.getElementById('specific_goals').value.trim(), 
-            meal_types_to_include: selectedMealTypes, 
-            dietary_notes: document.getElementById('dietary_notes').value.trim(), 
-            // Removed these as they are no longer in index.html
-            // exclusions: [], 
-            // foods_at_home: [], 
+            // These fields are present in the current index.html form
+            exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s),
+            foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             timestamp: new Date().toISOString(),
@@ -290,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Basic validation
         if (!formData.duration || !formData.goal || !formData.age || !formData.weight || !formData.height || !formData.gender || !formData.activity_level || !formData.meals_per_day || !formData.diet || !formData.email) {
             hideLoading();
-            showMessage('Errore di Validazione', 'Per favor, compila tutti i campi obbligatori.');
+            showMessage('Errore di Validazione', 'Per favore, compila tutti i campi obbligatori.');
             return;
         }
 
@@ -454,15 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>Obiettivo:</strong> ${data.goal}</p>
                     <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
                     <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
-                    <p><strong>Allergie:</strong> ${data.allergies.join(', ') || 'Nessuna'}</p>
-                    <p><strong>Preferenze:</strong> ${data.preferences.join(', ') || 'Nessuna'}</p>
-                    <p><strong>Livello Abilità Cucina:</strong> ${data.cooking_skill_level || 'N/A'}</p>
-                    <p><strong>Attrezzatura Disponibile:</strong> ${data.equipment_available.join(', ') || 'Nessuna'}</p>
-                    <p><strong>Persone per il Piano:</strong> ${data.family_members || 'N/A'}</p>
-                    <p><strong>Obiettivi Specifici:</strong> ${data.specific_goals || 'N/A'}</p>
-                    <p><strong>Tipi Pasti Inclusi:</strong> ${data.meal_types_to_include.join(', ') || 'N/A'}</p>
-                    <p><strong>Note Dietetiche Aggiuntive:</strong> ${data.dietary_notes || 'N/A'}</p>
-                    <p><strong>Cibi in Casa:</strong> ${data.foods_at_home ? data.foods_at_home.join(', ') : 'Nessuno'}</p>
+                    <p><strong>Esclusioni:</strong> ${data.exclusions.join(', ') || 'Nessuna'}</p>
+                    <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
                     <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
                     <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
                 `;
@@ -591,99 +551,92 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Errore durante la visualizzazione del piano pasti:", error);
             showMessage('Errore', 'Impossibile visualizzare il piano pasti.');
-        } finally {
-            hideLoading();
-        }
-    });
-
-    document.getElementById('mark-completed-button').addEventListener('click', async () => {
-        if (!currentRequestId) {
-            showMessage('Errore', 'Nessuna richiesta selezionata per l\'aggiornamento dello stato.');
-            return;
-        }
-
-        showLoading();
-        try {
-            let requests = getRequestsFromLocalStorage();
-            let requestIndex = requests.findIndex(req => req.id === currentRequestId);
-
-            if (requestIndex !== -1) {
-                requests[requestIndex].status = 'Inviato'; // Or 'Completato' as per your preference
-                saveRequestsToLocalStorage(requests);
-                showMessage('Stato Aggiornato', 'Richiesta segnata come "Inviato".');
-                document.getElementById('request-details-modal').classList.add('hidden'); // Close modal
-                loadRequests(); // Refresh table
-            } else {
-                showMessage('Errore', 'Richiesta non trovata per l\'aggiornamento dello stato.');
+            } finally {
+                hideLoading();
             }
-        } catch (error) {
-            console.error("Errore durante l'aggiornamento dello stato:", error);
-            showMessage('Errore Aggiornamento', 'Impossibile aggiornare lo stato della richiesta.');
-        } finally {
-            hideLoading();
-        }
-    });
+        });
 
-    document.getElementById('export-csv').addEventListener('click', async () => {
-        showLoading();
-        try {
-            let requests = getRequestsFromLocalStorage();
-
-            // Updated CSV headers to match new form fields
-            let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
-
-            requests.forEach((data) => {
-                const row = [
-                    data.id,
-                    new Date(data.timestamp).toLocaleString('it-IT'),
-                    data.email,
-                    data.phone || '',
-                    data.age,
-                    data.weight,
-                    data.height,
-                    data.gender,
-                    data.activity_level,
-                    data.goal,
-                    data.duration,
-                    data.diet,
-                    data.allergies.join('; '), 
-                    data.preferences.join('; '), 
-                    data.cooking_skill_level || '', 
-                    data.equipment_available.join('; '), 
-                    data.family_members || '', 
-                    data.specific_goals || '', 
-                    data.meal_types_to_include.join('; '), 
-                    data.dietary_notes || '', 
-                    // Removed these as they are no longer in index.html
-                    // data.foods_at_home.join('; '),
-                    data.meals_per_day,
-                    data.calories,
-                    data.status,
-                    data.mealPlan ? 'Generato' : 'Non Generato'
-                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','); // Handle commas and quotes
-
-                csvContent += row + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            if (link.download !== undefined) { // Feature detection for download attribute
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'richieste_meal_prep.csv');
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                showMessage('Esporta CSV', 'Il tuo browser non supporta il download diretto. Copia il testo qui sotto:\n\n' + csvContent);
+        document.getElementById('mark-completed-button').addEventListener('click', async () => {
+            if (!currentRequestId) {
+                showMessage('Errore', 'Nessuna richiesta selezionata per l\'aggiornamento dello stato.');
+                return;
             }
-            showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
-        } catch (error) {
-            console.error("Errore durante l'esportazione CSV:", error);
-            showMessage('Errore Esportazione', 'Impossibile esportare i dati in CSV.');
-        } finally {
-            hideLoading();
-        }
-    });
-}); // End DOMContentLoaded
+
+            showLoading();
+            try {
+                let requests = getRequestsFromLocalStorage();
+                let requestIndex = requests.findIndex(req => req.id === currentRequestId);
+
+                if (requestIndex !== -1) {
+                    requests[requestIndex].status = 'Inviato'; // Or 'Completato' as per your preference
+                    saveRequestsToLocalStorage(requests);
+                    showMessage('Stato Aggiornato', 'Richiesta segnata come "Inviato".');
+                    document.getElementById('request-details-modal').classList.add('hidden'); // Close modal
+                    loadRequests(); // Refresh table
+                } else {
+                    showMessage('Errore', 'Richiesta non trovata per l\'aggiornamento dello stato.');
+                }
+            } catch (error) {
+                console.error("Errore durante l'aggiornamento dello stato:", error);
+                showMessage('Errore Aggiornamento', 'Impossibile aggiornare lo stato della richiesta.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('export-csv').addEventListener('click', async () => {
+            showLoading();
+            try {
+                let requests = getRequestsFromLocalStorage();
+
+                // Updated CSV headers to match new form fields
+                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Esclusioni,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
+
+                requests.forEach((data) => {
+                    const row = [
+                        data.id,
+                        new Date(data.timestamp).toLocaleString('it-IT'),
+                        data.email,
+                        data.phone || '',
+                        data.age,
+                        data.weight,
+                        data.height,
+                        data.gender,
+                        data.activity_level,
+                        data.goal,
+                        data.duration,
+                        data.diet,
+                        data.exclusions.join('; '),
+                        data.foods_at_home.join('; '),
+                        data.meals_per_day,
+                        data.calories,
+                        data.status,
+                        data.mealPlan ? 'Generato' : 'Non Generato'
+                    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(','); // Handle commas and quotes
+
+                    csvContent += row + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) { // Feature detection for download attribute
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'richieste_meal_prep.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    showMessage('Esporta CSV', 'Il tuo browser non supporta il download diretto. Copia il testo qui sotto:\n\n' + csvContent);
+                }
+                showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
+            } catch (error) {
+                console.error("Errore durante l'esportazione CSV:", error);
+                showMessage('Errore Esportazione', 'Impossibile esportare i dati in CSV.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+    }); // End DOMContentLoaded
