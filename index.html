@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meal Prep Planner</title>
+    <!-- Favicon -->
+    <link rel="icon" href="https://placehold.co/32x32/FF7F00/FFFFFF?text=MP" type="image/png">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font: Inter -->
@@ -543,6 +545,7 @@
 
 
     <script>
+        console.log("Script loaded and parsed successfully."); // Added for debugging
         // Global variable to store the currently viewed request ID in the dashboard modal
         let currentRequestId = null;
 
@@ -563,7 +566,7 @@
          * Hides the custom modal message.
          */
         function hideMessage() {
-            document.getElementById('message-modal').classList.add('hidden');
+            document.getElementById('modal-close-button').click(); // Use the button's click handler
         }
 
         /**
@@ -775,7 +778,10 @@
             // Get selected allergies
             const selectedAllergies = Array.from(document.querySelectorAll('input[name="allergies"]:checked'))
                                         .map(cb => cb.value);
-            const otherAllergiesText = document.getElementById('other_allergies').value.trim();
+            // Check if 'other_allergies' element exists before accessing its value
+            const otherAllergiesElement = document.getElementById('other_allergies');
+            const otherAllergiesText = otherAllergiesElement ? otherAllergiesElement.value.trim() : '';
+
             if (otherAllergiesText) {
                 selectedAllergies.push(...otherAllergiesText.split(',').map(s => s.trim()).filter(s => s));
             }
@@ -783,7 +789,10 @@
             // Get selected preferences
             const selectedPreferences = Array.from(document.querySelectorAll('input[name="preferences"]:checked'))
                                             .map(cb => cb.value);
-            const otherPreferencesText = document.getElementById('other_preferences').value.trim();
+            // Check if 'other_preferences' element exists before accessing its value
+            const otherPreferencesElement = document.getElementById('other_preferences');
+            const otherPreferencesText = otherPreferencesElement ? otherPreferencesElement.value.trim() : '';
+
             if (otherPreferencesText) {
                 selectedPreferences.push(...otherPreferencesText.split(',').map(s => s.trim()).filter(s => s));
             }
@@ -813,8 +822,8 @@
                 specific_goals: document.getElementById('specific_goals').value.trim(), // New field
                 meal_types_to_include: selectedMealTypes, // New field
                 dietary_notes: document.getElementById('dietary_notes').value.trim(), // New field
-                exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s), // Existing, keep for compatibility
-                foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
+                exclusions: [], // Removed 'exclusions' from HTML, so initialize as empty
+                foods_at_home: [], // Removed 'foods_at_home' from HTML, so initialize as empty
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
                 timestamp: new Date().toISOString(),
@@ -825,7 +834,7 @@
             // Basic validation
             if (!formData.duration || !formData.goal || !formData.age || !formData.weight || !formData.height || !formData.gender || !formData.activity_level || !formData.meals_per_day || !formData.diet || !formData.email) {
                 hideLoading();
-                showMessage('Errore di Validazione', 'Per favore, compila tutti i campi obbligatori.');
+                showMessage('Errore di Validazione', 'Per favor, compila tutti i campi obbligatori.');
                 return;
             }
 
@@ -1027,7 +1036,7 @@
             } finally {
                 hideLoading();
             }
-        }
+        });
 
         document.getElementById('request-details-close-button').addEventListener('click', () => {
             document.getElementById('request-details-modal').classList.add('hidden');
