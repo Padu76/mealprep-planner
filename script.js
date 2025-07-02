@@ -19,7 +19,6 @@ function showMessage(title, message) {
  * Hides the custom modal message.
  */
 function hideMessage() {
-    // Corrected: Directly hide the modal, not trigger button click which causes infinite loop
     document.getElementById('message-modal').classList.add('hidden');
 }
 
@@ -232,31 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         showLoading();
 
-        // Get selected allergies
-        const selectedAllergies = Array.from(document.querySelectorAll('input[name="allergies"]:checked'))
-                                        .map(cb => cb.value);
-        const otherAllergiesElement = document.getElementById('other_allergies');
-        const otherAllergiesText = otherAllergiesElement ? otherAllergiesElement.value.trim() : '';
-
-        if (otherAllergiesText) {
-            selectedAllergies.push(...otherAllergiesText.split(',').map(s => s.trim()).filter(s => s));
-        }
-
-        // Get selected preferences
-        const selectedPreferences = Array.from(document.querySelectorAll('input[name="preferences"]:checked'))
-                                            .map(cb => cb.value);
-        const otherPreferencesElement = document.getElementById('other_preferences');
-        const otherPreferencesText = otherPreferencesElement ? otherPreferencesElement.value.trim() : '';
-
-        if (otherPreferencesText) {
-            selectedPreferences.push(...otherPreferencesText.split(',').map(s => s.trim()).filter(s => s));
-        }
-
-        // Get selected meal types
-        const selectedMealTypes = Array.from(document.querySelectorAll('input[name="meal_types_to_include"]:checked'))
-                                            .map(cb => cb.value);
-
-
         // Collect form data - Synchronized with your index.html's current structure
         const formData = {
             id: crypto.randomUUID(), // Generate a unique ID for the request
@@ -269,18 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
             activity_level: document.getElementById('activity_level').value,
             meals_per_day: parseInt(document.getElementById('meals_per_day').value),
             diet: document.getElementById('diet').value,
-            // These fields are present in your index.html (the one with the gallery)
-            allergies: selectedAllergies,
-            preferences: selectedPreferences,
-            cooking_skill_level: document.getElementById('cooking_skill_level').value,
-            equipment_available: document.getElementById('equipment_available').value.split(',').map(s => s.trim()).filter(s => s),
-            family_members: parseInt(document.getElementById('family_members').value),
-            specific_goals: document.getElementById('specific_goals').value.trim(),
-            meal_types_to_include: selectedMealTypes,
-            dietary_notes: document.getElementById('dietary_notes').value.trim(),
-            // Ensure these are collected from the form if they exist in index.html
-            exclusions: document.getElementById('exclusions') ? document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s) : [],
-            foods_at_home: document.getElementById('foods_at_home') ? document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s) : [],
+            // These fields are present in the current index.html form
+            exclusions: document.getElementById('exclusions').value.split(',').map(s => s.trim()).filter(s => s),
+            foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
             email: document.getElementById('email').value,
             phone: document.getElementById('phone').value,
             timestamp: new Date().toISOString(),
@@ -325,6 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('landing-page').classList.add('hidden');
         document.getElementById('dashboard-container').classList.add('hidden');
         document.getElementById(sectionId).classList.remove('hidden');
+        // Scroll to top when changing section
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // Handle URL hash for dashboard access
@@ -338,14 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial check on page load
-    window.addEventListener('load', () => {
-        if (window.location.hash === '#dashboard') {
-            showSection('dashboard-container');
-            loadRequests();
-        } else {
-            showSection('landing-page');
-        }
-    });
+    if (window.location.hash === '#dashboard') {
+        showSection('dashboard-container');
+        loadRequests();
+    } else {
+        showSection('landing-page');
+    }
+
 
     /**
      * Loads and displays requests in the dashboard table from local storage.
@@ -454,14 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>Obiettivo:</strong> ${data.goal}</p>
                     <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
                     <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
-                    <p><strong>Allergie:</strong> ${data.allergies.join(', ') || 'Nessuna'}</p>
-                    <p><strong>Preferenze:</strong> ${data.preferences.join(', ') || 'Nessuna'}</p>
-                    <p><strong>Livello Abilità Cucina:</strong> ${data.cooking_skill_level || 'N/A'}</p>
-                    <p><strong>Attrezzatura Disponibile:</strong> ${data.equipment_available.join(', ') || 'N/A'}</p>
-                    <p><strong>Persone per il Piano:</strong> ${data.family_members || 'N/A'}</p>
-                    <p><strong>Obiettivi Specifici:</strong> ${data.specific_goals || 'N/A'}</p>
-                    <p><strong>Tipi Pasti Inclusi:</strong> ${data.meal_types_to_include.join(', ') || 'N/A'}</p>
-                    <p><strong>Note Dietetiche Aggiuntive:</strong> ${data.dietary_notes || 'N/A'}</p>
+                    <p><strong>Esclusioni:</strong> ${data.exclusions.join(', ') || 'Nessuna'}</p>
+                    <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
                     <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
                     <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
                 `;
@@ -628,7 +588,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let requests = getRequestsFromLocalStorage();
 
-                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Allergie,Preferenze,Livello Abilità Cucina,Attrezzatura Disponibile,Persone per il Piano,Obiettivi Specifici,Tipi Pasti Inclusi,Note Dietetiche Aggiuntive,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
+                // Updated CSV headers to match current form fields
+                let csvContent = "ID Richiesta,Data Richiesta,Email,Telefono,Età,Peso,Altezza,Sesso,Livello Attività,Obiettivo,Durata,Dieta,Esclusioni,Cibi in Casa,Pasti al Giorno,Calorie Stimate,Stato,Piano Pasti\n";
 
                 requests.forEach((data) => {
                     const row = [
@@ -644,14 +605,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         data.goal,
                         data.duration,
                         data.diet,
-                        data.allergies.join('; '),
-                        data.preferences.join('; '),
-                        data.cooking_skill_level || '',
-                        data.equipment_available.join('; '),
-                        data.family_members || '',
-                        data.specific_goals || '',
-                        data.meal_types_to_include.join('; '),
-                        data.dietary_notes || '',
+                        data.exclusions.join('; '),
+                        data.foods_at_home.join('; '),
                         data.meals_per_day,
                         data.calories,
                         data.status,
@@ -683,8 +638,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-    </script>
-</body>
-</html>
+    }); // End DOMContentLoaded
+
 
 
