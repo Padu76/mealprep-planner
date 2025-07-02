@@ -25,18 +25,23 @@ exports.handler = async (event) => {
 
     const openai = new OpenAI({ apiKey: openaiApiKey });
 
-    // Costruisci il prompt dettagliato per l'AI con i nuovi campi
+    // Helper function per unire array in modo sicuro
+    const safeJoin = (arr, separator = ', ') => {
+        return Array.isArray(arr) && arr.length > 0 ? arr.join(separator) : 'Nessuna';
+    };
+
+    // Costruisci il prompt dettagliato per l'AI con i nuovi campi, usando safeJoin
     const prompt = `Genera un piano pasti dettagliato per ${requestData.duration} giorni.
     Utente: Età ${requestData.age}, Peso ${requestData.weight}kg, Altezza ${requestData.height}cm, Sesso ${requestData.gender}, Livello Attività ${requestData.activity_level}.
     Obiettivo: ${requestData.goal}. Calorie giornaliere stimate: ${requestData.calories} kcal.
     Dieta: ${requestData.diet}.
-    Allergie alimentari: ${requestData.allergies && requestData.allergies.length > 0 ? requestData.allergies.join(', ') : 'Nessuna'}.
-    Preferenze alimentari: ${requestData.preferences && requestData.preferences.length > 0 ? requestData.preferences.join(', ') : 'Nessuna'}.
+    Allergie alimentari: ${safeJoin(requestData.allergies)}.
+    Preferenze alimentari: ${safeJoin(requestData.preferences)}.
     Livello di abilità in cucina: ${requestData.cooking_skill_level || 'Non specificato'}.
-    Attrezzatura da cucina disponibile: ${requestData.equipment_available && requestData.equipment_available.length > 0 ? requestData.equipment_available.join(', ') : 'Non specificata'}.
+    Attrezzatura da cucina disponibile: ${safeJoin(requestData.equipment_available)}.
     Numero di persone per il piano: ${requestData.family_members || '1'}.
     Obiettivi specifici: ${requestData.specific_goals || 'Nessuno'}.
-    Tipi di pasti da includere: ${requestData.meal_types_to_include && requestData.meal_types_to_include.length > 0 ? requestData.meal_types_to_include.join(', ') : 'Non specificato'}.
+    Tipi di pasti da includere: ${safeJoin(requestData.meal_types_to_include)}.
     Note dietetiche aggiuntive: ${requestData.dietary_notes || 'Nessuna'}.
     Pasti al giorno: ${requestData.meals_per_day}.
 
@@ -113,4 +118,5 @@ exports.handler = async (event) => {
     };
   }
 };
+
 
