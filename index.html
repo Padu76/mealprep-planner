@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -551,3 +552,558 @@
 
 
 
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Prep Planner</title>
+    <!-- Favicon -->
+    <link rel="icon" href="https://placehold.co/32x32/FF7F00/FFFFFF?text=MP" type="image/png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff7f00;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e67300;
+        }
+
+        /* Ensure dashboard header elements are properly aligned */
+        #dashboard-container header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        #dashboard-container header h1 {
+            flex-grow: 1; /* Allow title to take available space */
+            min-width: 200px; /* Ensure title doesn't shrink too much */
+        }
+        #dashboard-container header div {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Space between user ID and logout button */
+        }
+        @media (max-width: 768px) {
+            #dashboard-container header {
+                flex-direction: column;
+                text-align: center;
+            }
+            #dashboard-container header h1 {
+                margin-bottom: 1rem;
+            }
+            #dashboard-container header div {
+                flex-direction: column;
+                width: 100%;
+            }
+            #dashboard-container header span, #dashboard-container header button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500"></div>
+            <p class="mt-4 text-white text-lg">Elaborazione richiesta...</p>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="mb-6"></p>
+            <button id="modal-close-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdf-viewer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-4 rounded-lg shadow-xl max-w-3xl w-full h-5/6 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Piano Pasti Generato</h3>
+                <button id="pdf-viewer-close-button" class="text-gray-600 hover:text-gray-900 text-2xl font-bold">&times;</button>
+            </div>
+            <iframe id="pdf-frame" class="w-full h-full border rounded-lg"></iframe>
+            <div class="mt-4 flex justify-end">
+                <a id="pdf-download-link" download="meal_prep_plan.pdf" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Scarica PDF</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landing-page">
+        <!-- Hero Section -->
+        <section class="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-20 md:py-32 flex items-center justify-center min-h-screen-75 rounded-b-lg shadow-lg">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4 animate-fade-in-down">
+                    Rivoluziona la Tua Alimentazione con <br class="hidden md:inline">Meal Prep Planner
+                </h1>
+                <p class="text-lg md:text-xl mb-8 opacity-90 animate-fade-in-up">
+                    Piani Pasti Personalizzati, Lista Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.
+                </p>
+                <a href="#meal-prep-form" class="bg-white text-orange-500 hover:bg-gray-100 font-bold py-3 px-8 rounded-full text-lg md:text-xl shadow-lg transition duration-300 transform hover:scale-105 animate-bounce-in">
+                    Inizia Ora!
+                </a>
+            </div>
+        </section>
+
+        <!-- Why Meal Prep Planner Section -->
+        <section class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Perché Scegliere Meal Prep Planner?</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">💡</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Risparmio di Tempo</h3>
+                        <p class="text-gray-700 text-center">Prepara i tuoi pasti per più giorni in una sola sessione, liberando tempo prezioso durante la settimana.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">💰</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Riduzione degli Sprechi</h3>
+                        <p class="text-gray-700 text-center">Una lista spesa precisa ti aiuta a comprare solo ciò che serve, riducendo gli sprechi alimentari e il budget.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-green-500 text-4xl mb-4 text-center">💪</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Obiettivi Raggiungibili</h3>
+                        <p class="text-gray-700 text-center">Piani personalizzati per perdita peso, aumento massa o mantenimento, con calcolo calorico dettagliato.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">🍽️</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Ricette Varie e Gustose</h3>
+                        <p class="text-gray-700 text-center">Scopri nuove ricette adatte alle tue preferenze e restrizioni alimentari.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-green-500 text-4xl mb-4 text-center">📱</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Mobile-Friendly</h3>
+                        <p class="text-gray-700 text-center">Accedi ai tuoi piani e ricette ovunque, dal tuo smartphone o tablet.</p>
+                    </div>
+                    <div class="bg-gray-50 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2">
+                        <div class="text-orange-500 text-4xl mb-4 text-center">✨</div>
+                        <h3 class="text-xl font-semibold text-center mb-4">Semplice e Intuitivo</h3>
+                        <p class="text-gray-700 text-center">Un'interfaccia chiara e facile da usare per tutti.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="py-16 md:py-24 bg-gray-100">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Come Funziona in 3 Semplici Passi</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">1</div>
+                        <h3 class="text-xl font-semibold mb-2">Compila il Form</h3>
+                        <p class="text-gray-700">Inserisci i tuoi dati, obiettivi e preferenze alimentari.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
+                        <h3 class="text-xl font-semibold mb-2">Ricevi il Tuo Piano</h3>
+                        <p class="text-gray-700">Il nostro sistema genera un piano pasti personalizzato con ricette e lista spesa.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">3</div>
+                        <h3 class="text-xl font-semibold mb-2">Inizia a Preparare!</h3>
+                        <p class="text-gray-700">Segui le istruzioni e goditi pasti sani e deliziosi per tutta la settimana.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- New: Meal Plans Gallery Section -->
+        <section class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Galleria dei Piani Pasti</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal1.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+1';" alt="Pasto preparato 1" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Insalata di Riso e Verdure</h3>
+                            <p class="text-sm text-gray-600">Un pasto leggero e nutriente, perfetto per il pranzo.</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal2.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+2';" alt="Pasto preparato 2" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Varietà di Meal Prep</h3>
+                            <p class="text-sm text-gray-600">Diverse opzioni per una settimana ricca di sapori.</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal3.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+3';" alt="Pasto preparato 3" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Pranzo Veloce e Sano</h3>
+                            <p class="text-sm text-gray-600">La comodità di un pasto pronto a portata di mano.</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal4.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+4';" alt="Pasto preparato 4" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Preparazione Intelligente</h3>
+                            <p class="text-sm text-gray-600">Organizza i tuoi pasti con facilità e precisione.</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal5.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+5';" alt="Pasto preparato 5" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Opzioni per Ogni Gusto</h3>
+                            <p class="text-sm text-gray-600">Pasti bilanciati e pronti da gustare.</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
+                        <img src="meal6.jpg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/FF7F00/FFFFFF?text=Pasto+6';" alt="Pasto preparato 6" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Menù Settimanale</h3>
+                            <p class="text-sm text-gray-600">Pianifica in anticipo per una settimana senza stress.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Meal Prep Form Section -->
+        <section id="meal-prep-form" class="py-16 md:py-24 bg-gray-100">
+            <div class="container mx-auto px-4 max-w-2xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Crea il Tuo Piano Personalizzato</h2>
+                <form id="meal-prep-form-element" class="bg-gray-50 p-8 rounded-lg shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label for="duration" class="block text-gray-700 text-sm font-bold mb-2">Durata del Meal Prep (giorni):</label>
+                            <input type="number" id="duration" name="duration" min="1" max="7" value="5" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="goal" class="block text-gray-700 text-sm font-bold mb-2">Obiettivo:</label>
+                            <select id="goal" name="goal" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona un obiettivo</option>
+                                <option value="weight_loss">Perdita Peso</option>
+                                <option value="muscle_gain">Aumento Massa Muscolare</option>
+                                <option value="maintenance">Mantenimento</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="age" class="block text-gray-700 text-sm font-bold mb-2">Età (anni):</label>
+                            <input type="number" id="age" name="age" min="18" max="100" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="weight" class="block text-gray-700 text-sm font-bold mb-2">Peso (kg):</label>
+                            <input type="number" id="weight" name="weight" min="30" max="300" step="0.1" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="height" class="block text-gray-700 text-sm font-bold mb-2">Altezza (cm):</label>
+                            <input type="number" id="height" name="height" min="100" max="250" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="gender" class="block text-gray-700 text-sm font-bold mb-2">Sesso:</label>
+                            <select id="gender" name="gender" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona il sesso</option>
+                                <option value="male">Uomo</option>
+                                <option value="female">Donna</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="activity_level" class="block text-gray-700 text-sm font-bold mb-2">Livello di Attività Fisica:</label>
+                            <select id="activity_level" name="activity_level" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Seleziona livello</option>
+                                <option value="sedentary">Sedentario (poco o nessun esercizio)</option>
+                                <option value="lightly_active">Leggermente attivo (esercizio leggero 1-3 giorni/settimana)</option>
+                                <option value="moderatamente_active">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
+                                <option value="very_active">Molto attivo (esercizio intenso 6-7 giorni/settimana)</option>
+                                <option value="extra_active">Estremamente attivo (esercizio molto intenso, lavoro fisico)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meals_per_day" class="block text-gray-700 text-sm font-bold mb-2">Pasti al Giorno:</label>
+                            <input type="number" id="meals_per_day" name="meals_per_day" min="1" max="6" value="3" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="diet" class="block text-gray-700 text-sm font-bold mb-2">Tipo di Dieta:</label>
+                        <select id="diet" name="diet" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="">Seleziona tipo di dieta</option>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Vegetariana</option>
+                            <option value="vegan">Vegana</option>
+                            <option value="keto">Keto</option>
+                            <option value="paleo">Paleo</option>
+                            <option value="gluten_free">Senza Glutine</option>
+                            <option value="dairy_free">Senza Lattosio</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="allergies" class="block text-gray-700 text-sm font-bold mb-2">Allergie Alimentari (se presenti):</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="arachidi" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Arachidi</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="lattosio" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Lattosio</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="glutine" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Glutine</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="uova" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Uova</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="noci" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Noci</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="pesce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pesce</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="crostacei" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Crostacei</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="allergies" value="soia" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Soia</span>
+                            </label>
+                        </div>
+                        <textarea id="other_allergies" name="other_allergies" rows="1" class="mt-2 shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Altre allergie (es. sesamo, senape)"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="preferences" class="block text-gray-700 text-sm font-bold mb-2">Preferenze Alimentari:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="piccante" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Piccante</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="dolce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Dolce</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="salato" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Salato</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="vegetali_freschi" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Vegetali freschi</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="carne_bianca" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Carne bianca</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="preferences" value="pesce" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pesce</span>
+                            </label>
+                        </div>
+                        <textarea id="other_preferences" name="other_preferences" rows="1" class="mt-2 shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Altre preferenze (es. cucina asiatica, mediterranea)"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="cooking_skill_level" class="block text-gray-700 text-sm font-bold mb-2">Livello di Abilità in Cucina:</label>
+                        <select id="cooking_skill_level" name="cooking_skill_level" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="">Seleziona livello</option>
+                            <option value="principiante">Principiante</option>
+                            <option value="intermedio">Intermedio</option>
+                            <option value="avanzato">Avanzato</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="equipment_available" class="block text-gray-700 text-sm font-bold mb-2">Attrezzatura da Cucina Disponibile (es. forno, microonde, frullatore):</label>
+                        <textarea id="equipment_available" name="equipment_available" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Separa con virgole"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="family_members" class="block text-gray-700 text-sm font-bold mb-2">Numero di Persone per il Piano:</label>
+                        <input type="number" id="family_members" name="family_members" min="1" value="1" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="specific_goals" class="block text-gray-700 text-sm font-bold mb-2">Obiettivi Specifici (es. ridurre il colesterolo, aumentare l'energia):</label>
+                        <textarea id="specific_goals" name="specific_goals" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Descrivi qui i tuoi obiettivi specifici"></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="meal_types_to_include" class="block text-gray-700 text-sm font-bold mb-2">Tipi di Pasti da Includere:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="colazione" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Colazione</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="pranzo" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Pranzo</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="cena" checked class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Cena</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="meal_types_to_include" value="spuntini" class="form-checkbox text-orange-500 rounded">
+                                <span class="ml-2 text-gray-700">Spuntini</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="dietary_notes" class="block text-gray-700 text-sm font-bold mb-2">Note Dietetiche Aggiuntive:</label>
+                        <textarea id="dietary_notes" name="dietary_notes" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Qualsiasi altra informazione rilevante per il tuo piano"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email:</label>
+                            <input type="email" id="email" name="email" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="tua@email.com">
+                        </div>
+                        <div>
+                            <label for="phone" class="block text-gray-700 text-sm font-bold mb-2">Telefono (opzionale, per WhatsApp):</label>
+                            <input type="tel" id="phone" name="phone" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="+39 333 1234567">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center">
+                        <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105">
+                            Genera il Mio Piano Pasti!
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- FAQ Section (Optional) -->
+        <section class="py-16 md:py-24 bg-gray-100">
+            <div class="container mx-auto px-4 max-w-3xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Domande Frequenti</h2>
+                <div class="space-y-4">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Cos'è il meal prep?</h3>
+                        <p class="text-gray-700">Il meal prep è l'atto di preparare pasti o ricette in anticipo, solitamente per 3-7 giorni, per avere pasti pronti da consumare in seguito. Aiuta a risparmiare tempo, denaro e a mantenere una dieta equilibrata.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Per chi è il meal prep?</h3>
+                        <p class="text-gray-700">È ideale per chi valuta la comodità e l'efficienza più della varietà quotidiana. Se non ti dispiace mangiare la stessa cosa per qualche giorno di seguito e vuoi massimizzare il tuo tempo o budget, il meal prep fa per te.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Posso personalizzare il mio piano?</h3>
+                        <p class="text-gray-700">Assolutamente sì! Il nostro form ti permette di specificare obiettivi, preferenze dietetiche, esclusioni e persino cibi che hai già a casa per un piano veramente su misura.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Come riceverò il mio piano?</h3>
+                        <p class="text-gray-700">Una volta generato, il piano ti verrà inviato via email come PDF, oppure potrai scaricarlo direttamente dalla dashboard (se sei l'amministratore).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-10">
+            <div class="container mx-auto px-4 text-center">
+                <p class="mb-4">&copy; 2024 Meal Prep Planner. Tutti i diritti riservati.</p>
+                <div class="flex justify-center space-x-6">
+                    <a href="#" class="hover:text-orange-500 transition duration-300">Privacy Policy</a>
+                    <a href="#" class="hover:text-orange-500 transition duration-300">Termini di Servizio</a>
+                    <a href="mailto:info@mealprepplanner.com" class="hover:text-orange-500 transition duration-300">Contatti</a>
+                </div>
+                <p class="mt-4 text-sm text-gray-400">
+                    <a href="#dashboard" class="hover:text-orange-500 transition duration-300">Dashboard Admin</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-container" class="min-h-screen bg-gray-100 p-4 hidden">
+        <header class="bg-white shadow-md rounded-lg p-6 mb-6 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-orange-500">Dashboard Amministratore</h1>
+            <a href="#landing-page" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">Torna alla Home</a>
+        </header>
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Richieste Ricevute</h2>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex space-x-2 w-full md:w-auto">
+                    <input type="date" id="filter-date" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto">
+                    <select id="filter-status" class="shadow appearance-none border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500 w-full md:w-auto">
+                        <option value="">Tutti gli Stati</option>
+                        <option value="Da elaborare">Da elaborare</option>
+                        <option value="Inviato">Inviato</option>
+                    </select>
+                    <button id="clear-filters" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300">Azzera</button>
+                </div>
+                <button id="export-csv" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 w-full md:w-auto">Esporta CSV</button>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg shadow-inner">
+                <table class="min-w-full bg-white border border-gray-200">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tl-lg">ID Richiesta</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Data Richiesta</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Stato</th>
+                            <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tr-lg">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-table-body" class="divide-y divide-gray-200">
+                        <!-- Requests will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Details Modal -->
+    <div id="request-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-orange-500">Dettagli Richiesta</h3>
+                <button id="request-details-close-button" class="text-gray-600 hover:text-gray-900 text-3xl font-bold">&times;</button>
+            </div>
+            <div id="request-details-content" class="text-gray-700 space-y-4">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="mt-8 flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="generate-plan-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Genera Piano</button>
+                <button id="view-plan-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition duration-300 hidden">Vedi Piano</button>
+                <button id="mark-completed-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">Segna come Completato</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to external JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+>>>>>>> 67eff92900fd2f875b2682f49ce65c73f7004413

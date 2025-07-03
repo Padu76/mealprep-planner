@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Meal Prep Planner</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; color: #333; }
+    header { background: #FF7F00; color: white; padding: 1.5rem; text-align: center; }
+    section { padding: 1.5rem; max-width: 1200px; margin: auto; }
+    h1 { color: #FF7F00; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 0.6rem; text-align: left; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    button { background: #4CAF50; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard Richieste Meal Prep Planner</h1>
+  </header>
+
+  <section>
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Email Utente</th>
+          <th>Obiettivo</th>
+          <th>Durata</th>
+          <th>Pasti/Giorno</th>
+          <th>Persone</th>
+          <th>Link Piano</th>
+          <th>Stato</th>
+          <th>Azione</th>
+        </tr>
+      </thead>
+      <tbody id="requestsTable">
+        <tr>
+          <td>01/07/2025</td>
+          <td>esempio@email.com</td>
+          <td>Dimagrimento</td>
+          <td>5 giorni</td>
+          <td>2 pasti</td>
+          <td>1</td>
+          <td><a href="#">Vedi piano</a></td>
+          <td>Da elaborare</td>
+          <td><button onclick="markAsCompleted(this)">Completato</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    function markAsCompleted(btn) {
+      const row = btn.closest('tr');
+      row.cells[7].textContent = 'Completato';
+      btn.disabled = true;
+      btn.textContent = '✔';
+    }
+  </script>
+</body>
+</html>
