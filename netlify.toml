@@ -1,35 +1,5 @@
-<<<<<<< HEAD
-# netlify.toml
-# Questo file configura le impostazioni di build e deploy per Netlify.
+[build]
+  functions = "netlify/functions"
 
-# Sezione per configurare le funzioni serverless
-[functions]
-  # Specifica la directory dove si trovano le tue funzioni Netlify.
-  # Assicurati che questo percorso sia corretto rispetto alla root del tuo repository.
-  directory = "netlify/functions"
-
-# Sezione per i plugin di Netlify.
-# Questo plugin assicura che le dipendenze specificate nel package.json delle funzioni
-# vengano installate automaticamente durante il processo di build.
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
-
-
-=======
-# netlify.toml
-# Questo file configura le impostazioni di build e deploy per Netlify.
-
-# Sezione per configurare le funzioni serverless
-[functions]
-  # Specifica la directory dove si trovano le tue funzioni Netlify.
-  # Assicurati che questo percorso sia corretto rispetto alla root del tuo repository.
-  directory = "netlify/functions"
-
-# Sezione per i plugin di Netlify.
-# Questo plugin assicura che le dipendenze specificate nel package.json delle funzioni
-# vengano installate automaticamente durante il processo di build.
-[[plugins]]
-  package = "@netlify/plugin-functions-install-core"
-
-
->>>>>>> 67eff92900fd2f875b2682f49ce65c73f7004413
