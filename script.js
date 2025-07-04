@@ -1,7 +1,7 @@
-let currentRequestId = null;
-
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Meal Prep Planner inizializzato');
+  
+  let currentRequestId = null;
 
   const form = document.getElementById('meal-prep-form-element');
   const loader = document.getElementById('loading-overlay');
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Gestione localStorage
   function saveRequest(request) {
     const requests = JSON.parse(localStorage.getItem('mealPrepRequests') || '[]');
-    request.id = Date.now(); // ID univoco
+    request.id = Date.now();
     requests.push(request);
     localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
     return request.id;
@@ -92,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.className = 'hover:bg-gray-50';
       
       const statusBadge = getStatusBadge(req.status);
-      const createdAt = new Date(req.created_at).toLocaleDateString('it-IT');
       
       tr.innerHTML = `
         <td class="p-2 border border-gray-300">${index + 1}</td>
@@ -191,7 +190,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const req = requests.find(r => r.id === id);
     if (!req || !req.mealPlan) return showMessage('Piano non disponibile', 'error');
 
-    // Genera PDF del piano
     generateMealPlanPDF(req.mealPlan, req.email);
   }
 
@@ -279,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </html>
     `;
 
-    // Mostra PDF in modal
     const pdfFrame = document.getElementById('pdf-frame');
     pdfFrame.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(pdfContent);
     document.getElementById('pdf-viewer-modal').classList.remove('hidden');
@@ -298,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Validazione
     const email = getInputValue('email');
     const goal = getInputValue('goal');
     const age = parseInt(getInputValue('age'));
@@ -311,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!weight || weight < 20 || weight > 300) return showMessage('Peso non valido', 'error');
     if (!height || height < 100 || height > 250) return showMessage('Altezza non valida', 'error');
 
-    // Costruisci richiesta
     const request = {
       duration: getInputValue('duration'),
       goal: goal,
@@ -330,15 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
       created_at: new Date().toISOString(),
     };
 
-    // Salva in localStorage
     const requestId = saveRequest(request);
-    
     showMessage('Richiesta salvata con successo! Vai alla dashboard per generare il piano.');
-    
-    // Resetta form
     form.reset();
-    
-    // Aggiorna dashboard
     loadDashboard();
   });
 
@@ -350,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const requestData = requests.find(r => r.id === currentRequestId);
     if (!requestData) return showMessage('Richiesta non trovata', 'error');
 
-    // Aggiorna stato a "elaborazione"
     updateRequestStatus(currentRequestId, 'Elaborazione');
     loadDashboard();
 
@@ -376,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(json.error || 'Errore nella generazione del piano');
       }
 
-      // Aggiorna stato e salva piano
       updateRequestStatus(currentRequestId, 'Piano generato', json.mealPlan);
       
       loader.classList.add('hidden');
