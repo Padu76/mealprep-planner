@@ -910,52 +910,69 @@
 
         // --- Form Auto-Save Functions ---
         function saveFormData() {
-            const formData = {
-                duration: document.getElementById('duration').value,
-                goal: document.getElementById('goal').value,
-                age: document.getElementById('age').value,
-                weight: document.getElementById('weight').value,
-                height: document.getElementById('height').value,
-                gender: document.getElementById('gender').value,
-                activity_level: document.getElementById('activity_level').value,
-                meals_per_day: document.getElementById('meals_per_day').value,
-                diet: document.getElementById('diet').value,
-                exclusions: document.getElementById('exclusions').value,
-                foods_at_home: document.getElementById('foods_at_home').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                lastSaved: new Date().toISOString()
-            };
+            try {
+                const formData = {
+                    duration: document.getElementById('duration').value,
+                    goal: document.getElementById('goal').value,
+                    age: document.getElementById('age').value,
+                    weight: document.getElementById('weight').value,
+                    height: document.getElementById('height').value,
+                    gender: document.getElementById('gender').value,
+                    activity_level: document.getElementById('activity_level').value,
+                    meals_per_day: document.getElementById('meals_per_day').value,
+                    diet: document.getElementById('diet').value,
+                    exclusions: document.getElementById('exclusions').value,
+                    foods_at_home: document.getElementById('foods_at_home').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    lastSaved: new Date().toISOString()
+                };
 
-            localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
-            showAutoSaveIndicator();
+                localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+                console.log('✅ Dati form salvati automaticamente');
+                showAutoSaveIndicator();
+            } catch (error) {
+                console.error('❌ Errore salvataggio form:', error);
+            }
         }
 
         function loadFormData() {
             try {
                 const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+                console.log('🔍 Controllo dati salvati:', savedData ? 'TROVATI' : 'NON TROVATI');
+                
                 if (savedData) {
                     const formData = JSON.parse(savedData);
+                    console.log('📋 Dati da caricare:', formData);
                     
-                    // Fill form fields
-                    document.getElementById('duration').value = formData.duration || '';
-                    document.getElementById('goal').value = formData.goal || '';
-                    document.getElementById('age').value = formData.age || '';
-                    document.getElementById('weight').value = formData.weight || '';
-                    document.getElementById('height').value = formData.height || '';
-                    document.getElementById('gender').value = formData.gender || '';
-                    document.getElementById('activity_level').value = formData.activity_level || '';
-                    document.getElementById('meals_per_day').value = formData.meals_per_day || '';
-                    document.getElementById('diet').value = formData.diet || '';
-                    document.getElementById('exclusions').value = formData.exclusions || '';
-                    document.getElementById('foods_at_home').value = formData.foods_at_home || '';
-                    document.getElementById('email').value = formData.email || '';
-                    document.getElementById('phone').value = formData.phone || '';
+                    // Fill form fields con controllo esistenza elementi
+                    const setFieldValue = (id, value) => {
+                        const element = document.getElementById(id);
+                        if (element && value !== undefined && value !== '') {
+                            element.value = value;
+                            console.log(`✅ ${id}: ${value}`);
+                        }
+                    };
 
+                    setFieldValue('duration', formData.duration);
+                    setFieldValue('goal', formData.goal);
+                    setFieldValue('age', formData.age);
+                    setFieldValue('weight', formData.weight);
+                    setFieldValue('height', formData.height);
+                    setFieldValue('gender', formData.gender);
+                    setFieldValue('activity_level', formData.activity_level);
+                    setFieldValue('meals_per_day', formData.meals_per_day);
+                    setFieldValue('diet', formData.diet);
+                    setFieldValue('exclusions', formData.exclusions);
+                    setFieldValue('foods_at_home', formData.foods_at_home);
+                    setFieldValue('email', formData.email);
+                    setFieldValue('phone', formData.phone);
+
+                    console.log('✅ Dati form caricati con successo');
                     return true;
                 }
             } catch (error) {
-                console.error('Errore nel caricamento dati form:', error);
+                console.error('❌ Errore nel caricamento dati form:', error);
             }
             return false;
         }
@@ -976,19 +993,32 @@
 
         // Add auto-save event listeners to form fields
         function setupAutoSave() {
+            console.log('🔧 Configurazione auto-save...');
             const formFields = document.querySelectorAll('#meal-prep-form-element input, #meal-prep-form-element select, #meal-prep-form-element textarea');
             
-            formFields.forEach(field => {
+            console.log(`📝 Trovati ${formFields.length} campi del form`);
+            
+            formFields.forEach((field, index) => {
+                console.log(`🔗 Collegamento campo ${index + 1}: ${field.id || field.name}`);
+                
                 field.addEventListener('input', () => {
                     clearTimeout(autoSaveTimeout);
-                    autoSaveTimeout = setTimeout(saveFormData, 1000); // Save after 1 second of inactivity
+                    autoSaveTimeout = setTimeout(() => {
+                        console.log('💾 Auto-save attivato (input)');
+                        saveFormData();
+                    }, 1000); // Save after 1 second of inactivity
                 });
                 
                 field.addEventListener('change', () => {
                     clearTimeout(autoSaveTimeout);
-                    autoSaveTimeout = setTimeout(saveFormData, 500); // Save immediately on change
+                    autoSaveTimeout = setTimeout(() => {
+                        console.log('💾 Auto-save attivato (change)');
+                        saveFormData();
+                    }, 500); // Save immediately on change
                 });
             });
+            
+            console.log('✅ Auto-save configurato correttamente');
         }
 
         // --- Data Storage Functions ---
