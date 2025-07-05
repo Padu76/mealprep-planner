@@ -181,7 +181,7 @@
             color: #9FCC9F !important;
         }
 
-        /* Meal prep card styles */
+        /* Meal prep card styles - CORRETTI */
         .meal-prep-card {
             background: #374151;
             border-radius: 12px;
@@ -231,26 +231,6 @@
             line-height: 1.6;
             flex-grow: 1;
         }
-
-        /* Placeholder images using CSS gradients and emojis */
-        .placeholder-image {
-            width: 100%;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            background: linear-gradient(135deg, #8FBC8F 0%, #9FCC9F 100%);
-            border-bottom: 3px solid #8FBC8F;
-            color: #1a1a1a;
-        }
-
-        .placeholder-time { background: linear-gradient(135deg, #FF9A8B 0%, #FECFEF 100%); }
-        .placeholder-waste { background: linear-gradient(135deg, #A8E6CF 0%, #DCEDC8 100%); }
-        .placeholder-goals { background: linear-gradient(135deg, #FFB347 0%, #FFCC5C 100%); }
-        .placeholder-recipes { background: linear-gradient(135deg, #AEC6CF 0%, #C3E4ED 100%); }
-        .placeholder-mobile { background: linear-gradient(135deg, #DDA0DD 0%, #E6E6FA 100%); }
-        .placeholder-simple { background: linear-gradient(135deg, #98D8C8 0%, #F7DC6F 100%); }
 
         /* Step cards */
         .step-card {
@@ -320,74 +300,25 @@
             }
         }
 
-        /* Loading spinner enhanced */
-        .loading-spinner {
-            border: 4px solid rgba(143, 188, 143, 0.3);
-            border-top: 4px solid #8FBC8F;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Enhanced meal card animations */
-        .meal-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .meal-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        /* Regenerate button pulse effect */
-        .regenerate-meal-btn {
-            position: relative;
-            transition: all 0.3s ease;
-        }
-
-        .regenerate-meal-btn:hover {
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        /* Status indicators */
-        .status-indicator {
-            display: inline-flex;
+        /* Placeholder images using CSS gradients and emojis */
+        .placeholder-image {
+            width: 100%;
+            height: 200px;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            font-size: 3rem;
+            background: linear-gradient(135deg, #8FBC8F 0%, #9FCC9F 100%);
+            border-bottom: 3px solid #8FBC8F;
+            color: #1a1a1a;
         }
 
-        .status-indicator::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: blink 2s infinite;
-        }
-
-        .status-generating::before {
-            background-color: #FFB347;
-        }
-
-        .status-ready::before {
-            background-color: #8FBC8F;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.3; }
-        }
+        .placeholder-time { background: linear-gradient(135deg, #FF9A8B 0%, #FECFEF 100%); }
+        .placeholder-waste { background: linear-gradient(135deg, #A8E6CF 0%, #DCEDC8 100%); }
+        .placeholder-goals { background: linear-gradient(135deg, #FFB347 0%, #FFCC5C 100%); }
+        .placeholder-recipes { background: linear-gradient(135deg, #AEC6CF 0%, #C3E4ED 100%); }
+        .placeholder-mobile { background: linear-gradient(135deg, #DDA0DD 0%, #E6E6FA 100%); }
+        .placeholder-simple { background: linear-gradient(135deg, #98D8C8 0%, #F7DC6F 100%); }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -395,17 +326,12 @@
     <!-- Autosave Indicator -->
     <div id="autosave-indicator" class="autosave-indicator">✓ Dati salvati</div>
 
-    <!-- Loading Overlay Enhanced -->
+    <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
         <div class="flex flex-col items-center">
-            <div class="loading-spinner mb-4"></div>
-            <p class="mt-4 text-white text-lg font-semibold">Generazione piano in corso...</p>
-            <p class="mt-2 text-white text-sm opacity-75">Creazione ricette personalizzate con Claude AI...</p>
-            <div class="mt-4 flex items-center">
-                <div class="status-indicator status-generating">
-                    <span class="text-sm text-gray-300">🤖 Claude AI sta pensando...</span>
-                </div>
-            </div>
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500" style="border-color: #8FBC8F #8FBC8F transparent transparent;"></div>
+            <p class="mt-4 text-white text-lg">Generazione piano in corso...</p>
+            <p class="mt-2 text-white text-sm">Creazione ricette personalizzate con Claude AI...</p>
         </div>
     </div>
 
@@ -889,11 +815,16 @@
         </div>
     </div>
 
+    <!-- Carica variabili d'ambiente da Netlify -->
+    <script>
+        window.CLAUDE_API_KEY = '{{CLAUDE_API_KEY}}';
+    </script>
+
     <script>
         // === CLAUDE AI CONFIGURATION ===
         const CLAUDE_API_CONFIG = {
             useAnthropicAPI: false,  // ❌ Primo tentativo: NO API diretta
-            apiKey: '',  // ✅ Disponibile come backup
+            apiKey: window.CLAUDE_API_KEY || '',  // ✅ Disponibile come backup
             useProxy: true,          // ✅ Primo tentativo: Proxy
             proxyEndpoint: 'https://meal-prep-backend-j6xm11vqk-andreas-projects-ee49b818.vercel.app/api/meal-plan-generator',
             useFallback: true
@@ -908,213 +839,357 @@
         let autoSaveTimeout;
         const FORM_STORAGE_KEY = 'mealPrepFormData';
 
-        // --- Form Auto-Save Functions ---
+        // === 🔧 FUNZIONI AUTO-SAVE CORRETTE ===
         function saveFormData() {
+            console.log('💾 [AUTO-SAVE] Tentativo salvataggio dati form...');
+            
             try {
+                // ✅ CONTROLLO ESISTENZA ELEMENTI
+                const elements = {
+                    duration: document.getElementById('duration'),
+                    goal: document.getElementById('goal'),
+                    age: document.getElementById('age'),
+                    weight: document.getElementById('weight'),
+                    height: document.getElementById('height'),
+                    gender: document.getElementById('gender'),
+                    activity_level: document.getElementById('activity_level'),
+                    meals_per_day: document.getElementById('meals_per_day'),
+                    diet: document.getElementById('diet'),
+                    exclusions: document.getElementById('exclusions'),
+                    foods_at_home: document.getElementById('foods_at_home'),
+                    email: document.getElementById('email'),
+                    phone: document.getElementById('phone')
+                };
+
+                // Verifica che tutti gli elementi esistano
+                for (const [key, element] of Object.entries(elements)) {
+                    if (!element) {
+                        console.error(`💾 [AUTO-SAVE] Elemento mancante: ${key}`);
+                        return false;
+                    }
+                }
+
                 const formData = {
-                    duration: document.getElementById('duration').value,
-                    goal: document.getElementById('goal').value,
-                    age: document.getElementById('age').value,
-                    weight: document.getElementById('weight').value,
-                    height: document.getElementById('height').value,
-                    gender: document.getElementById('gender').value,
-                    activity_level: document.getElementById('activity_level').value,
-                    meals_per_day: document.getElementById('meals_per_day').value,
-                    diet: document.getElementById('diet').value,
-                    exclusions: document.getElementById('exclusions').value,
-                    foods_at_home: document.getElementById('foods_at_home').value,
-                    email: document.getElementById('email').value,
-                    phone: document.getElementById('phone').value,
+                    duration: elements.duration.value,
+                    goal: elements.goal.value,
+                    age: elements.age.value,
+                    weight: elements.weight.value,
+                    height: elements.height.value,
+                    gender: elements.gender.value,
+                    activity_level: elements.activity_level.value,
+                    meals_per_day: elements.meals_per_day.value,
+                    diet: elements.diet.value,
+                    exclusions: elements.exclusions.value,
+                    foods_at_home: elements.foods_at_home.value,
+                    email: elements.email.value,
+                    phone: elements.phone.value,
                     lastSaved: new Date().toISOString()
                 };
 
                 localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
-                console.log('✅ Dati form salvati automaticamente');
+                console.log('✅ [AUTO-SAVE] Dati salvati con successo!', formData);
                 showAutoSaveIndicator();
+                return true;
+
             } catch (error) {
-                console.error('❌ Errore salvataggio form:', error);
+                console.error('❌ [AUTO-SAVE] Errore nel salvataggio:', error);
+                return false;
             }
         }
 
         function loadFormData() {
+            console.log('📁 [AUTO-SAVE] Tentativo caricamento dati salvati...');
+            
             try {
                 const savedData = localStorage.getItem(FORM_STORAGE_KEY);
-                console.log('🔍 Controllo dati salvati:', savedData ? 'TROVATI' : 'NON TROVATI');
-                
-                if (savedData) {
-                    const formData = JSON.parse(savedData);
-                    console.log('📋 Dati da caricare:', formData);
-                    
-                    // Fill form fields con controllo esistenza elementi
-                    const setFieldValue = (id, value) => {
-                        const element = document.getElementById(id);
-                        if (element && value !== undefined && value !== '') {
-                            element.value = value;
-                            console.log(`✅ ${id}: ${value}`);
-                        }
-                    };
-
-                    setFieldValue('duration', formData.duration);
-                    setFieldValue('goal', formData.goal);
-                    setFieldValue('age', formData.age);
-                    setFieldValue('weight', formData.weight);
-                    setFieldValue('height', formData.height);
-                    setFieldValue('gender', formData.gender);
-                    setFieldValue('activity_level', formData.activity_level);
-                    setFieldValue('meals_per_day', formData.meals_per_day);
-                    setFieldValue('diet', formData.diet);
-                    setFieldValue('exclusions', formData.exclusions);
-                    setFieldValue('foods_at_home', formData.foods_at_home);
-                    setFieldValue('email', formData.email);
-                    setFieldValue('phone', formData.phone);
-
-                    console.log('✅ Dati form caricati con successo');
-                    return true;
+                if (!savedData) {
+                    console.log('📁 [AUTO-SAVE] Nessun dato salvato trovato');
+                    return false;
                 }
+
+                const formData = JSON.parse(savedData);
+                console.log('📁 [AUTO-SAVE] Dati trovati:', formData);
+                
+                // ✅ CONTROLLO ESISTENZA ELEMENTI PRIMA DEL CARICAMENTO
+                const elementsToLoad = [
+                    { id: 'duration', value: formData.duration },
+                    { id: 'goal', value: formData.goal },
+                    { id: 'age', value: formData.age },
+                    { id: 'weight', value: formData.weight },
+                    { id: 'height', value: formData.height },
+                    { id: 'gender', value: formData.gender },
+                    { id: 'activity_level', value: formData.activity_level },
+                    { id: 'meals_per_day', value: formData.meals_per_day },
+                    { id: 'diet', value: formData.diet },
+                    { id: 'exclusions', value: formData.exclusions },
+                    { id: 'foods_at_home', value: formData.foods_at_home },
+                    { id: 'email', value: formData.email },
+                    { id: 'phone', value: formData.phone }
+                ];
+
+                let loadedCount = 0;
+                elementsToLoad.forEach(({ id, value }) => {
+                    const element = document.getElementById(id);
+                    if (element && value !== undefined && value !== null) {
+                        element.value = value || '';
+                        loadedCount++;
+                        console.log(`📁 [AUTO-SAVE] Caricato ${id}: ${value}`);
+                    } else if (!element) {
+                        console.warn(`📁 [AUTO-SAVE] Elemento non trovato: ${id}`);
+                    }
+                });
+
+                console.log(`✅ [AUTO-SAVE] Caricati ${loadedCount}/${elementsToLoad.length} campi`);
+                return loadedCount > 0;
+
             } catch (error) {
-                console.error('❌ Errore nel caricamento dati form:', error);
+                console.error('❌ [AUTO-SAVE] Errore nel caricamento:', error);
+                return false;
             }
-            return false;
         }
 
         function clearFormData() {
-            localStorage.removeItem(FORM_STORAGE_KEY);
-            document.getElementById('meal-prep-form-element').reset();
-            showMessage('Dati Cancellati', 'I dati del form sono stati cancellati.');
+            console.log('🗑️ [AUTO-SAVE] Cancellazione dati form...');
+            
+            try {
+                localStorage.removeItem(FORM_STORAGE_KEY);
+                
+                const formElement = document.getElementById('meal-prep-form-element');
+                if (formElement) {
+                    formElement.reset();
+                    console.log('✅ [AUTO-SAVE] Form resettato');
+                } else {
+                    console.error('❌ [AUTO-SAVE] Elemento form non trovato');
+                }
+                
+                showMessage('Dati Cancellati', 'I dati del form sono stati cancellati.');
+                console.log('✅ [AUTO-SAVE] Dati cancellati con successo');
+                
+            } catch (error) {
+                console.error('❌ [AUTO-SAVE] Errore nella cancellazione:', error);
+            }
         }
 
         function showAutoSaveIndicator() {
             const indicator = document.getElementById('autosave-indicator');
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 2000);
+            if (indicator) {
+                indicator.classList.add('show');
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+                console.log('💾 [AUTO-SAVE] Indicatore mostrato');
+            } else {
+                console.warn('💾 [AUTO-SAVE] Indicatore non trovato');
+            }
         }
 
-        // Add auto-save event listeners to form fields
+        // ✅ SETUP AUTO-SAVE CON CONTROLLI
         function setupAutoSave() {
-            console.log('🔧 Configurazione auto-save...');
-            const formFields = document.querySelectorAll('#meal-prep-form-element input, #meal-prep-form-element select, #meal-prep-form-element textarea');
+            console.log('⚙️ [AUTO-SAVE] Setup auto-save...');
             
-            console.log(`📝 Trovati ${formFields.length} campi del form`);
-            
-            formFields.forEach((field, index) => {
-                console.log(`🔗 Collegamento campo ${index + 1}: ${field.id || field.name}`);
-                
-                field.addEventListener('input', () => {
-                    clearTimeout(autoSaveTimeout);
-                    autoSaveTimeout = setTimeout(() => {
-                        console.log('💾 Auto-save attivato (input)');
-                        saveFormData();
-                    }, 1000); // Save after 1 second of inactivity
-                });
-                
-                field.addEventListener('change', () => {
-                    clearTimeout(autoSaveTimeout);
-                    autoSaveTimeout = setTimeout(() => {
-                        console.log('💾 Auto-save attivato (change)');
-                        saveFormData();
-                    }, 500); // Save immediately on change
-                });
-            });
-            
-            console.log('✅ Auto-save configurato correttamente');
-        }
-
-        // --- Data Storage Functions ---
-        function getRequestsFromLocalStorage() {
             try {
-                const requests = localStorage.getItem('mealPrepRequests');
-                return requests ? JSON.parse(requests) : [];
-            } catch (e) {
-                console.error("Errore nel recupero dati da localStorage:", e);
-                return [];
-            }
-        }
-
-        function saveRequestsToLocalStorage(requests) {
-            try {
-                localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
-            } catch (e) {
-                console.error("Errore nel salvataggio dati in localStorage:", e);
-                showMessage('Errore di Salvataggio', 'Impossibile salvare i dati localmente.');
-            }
-        }
-
-        // --- Utility Functions ---
-        function showMessage(title, message) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-            document.getElementById('message-modal').classList.remove('hidden');
-        }
-
-        function hideMessage() {
-            document.getElementById('message-modal').classList.add('hidden');
-        }
-
-        function showLoading() {
-            document.getElementById('loading-overlay').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
-        }
-
-        function calculateBMR(weightKg, heightCm, ageYears, gender) {
-            if (gender === 'maschio') {
-                return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) + 5;
-            } else if (gender === 'femmina') {
-                return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 161;
-            }
-            return 0;
-        }
-
-        function calculateTDEE(bmr, activityLevel) {
-            const activityMultipliers = {
-                sedentario: 1.2,
-                leggero: 1.375,
-                moderato: 1.55,
-                attivo: 1.725,
-                'molto attivo': 1.9
-            };
-            return bmr * (activityMultipliers[activityLevel] || 1.2);
-        }
-
-        function adjustCaloriesForGoal(tdee, goal) {
-            switch (goal) {
-                case 'dimagrimento':
-                    return tdee - 500;
-                case 'aumento massa':
-                    return tdee + 300;
-                case 'mantenimento':
-                default:
-                    return tdee;
-            }
-        }
-
-        // === CLAUDE AI INTEGRATION ===
-        async function generateAdvancedMealPlan(userData) {
-            console.log('🤖 Tentativo generazione con Claude AI...');
-            
-            // TENTATIVO 1: Proxy Backend
-            if (CLAUDE_API_CONFIG.useProxy && CLAUDE_API_CONFIG.proxyEndpoint) {
-                try {
-                    console.log('🔄 Tentativo con proxy backend...');
-                    const response = await fetch(CLAUDE_API_CONFIG.proxyEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userRequirements: JSON.stringify(userData)
-                        })
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('✅ Piano generato con Proxy Backend');
-                        return result;
+                const formFields = document.querySelectorAll('#meal-prep-form-element input, #meal-prep-form-element select, #meal-prep-form-element textarea');
+                console.log(`⚙️ [AUTO-SAVE] Trovati ${formFields.length} campi form`);
+                
+                if (formFields.length === 0) {
+                    console.error('❌ [AUTO-SAVE] Nessun campo form trovato!');
+                    return false;
+                }
+                
+                formFields.forEach((field, index) => {
+                    if (field && field.addEventListener) {
+                        // Event listener per input (typing)
+                        field.addEventListener('input', () => {
+                            console.log(`📝 [AUTO-SAVE] Input su campo ${field.id || index}`);
+                            clearTimeout(autoSaveTimeout);
+                            autoSaveTimeout = setTimeout(() => {
+                                saveFormData();
+                            }, 1000); // Salva dopo 1 secondo di inattività
+                        });
+                        
+                        // Event listener per change (selezioni)
+                        field.addEventListener('change', () => {
+                            console.log(`🔄 [AUTO-SAVE] Change su campo ${field.id || index}`);
+                            clearTimeout(autoSaveTimeout);
+                            autoSaveTimeout = setTimeout(() => {
+                                saveFormData();
+                            }, 500); // Salva immediatamente al cambio
+                        });
+                        
+                        console.log(`✅ [AUTO-SAVE] Listener aggiunti al campo ${field.id || index}`);
                     } else {
-                        throw new Error(`Proxy response status: ${response.status}`);
+                        console.warn(`⚠️ [AUTO-SAVE] Campo non valido all'indice ${index}`);
+                    }
+                });
+                
+                console.log('✅ [AUTO-SAVE] Setup completato con successo');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ [AUTO-SAVE] Errore nel setup:', error);
+                return false;
+            }
+        }
+
+[ADMIN] Aggiornamento statistiche...', requests.length);
+            
+            try {
+                // ✅ CONTROLLO ESISTENZA ELEMENTI PRIMA DELL'AGGIORNAMENTO
+                const elements = {
+                    totalRequests: document.getElementById('total-requests'),
+                    todayRequests: document.getElementById('today-requests'),
+                    generatedPlans: document.getElementById('generated-plans'),
+                    averageAge: document.getElementById('average-age')
+                };
+
+                // Verifica esistenza elementi
+                for (const [key, element] of Object.entries(elements)) {
+                    if (!element) {
+                        console.error(`📊 [ADMIN] Elemento mancante: ${key}`);
+                        return false;
                     }
                 }
+
+                // Calcola statistiche
+                const today = new Date().toISOString().split('T')[0];
+                const todayRequests = requests.filter(req => {
+                    const reqDate = new Date(req.timestamp).toISOString().split('T')[0];
+                    return reqDate === today;
+                });
+                const plansGenerated = requests.filter(req => req.mealPlan).length;
+                const totalAge = requests.reduce((sum, req) => sum + (req.age || 0), 0);
+                const avgAge = requests.length > 0 ? Math.round(totalAge / requests.length) : 0;
+
+                // ✅ AGGIORNA SOLO SE ELEMENTI ESISTONO
+                elements.totalRequests.textContent = requests.length;
+                elements.todayRequests.textContent = todayRequests.length;
+                elements.generatedPlans.textContent = plansGenerated;
+                elements.averageAge.textContent = avgAge;
+
+                console.log('✅ [ADMIN] Statistiche aggiornate:', {
+                    total: requests.length,
+                    today: todayRequests.length,
+                    plans: plansGenerated,
+                    avgAge: avgAge
+                });
+                return true;
+
+            } catch (error) {
+                console.error('❌ [ADMIN] Errore aggiornamento statistiche:', error);
+                return false;
+            }
+        }
+
+        function loadRequestsTable(requests = null) {
+            console.log('📋 [ADMIN] Caricamento tabella richieste...');
+            
+            try {
+                if (!requests) {
+                    requests = getRequestsFromLocalStorage();
+                }
+
+                // ✅ CONTROLLO ESISTENZA ELEMENTI FILTRI
+                const filterDate = document.getElementById('filter-date');
+                const filterGoal = document.getElementById('filter-goal');
+                const requestsTableBody = document.getElementById('requests-table-body');
+
+                if (!requestsTableBody) {
+                    console.error('❌ [ADMIN] Elemento tabella non trovato');
+                    return false;
+                }
+
+                // Applica filtri solo se elementi esistono
+                let filteredRequests = requests.filter(request => {
+                    let match = true;
+                    
+                    if (filterDate && filterDate.value) {
+                        const requestDate = new Date(request.timestamp).toISOString().split('T')[0];
+                        if (requestDate !== filterDate.value) match = false;
+                    }
+                    
+                    if (filterGoal && filterGoal.value && filterGoal.value !== '') {
+                        if (request.goal !== filterGoal.value) match = false;
+                    }
+                    
+                    return match;
+                });
+
+                // Ordina per timestamp decrescente
+                filteredRequests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Pulisci tabella
+                requestsTableBody.innerHTML = '';
+
+                if (filteredRequests.length === 0) {
+                    requestsTableBody.innerHTML = `<tr><td colspan="7" class="py-4 px-4 text-center text-gray-400">Nessuna richiesta trovata.</td></tr>`;
+                    return true;
+                }
+
+                // Carica righe
+                filteredRequests.forEach((data) => {
+                    const row = document.createElement('tr');
+                    row.classList.add('hover:bg-gray-600');
+
+                    const timestampDate = new Date(data.timestamp);
+                    const formattedDate = timestampDate.toLocaleDateString('it-IT');
+
+                    row.innerHTML = `
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-300">${formattedDate}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-300">${data.email}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-300">${data.age}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-300">${data.goal}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-300">${data.duration} giorni</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${data.mealPlan ? 'bg-green-600 text-white' : 'bg-yellow-600 text-white'}">
+                                ${data.mealPlan ? 'Generato' : 'Non generato'}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap text-sm font-medium">
+                            <button data-id="${data.id}" class="view-details-btn bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-full text-xs transition duration-300 mr-2">Dettagli</button>
+                        </td>
+                    `;
+                    requestsTableBody.appendChild(row);
+                });
+
+                // ✅ AGGIUNGI EVENT LISTENERS CON CONTROLLO
+                const detailButtons = document.querySelectorAll('.view-details-btn');
+                console.log(`📋 [ADMIN] Trovati ${detailButtons.length} bottoni dettagli`);
+                
+                detailButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const requestId = e.target.dataset.id;
+                        currentRequestId = requestId;
+                        console.log(`📋 [ADMIN] Click dettagli per richiesta ${requestId}`);
+                        showRequestDetails(requestId, requests);
+                    });
+                });
+
+                console.log(`✅ [ADMIN] Tabella caricata con ${filteredRequests.length} richieste`);
+                return true;
+
+            } catch (error) {
+                console.error('❌ [ADMIN] Errore caricamento tabella:', error);
+                return false;
+            }
+        }
+
+        function loadDashboard() {
+            console.log('🚀 [ADMIN] Caricamento dashboard...');
+            
+            try {
+                const requests = getRequestsFromLocalStorage();
+                console.log(`🚀 [ADMIN] Trovate ${requests.length} richieste`);
+                
+                const statsUpdated = updateStatistics(requests);
+                const tableLoaded = loadRequestsTable(requests);
+                
+                if (statsUpdated && tableLoaded) {
+                    console.log('✅ [ADMIN] Dashboard caricata con successo');
+                } else {
+                    console.warn('⚠️ [ADMIN] Dashboard caricata parzialmente');
+                }
+                
+            } catch (error) {
+                console.error('❌ [ADMIN] Errore caricamento dashboard:', error);
+            }
+        }
