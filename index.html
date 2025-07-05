@@ -3,198 +3,562 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Prep Planner</title>
+    <title>Meal Prep Planner - Piano Pasti Personalizzato con AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
-            background: #1a1a1a;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
             color: #ffffff;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        h1, h2, h3, h4, h5 {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #8FBC8F 0%, #9FCC9F 100%);
-            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s ease;
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #9FCC9F 0%, #AFDDAF 100%);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
         }
-
-        .hero-gradient {
-            background: linear-gradient(135deg, #8FBC8F 0%, #9FCC9F 100%);
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            transition: all 0.3s ease;
         }
-
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #0e8478 0%, #32d96a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(17, 153, 142, 0.4);
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        
         input, select, textarea {
-            background-color: #333333 !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
             color: #ffffff !important;
-            border-color: #555555 !important;
+            transition: all 0.3s ease !important;
         }
         
         input:focus, select:focus, textarea:focus {
-            border-color: #8FBC8F !important;
-            box-shadow: 0 0 0 3px rgba(143, 188, 143, 0.2) !important;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            outline: none !important;
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .bounce-in {
+            animation: bounceIn 1s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .feature-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 1rem;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .faq-question {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2.5rem !important;
+            }
+            
+            .hero-section p {
+                font-size: 1.1rem !important;
+            }
+            
+            .feature-card {
+                padding: 1.5rem;
+            }
+            
+            .feature-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white">
-
+<body>
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
         <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4" style="border-color: #8FBC8F #8FBC8F transparent transparent;"></div>
-            <p class="mt-4 text-white text-lg">Generazione piano in corso...</p>
+            <div class="spinner mb-4"></div>
+            <p class="text-white text-lg font-medium">🤖 Claude AI sta generando il tuo piano...</p>
+            <p class="text-gray-300 text-sm mt-2">Questo può richiedere 30-60 secondi</p>
         </div>
     </div>
 
     <!-- Message Modal -->
-    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border border-gray-600">
-            <h3 id="modal-title" class="text-xl font-bold mb-4 text-white"></h3>
-            <p id="modal-message" class="mb-6 text-gray-300"></p>
-            <button id="modal-close-button" class="btn-primary font-bold py-2 px-6 rounded-full transition duration-300">Chiudi</button>
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="glass-effect p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 text-center">
+            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-white"></h3>
+            <p id="modal-message" class="mb-6 text-gray-300 leading-relaxed"></p>
+            <button id="modal-close-button" class="btn-primary font-bold py-3 px-6 rounded-full transition duration-300">
+                Chiudi
+            </button>
         </div>
     </div>
 
-    <!-- Landing Page -->
+    <!-- Main Content -->
     <div id="landing-page">
         <!-- Hero Section -->
-        <section class="relative hero-gradient text-black py-20 md:py-32 flex items-center justify-center">
-            <div class="container mx-auto px-4 text-center">
-                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
-                    Rivoluziona la Tua Alimentazione con Meal Prep Planner
-                </h1>
-                <p class="text-lg md:text-xl mb-8 opacity-90">
-                    Piani Pasti Personalizzati con Claude AI, Lista Spesa Intelligente e Ricette Passo-Passo.
-                </p>
-                <a href="#meal-prep-form" class="bg-black text-white hover:bg-gray-800 font-bold py-3 px-8 rounded-full text-lg md:text-xl shadow-lg transition duration-300">
-                    Inizia Ora!
-                </a>
+        <section class="hero-section relative hero-gradient min-h-screen flex items-center justify-center text-white overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-20"></div>
+            <div class="relative z-10 container mx-auto px-6 text-center">
+                <div class="fade-in">
+                    <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+                        Meal Prep con 
+                        <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                            Claude AI
+                        </span>
+                    </h1>
+                    <p class="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto leading-relaxed">
+                        Piani alimentari personalizzati, liste spesa intelligenti e ricette step-by-step. 
+                        Il futuro della nutrizione è qui.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="#meal-prep-form" class="btn-primary font-bold py-4 px-8 rounded-full text-lg shadow-lg inline-block">
+                            🚀 Inizia Gratis
+                        </a>
+                        <a href="#come-funziona" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-bold py-4 px-8 rounded-full text-lg border border-white border-opacity-30 transition duration-300 inline-block">
+                            📖 Come Funziona
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+                <a href="#perche-scegliere" class="text-white text-2xl">⬇️</a>
             </div>
         </section>
 
-        <!-- Meal Prep Form Section -->
-        <section id="meal-prep-form" class="py-16 md:py-24 bg-gray-900">
-            <div class="container mx-auto px-4 max-w-2xl">
-                <h2 class="text-3xl md:text-4xl font-bold text-center mb-8" style="color: #8FBC8F;">Crea il Tuo Piano Personalizzato</h2>
+        <!-- Perché Scegliere Section -->
+        <section id="perche-scegliere" class="py-20 bg-gray-900 bg-opacity-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16 fade-in">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                        Perché Scegliere 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                            Il Nostro Meal Prep
+                        </span>
+                    </h2>
+                    <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                        Tecnologia AI avanzata che rivoluziona il modo di pianificare i tuoi pasti
+                    </p>
+                </div>
                 
-                <form id="meal-prep-form-element" class="bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-600">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="card feature-card bounce-in">
+                        <img src="image1.png" alt="Intelligenza Artificiale" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-purple-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">🤖</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">Intelligenza Artificiale</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Claude AI analizza le tue preferenze e crea piani su misura con ricette innovative e bilanciate
+                        </p>
+                    </div>
+                    
+                    <div class="card feature-card bounce-in" style="animation-delay: 0.2s;">
+                        <img src="image2.png" alt="Veloce e Preciso" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-green-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">⚡</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">Veloce e Preciso</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Piano completo generato in meno di 60 secondi con calcoli nutrizionali precisi
+                        </p>
+                    </div>
+                    
+                    <div class="card feature-card bounce-in" style="animation-delay: 0.4s;">
+                        <img src="image3.png" alt="100% Personalizzato" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-blue-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">🎯</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">100% Personalizzato</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Ogni piano è unico: età, peso, obiettivi, allergie e preferenze considerate
+                        </p>
+                    </div>
+                    
+                    <div class="card feature-card bounce-in" style="animation-delay: 0.6s;">
+                        <img src="image4.png" alt="Lista Spesa Smart" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-yellow-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">🛒</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">Lista Spesa Smart</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Lista spesa ottimizzata e organizzata per categorie, pronta per il supermercato
+                        </p>
+                    </div>
+                    
+                    <div class="card feature-card bounce-in" style="animation-delay: 0.8s;">
+                        <img src="image5.png" alt="Mobile Ready" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-pink-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">📱</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">Mobile Ready</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Interfaccia ottimizzata per mobile, accesso ovunque ai tuoi piani
+                        </p>
+                    </div>
+                    
+                    <div class="card feature-card bounce-in" style="animation-delay: 1s;">
+                        <img src="image6.png" alt="Completamente Gratis" class="w-20 h-20 mx-auto mb-4 rounded-full object-cover border-4 border-red-500" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="feature-icon" style="display: none;">💰</div>
+                        <h3 class="text-2xl font-bold mb-4 text-white">Completamente Gratis</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Nessun costo nascosto, nessun abbonamento. Meal prep premium sempre gratuito
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Come Funziona Section -->
+        <section id="come-funziona" class="py-20 bg-gray-800 bg-opacity-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-16 fade-in">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">Come Funziona</h2>
+                    <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                        4 semplici passi per il tuo piano pasti perfetto
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="text-center fade-in">
+                        <div class="step-number">1</div>
+                        <h3 class="text-xl font-bold mb-4 text-white">Compila il Form</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Inserisci i tuoi dati: età, peso, obiettivi e preferenze alimentari
+                        </p>
+                    </div>
+                    
+                    <div class="text-center fade-in" style="animation-delay: 0.2s;">
+                        <div class="step-number">2</div>
+                        <h3 class="text-xl font-bold mb-4 text-white">AI Genera il Piano</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Claude AI crea ricette personalizzate e calcola le porzioni perfette
+                        </p>
+                    </div>
+                    
+                    <div class="text-center fade-in" style="animation-delay: 0.4s;">
+                        <div class="step-number">3</div>
+                        <h3 class="text-xl font-bold mb-4 text-white">Revisiona e Modifica</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Cambia i pasti che non ti piacciono con un click
+                        </p>
+                    </div>
+                    
+                    <div class="text-center fade-in" style="animation-delay: 0.6s;">
+                        <div class="step-number">4</div>
+                        <h3 class="text-xl font-bold mb-4 text-white">Inizia a Cucinare</h3>
+                        <p class="text-gray-300 leading-relaxed">
+                            Scarica PDF, fai la spesa e segui le ricette step-by-step
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form Section -->
+        <section id="meal-prep-form" class="py-20 bg-gray-900 bg-opacity-70">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <div class="text-center mb-12 fade-in">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                        Crea il Tuo Piano 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                            Personalizzato
+                        </span>
+                    </h2>
+                    <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                        Compila il form qui sotto e lascia che Claude AI crei il piano perfetto per te
+                    </p>
+                </div>
+                
+                <form id="meal-prep-form-element" class="glass-effect p-8 md:p-12 rounded-2xl shadow-2xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
-                            <label for="duration" class="block text-gray-300 text-sm font-bold mb-2">Durata del Meal Prep (giorni):</label>
-                            <input type="number" id="duration" name="duration" min="1" max="7" value="5" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="duration" class="block text-white text-sm font-semibold mb-3">
+                                📅 Durata del Meal Prep (giorni):
+                            </label>
+                            <input type="number" id="duration" name="duration" min="1" max="7" value="5" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                         </div>
                         <div>
-                            <label for="goal" class="block text-gray-300 text-sm font-bold mb-2">Obiettivo:</label>
-                            <select id="goal" name="goal" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="goal" class="block text-white text-sm font-semibold mb-3">
+                                🎯 Obiettivo:
+                            </label>
+                            <select id="goal" name="goal" required class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                                 <option value="">Seleziona un obiettivo</option>
-                                <option value="dimagrimento">Dimagrimento</option>
-                                <option value="aumento massa">Aumento Massa Muscolare</option>
-                                <option value="mantenimento">Mantenimento</option>
+                                <option value="dimagrimento">🔥 Dimagrimento</option>
+                                <option value="aumento massa">💪 Aumento Massa Muscolare</option>
+                                <option value="mantenimento">⚖️ Mantenimento</option>
                             </select>
                         </div>
                         <div>
-                            <label for="age" class="block text-gray-300 text-sm font-bold mb-2">Età (anni):</label>
-                            <input type="number" id="age" name="age" min="18" max="100" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="age" class="block text-white text-sm font-semibold mb-3">
+                                🎂 Età (anni):
+                            </label>
+                            <input type="number" id="age" name="age" min="18" max="100" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium" placeholder="Es. 25">
                         </div>
                         <div>
-                            <label for="weight" class="block text-gray-300 text-sm font-bold mb-2">Peso (kg):</label>
-                            <input type="number" id="weight" name="weight" min="30" max="300" step="0.1" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="weight" class="block text-white text-sm font-semibold mb-3">
+                                ⚖️ Peso (kg):
+                            </label>
+                            <input type="number" id="weight" name="weight" min="30" max="300" step="0.1" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium" placeholder="Es. 70.5">
                         </div>
                         <div>
-                            <label for="height" class="block text-gray-300 text-sm font-bold mb-2">Altezza (cm):</label>
-                            <input type="number" id="height" name="height" min="100" max="250" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="height" class="block text-white text-sm font-semibold mb-3">
+                                📏 Altezza (cm):
+                            </label>
+                            <input type="number" id="height" name="height" min="100" max="250" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium" placeholder="Es. 175">
                         </div>
                         <div>
-                            <label for="gender" class="block text-gray-300 text-sm font-bold mb-2">Sesso:</label>
-                            <select id="gender" name="gender" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="gender" class="block text-white text-sm font-semibold mb-3">
+                                👤 Sesso:
+                            </label>
+                            <select id="gender" name="gender" required class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                                 <option value="">Seleziona il sesso</option>
-                                <option value="maschio">Uomo</option>
-                                <option value="femmina">Donna</option>
+                                <option value="maschio">👨 Uomo</option>
+                                <option value="femmina">👩 Donna</option>
                             </select>
                         </div>
                         <div>
-                            <label for="activity_level" class="block text-gray-300 text-sm font-bold mb-2">Livello di Attività Fisica:</label>
-                            <select id="activity_level" name="activity_level" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="activity_level" class="block text-white text-sm font-semibold mb-3">
+                                🏃‍♂️ Livello di Attività Fisica:
+                            </label>
+                            <select id="activity_level" name="activity_level" required class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                                 <option value="">Seleziona livello</option>
-                                <option value="sedentario">Sedentario</option>
-                                <option value="leggero">Leggermente attivo</option>
-                                <option value="moderato">Moderatamente attivo</option>
-                                <option value="attivo">Molto attivo</option>
-                                <option value="molto attivo">Estremamente attivo</option>
+                                <option value="sedentario">🪑 Sedentario</option>
+                                <option value="leggero">🚶‍♂️ Leggermente attivo</option>
+                                <option value="moderato">🏃‍♂️ Moderatamente attivo</option>
+                                <option value="attivo">🏋️‍♂️ Molto attivo</option>
+                                <option value="molto attivo">🔥 Estremamente attivo</option>
                             </select>
                         </div>
                         <div>
-                            <label for="meals_per_day" class="block text-gray-300 text-sm font-bold mb-2">Pasti al Giorno:</label>
-                            <input type="number" id="meals_per_day" name="meals_per_day" min="1" max="6" value="3" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                            <label for="meals_per_day" class="block text-white text-sm font-semibold mb-3">
+                                🍽️ Pasti al Giorno:
+                            </label>
+                            <input type="number" id="meals_per_day" name="meals_per_day" min="2" max="5" value="3" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                         </div>
                     </div>
 
-                    <div class="mb-6">
-                        <label for="diet" class="block text-gray-300 text-sm font-bold mb-2">Tipo di Dieta:</label>
-                        <select id="diet" name="diet" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none">
+                    <div class="mb-8">
+                        <label for="diet" class="block text-white text-sm font-semibold mb-3">
+                            🥗 Tipo di Dieta:
+                        </label>
+                        <select id="diet" name="diet" required class="w-full py-3 px-4 rounded-lg text-lg font-medium">
                             <option value="">Seleziona tipo di dieta</option>
-                            <option value="bilanciata">Bilanciata</option>
-                            <option value="vegetariana">Vegetariana</option>
-                            <option value="vegana">Vegana</option>
-                            <option value="basso carboidrati">Basso Carboidrati</option>
-                            <option value="basso grassi">Basso Grassi</option>
-                            <option value="senza glutine">Senza Glutine</option>
-                            <option value="senza lattosio">Senza Lattosio</option>
+                            <option value="bilanciata">⚖️ Bilanciata</option>
+                            <option value="vegetariana">🥕 Vegetariana</option>
+                            <option value="vegana">🌱 Vegana</option>
+                            <option value="basso carboidrati">🥩 Basso Carboidrati</option>
+                            <option value="basso grassi">🍗 Basso Grassi</option>
+                            <option value="senza glutine">🌾 Senza Glutine</option>
+                            <option value="senza lattosio">🥛 Senza Lattosio</option>
                         </select>
                     </div>
 
-                    <div class="mb-6">
-                        <label for="exclusions" class="block text-gray-300 text-sm font-bold mb-2">Esclusioni Alimentari:</label>
-                        <textarea id="exclusions" name="exclusions" rows="3" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none" placeholder="Separa con virgole"></textarea>
+                    <div class="mb-8">
+                        <label for="exclusions" class="block text-white text-sm font-semibold mb-3">
+                            🚫 Esclusioni Alimentari:
+                        </label>
+                        <textarea id="exclusions" name="exclusions" rows="3" 
+                                  class="w-full py-3 px-4 rounded-lg text-lg font-medium resize-none" 
+                                  placeholder="Es. noci, crostacei, pomodori (separa con virgole)"></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                         <div>
-                            <label for="email" class="block text-gray-300 text-sm font-bold mb-2">Email:</label>
-                            <input type="email" id="email" name="email" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none" placeholder="tua@email.com">
+                            <label for="email" class="block text-white text-sm font-semibold mb-3">
+                                📧 Email:
+                            </label>
+                            <input type="email" id="email" name="email" required 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium" 
+                                   placeholder="tua@email.com">
                         </div>
                         <div>
-                            <label for="phone" class="block text-gray-300 text-sm font-bold mb-2">Telefono (opzionale):</label>
-                            <input type="tel" id="phone" name="phone" class="shadow appearance-none border rounded-lg w-full py-3 px-4 leading-tight focus:outline-none" placeholder="+39 333 1234567">
+                            <label for="phone" class="block text-white text-sm font-semibold mb-3">
+                                📱 Telefono (opzionale):
+                            </label>
+                            <input type="tel" id="phone" name="phone" 
+                                   class="w-full py-3 px-4 rounded-lg text-lg font-medium" 
+                                   placeholder="+39 333 1234567">
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-center">
-                        <button type="submit" class="btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300">
-                            Genera il Mio Piano Pasti!
+                    <div class="text-center">
+                        <button type="submit" class="btn-primary font-bold py-4 px-12 rounded-full text-xl shadow-xl transition duration-300 transform hover:scale-105">
+                            🚀 Genera il Mio Piano con AI!
                         </button>
+                        <p class="text-gray-400 text-sm mt-4">
+                            Generazione completamente gratuita • Nessun dato condiviso
+                        </p>
                     </div>
                 </form>
             </div>
         </section>
 
         <!-- Plan Preview Page -->
-        <div id="plan-preview-page" class="container mx-auto px-4 py-16 hidden">
+        <div id="plan-preview-page" class="container mx-auto px-6 py-20 hidden">
             <div class="max-w-6xl mx-auto">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold mb-4" style="color: #8FBC8F;">Anteprima del Tuo Piano Pasti</h2>
-                    <p class="text-lg text-gray-300 mb-4">Revisiona i tuoi pasti e personalizza quello che preferisci</p>
+                <div class="text-center mb-12 fade-in">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                        🎉 Il Tuo Piano è Pronto!
+                    </h2>
+                    <p class="text-xl text-gray-300 mb-6">
+                        Revisiona i tuoi pasti e personalizza quello che preferisci
+                    </p>
+                    <div class="inline-flex items-center bg-green-600 bg-opacity-20 text-green-400 px-6 py-3 rounded-full border border-green-600 border-opacity-30">
+                        <span class="text-2xl mr-2">🤖</span>
+                        <span class="font-semibold">Generato da Claude AI</span>
+                    </div>
                 </div>
 
                 <!-- Plan Content -->
-                <div id="plan-preview-content" class="space-y-8">
+                <div id="plan-preview-content" class="space-y-8 mb-12">
                     <!-- Days will be dynamically loaded here -->
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-                    <button id="confirm-plan-button" class="btn-primary font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300">
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mt-12">
+                    <button id="confirm-plan-button" class="btn-primary font-bold py-4 px-8 rounded-full text-lg shadow-lg transition duration-300">
                         ✅ Conferma Piano
                     </button>
-                    <button id="regenerate-all-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">
+                    <button id="regenerate-all-button" class="btn-secondary font-bold py-4 px-8 rounded-full text-lg shadow-lg transition duration-300">
                         🔄 Rigenera Tutto
                     </button>
-                    <button id="back-to-form-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">
+                    <button id="back-to-form-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-8 rounded-full text-lg transition duration-300">
                         ⬅️ Torna al Form
                     </button>
                 </div>
@@ -202,17 +566,153 @@
         </div>
 
         <!-- Success Page -->
-        <div id="success-page" class="container mx-auto px-4 py-16 text-center hidden">
+        <div id="success-page" class="container mx-auto px-6 py-20 text-center hidden">
             <div class="max-w-2xl mx-auto">
-                <div class="text-6xl mb-6">🎉</div>
-                <h2 class="text-3xl font-bold mb-4" style="color: #8FBC8F;">Piano Confermato con Successo!</h2>
-                <p class="text-lg text-gray-300 mb-8">Il tuo piano pasti personalizzato è pronto!</p>
+                <div class="text-8xl mb-8 animate-bounce">🎉</div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                    Piano Confermato!
+                </h2>
+                <p class="text-xl text-gray-300 mb-12">
+                    Il tuo piano pasti personalizzato con Claude AI è pronto per l'uso!
+                </p>
                 
                 <div class="space-y-4">
-                    <button id="new-plan-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-full transition duration-300">
+                    <button id="download-pdf-button" class="btn-primary font-bold py-4 px-8 rounded-full text-lg shadow-lg transition duration-300 w-full max-w-md">
+                        📄 Scarica PDF
+                    </button>
+                    <button id="share-whatsapp-button" class="btn-secondary font-bold py-4 px-8 rounded-full text-lg shadow-lg transition duration-300 w-full max-w-md">
+                        📱 Condividi su WhatsApp
+                    </button>
+                    <button id="new-plan-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-4 px-8 rounded-full text-lg transition duration-300 w-full max-w-md">
                         🆕 Crea un Nuovo Piano
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="py-20 bg-gray-800 bg-opacity-50">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <div class="text-center mb-16 fade-in">
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6">FAQ</h2>
+                    <p class="text-xl text-gray-300">
+                        Le domande più frequenti sul nostro Meal Prep AI
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="faq-item glass-effect rounded-lg overflow-hidden">
+                        <div class="faq-question p-6 cursor-pointer hover:bg-white hover:bg-opacity-5 transition-colors duration-300" onclick="toggleFAQ(this)">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">Come funziona l'intelligenza artificiale nella generazione dei piani?</h3>
+                                <span class="text-2xl text-gray-400 transition-transform duration-300">+</span>
+                            </div>
+                        </div>
+                        <div class="faq-answer p-6 pt-0 text-gray-300">
+                            <p>Claude AI analizza tutti i tuoi dati (età, peso, obiettivi, preferenze) e genera ricette personalizzate considerando i tuoi bisogni nutrizionali specifici. L'AI calcola automaticamente porzioni e macronutrienti per ogni pasto.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item glass-effect rounded-lg overflow-hidden">
+                        <div class="faq-question p-6 cursor-pointer hover:bg-white hover:bg-opacity-5 transition-colors duration-300" onclick="toggleFAQ(this)">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">Posso modificare i pasti generati?</h3>
+                                <span class="text-2xl text-gray-400 transition-transform duration-300">+</span>
+                            </div>
+                        </div>
+                        <div class="faq-answer p-6 pt-0 text-gray-300">
+                            <p>Assolutamente sì! Puoi rigenerare qualsiasi singolo pasto che non ti piace o rigenerare l'intero piano. L'AI proporrà sempre alternative diverse mantenendo l'equilibrio nutrizionale.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item glass-effect rounded-lg overflow-hidden">
+                        <div class="faq-question p-6 cursor-pointer hover:bg-white hover:bg-opacity-5 transition-colors duration-300" onclick="toggleFAQ(this)">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">Il servizio è davvero gratuito?</h3>
+                                <span class="text-2xl text-gray-400 transition-transform duration-300">+</span>
+                            </div>
+                        </div>
+                        <div class="faq-answer p-6 pt-0 text-gray-300">
+                            <p>Sì, completamente gratuito! Non ci sono costi nascosti, abbonamenti o limiti. Puoi generare tutti i piani che vuoi senza pagare nulla.</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item glass-effect rounded-lg overflow-hidden">
+                        <div class="faq-question p-6 cursor-pointer hover:bg-white hover:bg-opacity-5 transition-colors duration-300" onclick="toggleFAQ(this)">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">Come vengono calcolate le calorie?</h3>
+                                <span class="text-2xl text-gray-400 transition-transform duration-300">+</span>
+                            </div>
+                        </div>
+                        <div class="faq-answer p-6 pt-0 text-gray-300">
+                            <p>Utilizziamo la formula di Mifflin-St Jeor per calcolare il metabolismo basale, poi applichiamo i moltiplicatori per il livello di attività fisica e aggiustiamo in base al tuo obiettivo (dimagrimento, mantenimento, massa).</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item glass-effect rounded-lg overflow-hidden">
+                        <div class="faq-question p-6 cursor-pointer hover:bg-white hover:bg-opacity-5 transition-colors duration-300" onclick="toggleFAQ(this)">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-white">Supportate diete specifiche?</h3>
+                                <span class="text-2xl text-gray-400 transition-transform duration-300">+</span>
+                            </div>
+                        </div>
+                        <div class="faq-answer p-6 pt-0 text-gray-300">
+                            <p>Sì! Supportiamo vegetariana, vegana, basso carboidrati, basso grassi, senza glutine, senza lattosio e dieta bilanciata. Puoi anche specificare esclusioni alimentari specifiche.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-900 py-12 border-t border-gray-700">
+            <div class="container mx-auto px-6 text-center">
+                <div class="mb-8">
+                    <h3 class="text-2xl font-bold mb-4">Meal Prep AI</h3>
+                    <p class="text-gray-400 max-w-2xl mx-auto">
+                        Il futuro della pianificazione alimentare è qui. Powered by Claude AI.
+                    </p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-6 mb-8">
+                    <a href="#meal-prep-form" class="text-gray-400 hover:text-white transition-colors duration-300">
+                        Genera Piano
+                    </a>
+                    <a href="#faq" class="text-gray-400 hover:text-white transition-colors duration-300">
+                        FAQ
+                    </a>
+                    <a href="#come-funziona" class="text-gray-400 hover:text-white transition-colors duration-300">
+                        Come Funziona
+                    </a>
+                </div>
+                
+                <div class="text-gray-500 text-sm">
+                    © 2024 Meal Prep AI. Generato con Claude AI di Anthropic.
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Admin Section -->
+    <div id="admin-section" class="fixed bottom-4 right-4 z-40">
+        <button id="admin-toggle" class="bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 opacity-50 hover:opacity-100">
+            ⚙️
+        </button>
+        <div id="admin-panel" class="hidden absolute bottom-16 right-0 glass-effect p-4 rounded-lg shadow-xl w-64">
+            <h4 class="text-white font-bold mb-3">Admin Panel</h4>
+            <div class="space-y-2 text-sm">
+                <div class="text-gray-300">
+                    <span class="font-medium">Versione:</span> 2.0 Complete
+                </div>
+                <div class="text-gray-300">
+                    <span class="font-medium">Status:</span> <span class="text-green-400">✅ Online</span>
+                </div>
+                <div class="text-gray-300">
+                    <span class="font-medium">AI:</span> <span class="text-blue-400">🤖 Claude AI</span>
+                </div>
+                <button id="clear-storage" class="w-full bg-red-600 hover:bg-red-700 text-white py-1 px-2 rounded text-xs transition-colors duration-300">
+                    Clear Storage
+                </button>
             </div>
         </div>
     </div>
@@ -328,6 +828,7 @@
             if (data.meals_per_day >= 2) mealTypes.push("Pranzo");
             if (data.meals_per_day >= 3) mealTypes.push("Cena");
             if (data.meals_per_day >= 4) mealTypes.push("Spuntino");
+            if (data.meals_per_day >= 5) mealTypes.push("Spuntino Serale");
 
             const mealTemplates = getMealTemplates();
             const recipes = [];
@@ -358,18 +859,7 @@
             }
 
             return {
-                shoppingList: [
-                    "Avena - 500g",
-                    "Latte - 2L", 
-                    "Banane - 1kg",
-                    "Noci - 200g",
-                    "Petto di pollo - 1kg",
-                    "Riso integrale - 500g",
-                    "Verdure miste - 1kg",
-                    "Salmone - 800g",
-                    "Patate dolci - 1.5kg",
-                    "Broccoli - 1kg"
-                ],
+                shoppingList: generateShoppingList(recipes, data),
                 recipes: recipes,
                 nutritionSummary: {
                     totalCaloriesPerDay: data.calories,
@@ -378,9 +868,11 @@
                     fatPerDay: Math.round(data.calories * 0.30 / 9) + "g"
                 },
                 mealPrepTips: [
-                    "Prepara tutto la domenica per risparmiare tempo durante la settimana",
-                    "Usa contenitori di vetro per conservare meglio i pasti",
-                    "Congela le porzioni in eccesso per la settimana successiva"
+                    "🥘 Prepara tutto la domenica per risparmiare tempo durante la settimana",
+                    "📦 Usa contenitori di vetro per conservare meglio i pasti",
+                    "❄️ Congela le porzioni in eccesso per la settimana successiva",
+                    "🔥 Riscalda nel microonde o in padella mantenendo umidità",
+                    "📝 Segna sui contenitori il giorno e il tipo di pasto"
                 ]
             };
         }
@@ -410,6 +902,12 @@
                     ingredients: ["150g yogurt greco", "1 cucchiaio miele", "10g mandorle"],
                     instructions: "Mescola yogurt e miele, aggiungi mandorle tritate.",
                     protein: "15g", carbs: "20g", fat: "8g"
+                },
+                "Spuntino Serale": {
+                    name: "Ricotta con frutti di bosco",
+                    ingredients: ["100g ricotta", "50g frutti di bosco", "5g miele"],
+                    instructions: "Mescola ricotta e frutti di bosco, aggiungi un filo di miele.",
+                    protein: "12g", carbs: "15g", fat: "6g"
                 }
             };
         }
@@ -465,10 +963,32 @@
                         instructions: "Frulla datteri e mandorle, forma palline e rotola nel cocco.",
                         protein: "8g", carbs: "25g", fat: "12g"
                     }
+                ],
+                "Spuntino Serale": [
+                    {
+                        name: "Smoothie proteico",
+                        ingredients: ["1 banana", "200ml latte", "20g proteine in polvere"],
+                        instructions: "Frulla tutti gli ingredienti fino ad ottenere un composto liscio.",
+                        protein: "25g", carbs: "30g", fat: "5g"
+                    }
                 ]
             };
 
             return alternatives[mealType] || [];
+        }
+
+        function generateShoppingList(recipes, userData) {
+            const ingredientsList = new Set();
+            
+            recipes.forEach(day => {
+                day.meals.forEach(meal => {
+                    meal.ingredients.forEach(ingredient => {
+                        ingredientsList.add(ingredient);
+                    });
+                });
+            });
+            
+            return Array.from(ingredientsList).sort();
         }
 
         // --- Plan Preview Functions ---
@@ -476,59 +996,112 @@
             currentGeneratedPlan = { planData, userInfo };
             loadPlanPreview(planData, userInfo);
             
-            document.getElementById('meal-prep-form').classList.add('hidden');
-            document.getElementById('plan-preview-page').classList.remove('hidden');
+            document.getElementById('meal-prep-form').scrollIntoView({ behavior: 'smooth' });
+            setTimeout(() => {
+                document.getElementById('landing-page').style.display = 'none';
+                document.getElementById('plan-preview-page').classList.remove('hidden');
+            }, 500);
         }
 
         function loadPlanPreview(planData, userInfo) {
             const contentContainer = document.getElementById('plan-preview-content');
             contentContainer.innerHTML = '';
 
+            // Aggiungi summary nutrizionale
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'glass-effect rounded-xl p-6 mb-8';
+            summaryDiv.innerHTML = `
+                <h3 class="text-2xl font-bold mb-4 text-center text-white">📊 Riepilogo Nutrizionale</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-blue-600 bg-opacity-20 p-4 rounded-lg border border-blue-600 border-opacity-30">
+                        <div class="text-2xl font-bold text-blue-400">${planData.nutritionSummary.totalCaloriesPerDay}</div>
+                        <div class="text-sm text-gray-300">Calorie/giorno</div>
+                    </div>
+                    <div class="bg-green-600 bg-opacity-20 p-4 rounded-lg border border-green-600 border-opacity-30">
+                        <div class="text-2xl font-bold text-green-400">${planData.nutritionSummary.proteinPerDay}</div>
+                        <div class="text-sm text-gray-300">Proteine</div>
+                    </div>
+                    <div class="bg-yellow-600 bg-opacity-20 p-4 rounded-lg border border-yellow-600 border-opacity-30">
+                        <div class="text-2xl font-bold text-yellow-400">${planData.nutritionSummary.carbsPerDay}</div>
+                        <div class="text-sm text-gray-300">Carboidrati</div>
+                    </div>
+                    <div class="bg-purple-600 bg-opacity-20 p-4 rounded-lg border border-purple-600 border-opacity-30">
+                        <div class="text-2xl font-bold text-purple-400">${planData.nutritionSummary.fatPerDay}</div>
+                        <div class="text-sm text-gray-300">Grassi</div>
+                    </div>
+                </div>
+            `;
+            contentContainer.appendChild(summaryDiv);
+
+            // Aggiungi giorni
             planData.recipes.forEach((dayPlan, dayIndex) => {
                 const dayDiv = document.createElement('div');
-                dayDiv.className = 'bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-600';
+                dayDiv.className = 'glass-effect rounded-xl shadow-2xl p-8';
                 
                 let mealsHtml = '';
                 dayPlan.meals.forEach((meal, mealIndex) => {
                     mealsHtml += `
-                        <div class="bg-gray-700 p-4 rounded-lg mb-4">
-                            <div class="flex justify-between items-start mb-3">
-                                <h4 class="text-lg font-semibold text-white">${meal.type}</h4>
-                                <button class="regenerate-meal-btn text-green-400 hover:text-green-300 text-sm font-medium transition-colors" 
-                                        data-day="${dayIndex}" data-meal="${mealIndex}" data-meal-type="${meal.type}" style="color: #8FBC8F;">
+                        <div class="bg-gray-800 bg-opacity-50 p-6 rounded-xl mb-6 border border-gray-600 border-opacity-50">
+                            <div class="flex justify-between items-start mb-4">
+                                <h4 class="text-xl font-bold text-white">${meal.type}</h4>
+                                <button class="regenerate-meal-btn bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-all duration-300 transform hover:scale-105" 
+                                        data-day="${dayIndex}" data-meal="${mealIndex}" data-meal-type="${meal.type}">
                                     🔄 Cambia
                                 </button>
                             </div>
-                            <h5 class="text-md font-medium mb-2" style="color: #8FBC8F;">${meal.name}</h5>
-                            <div class="text-sm text-gray-300 mb-3">
-                                <div class="flex flex-wrap gap-2 mb-2">
-                                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs">🔥 ${meal.calories} kcal</span>
-                                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs">🥩 ${meal.protein}</span>
-                                    <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">🍞 ${meal.carbs}</span>
-                                    <span class="bg-purple-600 text-white px-2 py-1 rounded text-xs">🥑 ${meal.fat}</span>
+                            <h5 class="text-lg font-semibold mb-3 text-blue-400">${meal.name}</h5>
+                            <div class="mb-4">
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    <span class="bg-red-600 bg-opacity-20 text-red-400 px-3 py-1 rounded-full text-sm border border-red-600 border-opacity-30">🔥 ${meal.calories} kcal</span>
+                                    <span class="bg-green-600 bg-opacity-20 text-green-400 px-3 py-1 rounded-full text-sm border border-green-600 border-opacity-30">🥩 ${meal.protein}</span>
+                                    <span class="bg-yellow-600 bg-opacity-20 text-yellow-400 px-3 py-1 rounded-full text-sm border border-yellow-600 border-opacity-30">🍞 ${meal.carbs}</span>
+                                    <span class="bg-purple-600 bg-opacity-20 text-purple-400 px-3 py-1 rounded-full text-sm border border-purple-600 border-opacity-30">🥑 ${meal.fat}</span>
                                 </div>
                             </div>
-                            <div class="text-sm text-gray-300">
-                                <p class="font-medium mb-1 text-white">Ingredienti:</p>
-                                <ul class="list-disc list-inside text-xs mb-2">
-                                    ${meal.ingredients.map(ing => `<li>${ing}</li>`).join('')}
-                                </ul>
-                                <p class="font-medium mb-1 text-white">Preparazione:</p>
-                                <p class="text-xs">${meal.instructions}</p>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                <div>
+                                    <p class="font-semibold mb-2 text-white">📋 Ingredienti:</p>
+                                    <ul class="list-disc list-inside text-sm text-gray-300 space-y-1">
+                                        ${meal.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <p class="font-semibold mb-2 text-white">👨‍🍳 Preparazione:</p>
+                                    <p class="text-sm text-gray-300 leading-relaxed">${meal.instructions}</p>
+                                </div>
                             </div>
                         </div>
                     `;
                 });
 
                 dayDiv.innerHTML = `
-                    <h3 class="text-2xl font-bold mb-4 text-center" style="color: #8FBC8F;">${dayPlan.day}</h3>
-                    <div class="space-y-4">
+                    <h3 class="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">${dayPlan.day}</h3>
+                    <div class="space-y-6">
                         ${mealsHtml}
                     </div>
                 `;
                 
                 contentContainer.appendChild(dayDiv);
             });
+
+            // Aggiungi lista spesa e tips
+            const extrasDiv = document.createElement('div');
+            extrasDiv.className = 'grid md:grid-cols-2 gap-8';
+            extrasDiv.innerHTML = `
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-2xl font-bold mb-4 text-white">🛒 Lista Spesa</h3>
+                    <ul class="space-y-2">
+                        ${planData.shoppingList.map(item => `<li class="text-gray-300 flex items-center"><span class="text-green-400 mr-2">•</span>${item}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="glass-effect rounded-xl p-6">
+                    <h3 class="text-2xl font-bold mb-4 text-white">💡 Consigli Meal Prep</h3>
+                    <ul class="space-y-3">
+                        ${planData.mealPrepTips.map(tip => `<li class="text-gray-300 text-sm leading-relaxed">${tip}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            contentContainer.appendChild(extrasDiv);
 
             setupRegenerateMealButtons();
         }
@@ -618,8 +1191,178 @@
         function resetToLanding() {
             document.getElementById('success-page').classList.add('hidden');
             document.getElementById('plan-preview-page').classList.add('hidden');
-            document.getElementById('meal-prep-form').classList.remove('hidden');
+            document.getElementById('landing-page').style.display = 'block';
             currentGeneratedPlan = null;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- PDF and WhatsApp Functions ---
+        function generatePDF() {
+            if (!currentGeneratedPlan) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            try {
+                // Title
+                doc.setFontSize(20);
+                doc.text('Il Tuo Piano Pasti Personalizzato', 20, 20);
+                
+                // Generated with AI
+                doc.setFontSize(12);
+                doc.text('Generato con Claude AI', 20, 30);
+                
+                let yPosition = 50;
+                
+                // Nutrition Summary
+                const nutrition = currentGeneratedPlan.planData.nutritionSummary;
+                doc.setFontSize(16);
+                doc.text('Riepilogo Nutrizionale:', 20, yPosition);
+                yPosition += 10;
+                
+                doc.setFontSize(12);
+                doc.text(`Calorie giornaliere: ${nutrition.totalCaloriesPerDay}`, 20, yPosition);
+                doc.text(`Proteine: ${nutrition.proteinPerDay}`, 20, yPosition + 10);
+                doc.text(`Carboidrati: ${nutrition.carbsPerDay}`, 20, yPosition + 20);
+                doc.text(`Grassi: ${nutrition.fatPerDay}`, 20, yPosition + 30);
+                
+                yPosition += 50;
+                
+                // Recipes
+                currentGeneratedPlan.planData.recipes.forEach((dayPlan, dayIndex) => {
+                    if (yPosition > 250) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    doc.setFontSize(16);
+                    doc.text(dayPlan.day, 20, yPosition);
+                    yPosition += 15;
+                    
+                    dayPlan.meals.forEach((meal) => {
+                        if (yPosition > 260) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+                        
+                        doc.setFontSize(14);
+                        doc.text(`${meal.type}: ${meal.name}`, 25, yPosition);
+                        yPosition += 8;
+                        
+                        doc.setFontSize(10);
+                        doc.text(`Calorie: ${meal.calories} | Proteine: ${meal.protein} | Carb: ${meal.carbs} | Grassi: ${meal.fat}`, 25, yPosition);
+                        yPosition += 8;
+                        
+                        doc.text('Ingredienti: ' + meal.ingredients.join(', '), 25, yPosition);
+                        yPosition += 6;
+                        
+                        const instructions = doc.splitTextToSize(meal.instructions, 160);
+                        doc.text(instructions, 25, yPosition);
+                        yPosition += instructions.length * 4 + 10;
+                    });
+                    
+                    yPosition += 10;
+                });
+                
+                // Shopping List
+                if (yPosition > 200) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(16);
+                doc.text('Lista Spesa:', 20, yPosition);
+                yPosition += 15;
+                
+                doc.setFontSize(10);
+                currentGeneratedPlan.planData.shoppingList.forEach((item) => {
+                    if (yPosition > 280) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.text(`• ${item}`, 25, yPosition);
+                    yPosition += 5;
+                });
+                
+                doc.save('meal-prep-plan.pdf');
+                showMessage('PDF Generato!', 'Il tuo piano pasti è stato scaricato come PDF.');
+                
+            } catch (error) {
+                console.error('Errore generazione PDF:', error);
+                showMessage('Errore PDF', 'Si è verificato un errore nella generazione del PDF.');
+            }
+        }
+
+        function shareWhatsApp() {
+            if (!currentGeneratedPlan) return;
+            
+            const { planData } = currentGeneratedPlan;
+            
+            let message = `🥘 *Il Mio Piano Pasti Personalizzato*\n`;
+            message += `✨ Generato con Claude AI\n\n`;
+            
+            message += `📊 *Riepilogo Nutrizionale:*\n`;
+            message += `• Calorie: ${planData.nutritionSummary.totalCaloriesPerDay}/giorno\n`;
+            message += `• Proteine: ${planData.nutritionSummary.proteinPerDay}\n`;
+            message += `• Carboidrati: ${planData.nutritionSummary.carbsPerDay}\n`;
+            message += `• Grassi: ${planData.nutritionSummary.fatPerDay}\n\n`;
+            
+            planData.recipes.forEach((dayPlan, index) => {
+                if (index < 3) { // Limita ai primi 3 giorni per WhatsApp
+                    message += `🗓️ *${dayPlan.day}:*\n`;
+                    dayPlan.meals.forEach((meal) => {
+                        message += `• ${meal.type}: ${meal.name}\n`;
+                    });
+                    message += `\n`;
+                }
+            });
+            
+            message += `🛒 *Lista Spesa:*\n`;
+            planData.shoppingList.slice(0, 10).forEach((item) => {
+                message += `• ${item}\n`;
+            });
+            
+            if (planData.shoppingList.length > 10) {
+                message += `... e altri ${planData.shoppingList.length - 10} ingredienti\n`;
+            }
+            
+            message += `\n🤖 Creato con Meal Prep AI`;
+            
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+            
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // --- FAQ Functions ---
+        function toggleFAQ(element) {
+            const faqItem = element.closest('.faq-item');
+            const answer = faqItem.querySelector('.faq-answer');
+            const icon = element.querySelector('span');
+            
+            faqItem.classList.toggle('active');
+            
+            if (faqItem.classList.contains('active')) {
+                icon.textContent = '−';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.textContent = '+';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // --- Admin Functions ---
+        function toggleAdminPanel() {
+            const panel = document.getElementById('admin-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            showMessage('Storage Cleared', 'Tutti i dati locali sono stati cancellati.');
         }
 
         // --- Event Listeners ---
@@ -642,12 +1385,16 @@
                 phone: document.getElementById('phone').value
             };
 
-            if (!formData.duration || !formData.goal || !formData.age || !formData.weight || !formData.height || !formData.gender || !formData.activity_level || !formData.meals_per_day || !formData.diet || !formData.email) {
+            // Validation
+            if (!formData.duration || !formData.goal || !formData.age || !formData.weight || 
+                !formData.height || !formData.gender || !formData.activity_level || 
+                !formData.meals_per_day || !formData.diet || !formData.email) {
                 hideLoading();
                 showMessage('Errore di Validazione', 'Per favore, compila tutti i campi obbligatori.');
                 return;
             }
 
+            // Calculate calories
             const bmr = calculateBMR(formData.weight, formData.height, formData.age, formData.gender);
             const tdee = calculateTDEE(bmr, formData.activity_level);
             const dailyCalories = adjustCaloriesForGoal(tdee, formData.goal);
@@ -657,6 +1404,10 @@
                 console.log('🚀 Avvio generazione piano pasti...');
                 const mealPlan = await generateAdvancedMealPlan(formData);
                 showPlanPreview(mealPlan, formData);
+                
+                // Save to localStorage for persistence
+                localStorage.setItem('lastMealPlan', JSON.stringify({ mealPlan, formData }));
+                
             } catch (error) {
                 console.error("Errore durante la generazione del piano pasti:", error);
                 showMessage('Errore Generazione', `Si è verificato un errore: ${error.message}. Riprova più tardi.`);
@@ -665,6 +1416,7 @@
             }
         });
 
+        // Action buttons
         document.getElementById('confirm-plan-button').addEventListener('click', () => {
             if (!currentGeneratedPlan) return;
             showSuccessPage();
@@ -677,7 +1429,11 @@
             try {
                 console.log('🔄 Rigenerazione completa del piano...');
                 const newMealPlan = await generateAdvancedMealPlan(currentGeneratedPlan.userInfo);
-                showPlanPreview(newMealPlan, currentGeneratedPlan.userInfo);
+                
+                // Update current plan
+                currentGeneratedPlan.planData = newMealPlan;
+                loadPlanPreview(newMealPlan, currentGeneratedPlan.userInfo);
+                
                 showMessage('Piano Rigenerato!', 'Tutto il piano è stato rigenerato con nuove ricette!');
             } catch (error) {
                 console.error('Errore rigenerazione:', error);
@@ -689,16 +1445,129 @@
 
         document.getElementById('back-to-form-button').addEventListener('click', () => {
             document.getElementById('plan-preview-page').classList.add('hidden');
-            document.getElementById('meal-prep-form').classList.remove('hidden');
+            document.getElementById('landing-page').style.display = 'block';
+            
+            // Scroll to form
+            setTimeout(() => {
+                document.getElementById('meal-prep-form').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         });
 
+        // Success page buttons
+        document.getElementById('download-pdf-button').addEventListener('click', generatePDF);
+        document.getElementById('share-whatsapp-button').addEventListener('click', shareWhatsApp);
         document.getElementById('new-plan-button').addEventListener('click', resetToLanding);
+
+        // Modal close
         document.getElementById('modal-close-button').addEventListener('click', hideMessage);
 
-        // Page load initialization
-        window.addEventListener('load', () => {
-            console.log('🔧 Configurazione Claude AI:', CLAUDE_API_CONFIG);
+        // Admin panel
+        document.getElementById('admin-toggle').addEventListener('click', toggleAdminPanel);
+        document.getElementById('clear-storage').addEventListener('click', clearStorage);
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
+
+        // Form auto-save
+        const formInputs = document.querySelectorAll('#meal-prep-form-element input, #meal-prep-form-element select, #meal-prep-form-element textarea');
+        formInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                const formData = new FormData(document.getElementById('meal-prep-form-element'));
+                const data = Object.fromEntries(formData);
+                localStorage.setItem('mealPrepFormData', JSON.stringify(data));
+            });
+        });
+
+        // Load saved form data
+        function loadSavedFormData() {
+            const savedData = localStorage.getItem('mealPrepFormData');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    Object.keys(data).forEach(key => {
+                        const input = document.getElementById(key);
+                        if (input && data[key]) {
+                            input.value = data[key];
+                        }
+                    });
+                } catch (error) {
+                    console.log('Errore caricamento dati salvati:', error);
+                }
+            }
+        }
+
+        // Load last meal plan if exists
+        function loadLastMealPlan() {
+            const lastPlan = localStorage.getItem('lastMealPlan');
+            if (lastPlan) {
+                try {
+                    const { mealPlan, formData } = JSON.parse(lastPlan);
+                    console.log('📱 Piano precedente trovato nel storage');
+                    
+                    // Optional: Show option to reload last plan
+                    const reloadButton = document.createElement('button');
+                    reloadButton.textContent = '🔄 Carica Ultimo Piano';
+                    reloadButton.className = 'bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-all duration-300 mb-4';
+                    reloadButton.onclick = () => {
+                        showPlanPreview(mealPlan, formData);
+                        reloadButton.remove();
+                    };
+                    
+                    const form = document.getElementById('meal-prep-form-element');
+                    form.parentNode.insertBefore(reloadButton, form);
+                    
+                } catch (error) {
+                    console.log('Errore caricamento ultimo piano:', error);
+                }
+            }
+        }
+
+        // Initialize app
+        window.addEventListener('load', () => {
+            console.log('🚀 Meal Prep AI v2.0 Initialized');
+            console.log('🔧 Configurazione Claude AI:', CLAUDE_API_CONFIG);
+            
+            loadSavedFormData();
+            loadLastMealPlan();
+            
+            // Add fade-in animation to sections on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('section').forEach(section => {
+                observer.observe(section);
+            });
+        });
+
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            hideLoading();
+        });
+
+        // Make functions global for inline handlers
+        window.toggleFAQ = toggleFAQ;
     </script>
 </body>
 </html>
