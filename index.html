@@ -208,8 +208,8 @@
         <!-- How It Works Section -->
         <section class="py-16 md:py-24 bg-gray-100">
             <div class="container mx-auto px-4">
-                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Come Funziona in 3 Semplici Passi</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Come Funziona in 4 Semplici Passi</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
                         <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">1</div>
                         <h3 class="text-xl font-semibold mb-2">Compila il Form</h3>
@@ -217,12 +217,17 @@
                     </div>
                     <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
                         <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
-                        <h3 class="text-xl font-semibold mb-2">Ricevi il Tuo Piano</h3>
-                        <p class="text-gray-700">Il nostro sistema genera immediatamente un piano pasti personalizzato con ricette e lista spesa.</p>
+                        <h3 class="text-xl font-semibold mb-2">Vedi l'Anteprima</h3>
+                        <p class="text-gray-700">Il sistema genera un piano personalizzato che puoi visualizzare e modificare prima di confermarlo.</p>
                     </div>
                     <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
                         <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">3</div>
-                        <h3 class="text-xl font-semibold mb-2">Inizia a Preparare!</h3>
+                        <h3 class="text-xl font-semibold mb-2">Personalizza</h3>
+                        <p class="text-gray-700">Cambia singoli pasti che non ti piacciono con alternative deliziose adatte alle tue preferenze.</p>
+                    </div>
+                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
+                        <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">4</div>
+                        <h3 class="text-xl font-semibold mb-2">Scarica e Prepara!</h3>
                         <p class="text-gray-700">Scarica il PDF o ricevilo su WhatsApp e goditi pasti sani e deliziosi per tutta la settimana.</p>
                     </div>
                 </div>
@@ -340,15 +345,56 @@
             </div>
         </section>
 
+        <!-- Plan Preview Page -->
+        <div id="plan-preview-page" class="container mx-auto px-4 py-16 hidden">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-orange-500 mb-4">Anteprima del Tuo Piano Pasti</h2>
+                    <p class="text-lg text-gray-700 mb-4">Revisiona i tuoi pasti e personalizza quello che preferisci</p>
+                    <div class="flex flex-wrap justify-center gap-4 mb-6">
+                        <span id="calories-badge" class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">📊 0 kcal/giorno</span>
+                        <span id="meals-badge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">🍽️ 0 pasti/giorno</span>
+                        <span id="duration-badge" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">📅 0 giorni</span>
+                    </div>
+                </div>
+
+                <!-- Plan Content -->
+                <div id="plan-preview-content" class="space-y-8">
+                    <!-- Days will be dynamically loaded here -->
+                </div>
+
+                <!-- Shopping List Preview -->
+                <div class="bg-gray-50 p-6 rounded-lg mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">📋 Lista della Spesa</h3>
+                    <div id="shopping-list-preview" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                        <!-- Shopping items will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                    <button id="confirm-plan-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105">
+                        ✅ Conferma Piano
+                    </button>
+                    <button id="regenerate-all-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition duration-300">
+                        🔄 Rigenera Tutto
+                    </button>
+                    <button id="back-to-form-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300">
+                        ⬅️ Torna al Form
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Success Page -->
         <div id="success-page" class="container mx-auto px-4 py-16 text-center hidden">
             <div class="success-animation max-w-2xl mx-auto">
                 <div class="text-6xl mb-6">🎉</div>
-                <h2 class="text-3xl font-bold text-orange-500 mb-4">Piano Generato con Successo!</h2>
+                <h2 class="text-3xl font-bold text-orange-500 mb-4">Piano Confermato con Successo!</h2>
                 <p class="text-lg text-gray-700 mb-8">Il tuo piano pasti personalizzato è pronto. Puoi scaricarlo come PDF o riceverlo direttamente su WhatsApp.</p>
                 
                 <div class="bg-gray-50 p-6 rounded-lg mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Cosa riceverai:</h3>
+                    <h3 class="text-xl font-semibold mb-4">Il tuo piano include:</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                         <div class="flex items-start">
                             <div class="text-2xl mr-3">📋</div>
@@ -382,12 +428,16 @@
                 </div>
 
                 <div class="space-y-4">
-                    <button id="view-generated-plan-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105 w-full md:w-auto">
-                        Visualizza il Tuo Piano
+                    <button id="view-final-plan-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300 transform hover:scale-105 w-full md:w-auto">
+                        📄 Scarica PDF
+                    </button>
+                    <br>
+                    <button id="send-whatsapp-final-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition duration-300 w-full md:w-auto">
+                        📱 Invia su WhatsApp
                     </button>
                     <br>
                     <button id="new-plan-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-full transition duration-300 w-full md:w-auto">
-                        Crea un Nuovo Piano
+                        🆕 Crea un Nuovo Piano
                     </button>
                 </div>
             </div>
@@ -403,8 +453,8 @@
                         <p class="text-gray-700">Il meal prep è l'atto di preparare pasti o ricette in anticipo, solitamente per 3-7 giorni, per avere pasti pronti da consumare in seguito. Aiuta a risparmiare tempo, denaro e a mantenere una dieta equilibrata.</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Quanto tempo ci vuole per ricevere il piano?</h3>
-                        <p class="text-gray-700">Il tuo piano personalizzato viene generato immediatamente dopo l'invio del form. In pochi secondi avrai ricette dettagliate e lista della spesa pronta.</p>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Posso modificare il piano prima di scaricarlo?</h3>
+                        <p class="text-gray-700">Assolutamente sì! Dopo la generazione vedrai un'anteprima completa dove puoi cambiare singoli pasti che non ti piacciono. Clicca "Cambia" su qualsiasi ricetta per ottenere alternative.</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-gray-800">I miei dati vengono salvati?</h3>
@@ -412,7 +462,7 @@
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-gray-800">Come riceverò il mio piano?</h3>
-                        <p class="text-gray-700">Potrai visualizzarlo immediatamente al termine della generazione, scaricarlo come PDF per tenerlo sempre con te, o riceverlo direttamente su WhatsApp per comodità.</p>
+                        <p class="text-gray-700">Una volta confermato il piano, potrai scaricarlo come PDF per tenerlo sempre con te, o riceverlo direttamente su WhatsApp per comodità.</p>
                     </div>
                 </div>
             </div>
@@ -812,6 +862,308 @@
             return templates;
         }
 
+        // --- Plan Preview Functions ---
+        function showPlanPreview(planData, userInfo) {
+            currentGeneratedPlan = { planData, userInfo };
+            
+            // Update summary badges
+            document.getElementById('calories-badge').textContent = `📊 ${userInfo.calories} kcal/giorno`;
+            document.getElementById('meals-badge').textContent = `🍽️ ${userInfo.meals_per_day} pasti/giorno`;
+            document.getElementById('duration-badge').textContent = `📅 ${userInfo.duration} giorni`;
+            
+            // Load plan content
+            loadPlanPreview(planData, userInfo);
+            
+            // Show preview page
+            document.getElementById('meal-prep-form').classList.add('hidden');
+            document.getElementById('plan-preview-page').classList.remove('hidden');
+        }
+
+        function loadPlanPreview(planData, userInfo) {
+            const contentContainer = document.getElementById('plan-preview-content');
+            contentContainer.innerHTML = '';
+
+            // Load daily plans
+            planData.recipes.forEach((dayPlan, dayIndex) => {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'bg-white rounded-lg shadow-lg p-6';
+                
+                let mealsHtml = '';
+                dayPlan.meals.forEach((meal, mealIndex) => {
+                    mealsHtml += `
+                        <div class="meal-card bg-gray-50 p-4 rounded-lg border-2 border-transparent hover:border-orange-300 transition-all duration-300" data-day="${dayIndex}" data-meal="${mealIndex}">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="text-lg font-semibold text-gray-800">${meal.type}</h4>
+                                <button class="regenerate-meal-btn text-orange-500 hover:text-orange-700 text-sm font-medium transition-colors" 
+                                        data-day="${dayIndex}" data-meal="${mealIndex}" data-meal-type="${meal.type}">
+                                    🔄 Cambia
+                                </button>
+                            </div>
+                            <h5 class="text-md font-medium text-orange-600 mb-2">${meal.name}</h5>
+                            <div class="text-sm text-gray-600 mb-3">
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">🔥 ${meal.calories} kcal</span>
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">🥩 ${meal.protein}</span>
+                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">🍞 ${meal.carbs}</span>
+                                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">🥑 ${meal.fat}</span>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-700">
+                                <p class="font-medium mb-1">Ingredienti:</p>
+                                <ul class="list-disc list-inside text-xs mb-2">
+                                    ${meal.ingredients.map(ing => `<li>${ing}</li>`).join('')}
+                                </ul>
+                                <p class="font-medium mb-1">Preparazione:</p>
+                                <p class="text-xs">${meal.instructions}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                dayDiv.innerHTML = `
+                    <h3 class="text-2xl font-bold text-orange-500 mb-4 text-center">${dayPlan.day}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-${Math.min(userInfo.meals_per_day, 3)} gap-4" id="day-${dayIndex}-meals">
+                        ${mealsHtml}
+                    </div>
+                `;
+                
+                contentContainer.appendChild(dayDiv);
+            });
+
+            // Load shopping list
+            loadShoppingListPreview(planData.shoppingList);
+            
+            // Add event listeners for regenerate buttons
+            setupRegenerateMealButtons();
+        }
+
+        function loadShoppingListPreview(shoppingList) {
+            const shoppingContainer = document.getElementById('shopping-list-preview');
+            shoppingContainer.innerHTML = '';
+            
+            shoppingList.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'bg-white p-2 rounded border text-gray-700';
+                itemDiv.innerHTML = `<span class="text-orange-500">•</span> ${item}`;
+                shoppingContainer.appendChild(itemDiv);
+            });
+        }
+
+        function setupRegenerateMealButtons() {
+            document.querySelectorAll('.regenerate-meal-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const dayIndex = parseInt(e.target.dataset.day);
+                    const mealIndex = parseInt(e.target.dataset.meal);
+                    const mealType = e.target.dataset.mealType;
+                    
+                    regenerateSingleMeal(dayIndex, mealIndex, mealType);
+                });
+            });
+        }
+
+        function regenerateSingleMeal(dayIndex, mealIndex, mealType) {
+            if (!currentGeneratedPlan) return;
+            
+            showLoading();
+            
+            try {
+                const { planData, userInfo } = currentGeneratedPlan;
+                const caloriesPerMeal = Math.round(userInfo.calories / userInfo.meals_per_day);
+                
+                // Get alternative meal templates
+                const alternativeTemplates = getAlternativeMealTemplates(mealType, userInfo.diet);
+                
+                // Select a random alternative template
+                const selectedTemplate = alternativeTemplates[Math.floor(Math.random() * alternativeTemplates.length)];
+                
+                // Create new meal
+                const newMeal = {
+                    type: mealType,
+                    name: selectedTemplate.name,
+                    ingredients: selectedTemplate.ingredients.slice(),
+                    instructions: selectedTemplate.instructions,
+                    calories: caloriesPerMeal,
+                    protein: selectedTemplate.protein,
+                    carbs: selectedTemplate.carbs,
+                    fat: selectedTemplate.fat
+                };
+                
+                // Update the plan data
+                planData.recipes[dayIndex].meals[mealIndex] = newMeal;
+                
+                // Regenerate shopping list
+                const shoppingItems = new Set();
+                planData.recipes.forEach(dayPlan => {
+                    dayPlan.meals.forEach(meal => {
+                        const template = findTemplateByName(meal.name, userInfo.diet);
+                        if (template && template.shopping) {
+                            template.shopping.forEach(item => shoppingItems.add(item));
+                        }
+                    });
+                });
+                planData.shoppingList = Array.from(shoppingItems);
+                
+                // Reload preview
+                loadPlanPreview(planData, userInfo);
+                
+                // Show success message
+                setTimeout(() => {
+                    showMessage('Pasto Rigenerato!', `Il ${mealType.toLowerCase()} del ${planData.recipes[dayIndex].day} è stato cambiato con successo!`);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Errore nella rigenerazione del pasto:', error);
+                showMessage('Errore', 'Si è verificato un errore nella rigenerazione del pasto.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function getAlternativeMealTemplates(mealType, dietType) {
+            const alternatives = {
+                "Colazione": [
+                    {
+                        name: "Pancakes proteici",
+                        ingredients: ["2 uova", "30g avena", "100ml latte", "1 cucchiaino miele"],
+                        instructions: "Frulla tutti gli ingredienti. Cuoci in padella antiaderente per formare piccoli pancakes.",
+                        protein: "18g", carbs: "35g", fat: "10g",
+                        shopping: ["Uova - 12 pezzi", "Avena - 500g", "Latte - 1L", "Miele - 1 barattolo"]
+                    },
+                    {
+                        name: "Toast integrale con avocado",
+                        ingredients: ["2 fette pane integrale", "1/2 avocado", "1 uovo", "pomodorini"],
+                        instructions: "Tosta il pane, spalma l'avocado schiacciato, aggiungi l'uovo in camicia e pomodorini.",
+                        protein: "15g", carbs: "40g", fat: "14g",
+                        shopping: ["Pane integrale - 1 pagnotta", "Avocado - 4 pezzi", "Uova - 12 pezzi", "Pomodorini - 500g"]
+                    },
+                    {
+                        name: "Smoothie bowl energetico",
+                        ingredients: ["1 banana", "100g frutti misti", "200ml yogurt greco", "15g granola"],
+                        instructions: "Frulla banana e yogurt, versa in una bowl, aggiungi frutti e granola sopra.",
+                        protein: "20g", carbs: "45g", fat: "8g",
+                        shopping: ["Banane - 1kg", "Frutti misti - 500g", "Yogurt greco - 1kg", "Granola - 400g"]
+                    }
+                ],
+                "Pranzo": [
+                    {
+                        name: "Insalata di quinoa e verdure",
+                        ingredients: ["80g quinoa", "150g verdure grigliate", "50g feta", "olive"],
+                        instructions: "Cuoci la quinoa, griglia le verdure, mescola tutto con feta sbriciolata e olive.",
+                        protein: "18g", carbs: "45g", fat: "12g",
+                        shopping: ["Quinoa - 500g", "Verdure miste - 1kg", "Feta - 200g", "Olive - 200g"]
+                    },
+                    {
+                        name: "Wrap di pollo e verdure",
+                        ingredients: ["1 tortilla integrale", "100g pollo grigliato", "verdure fresche", "hummus"],
+                        instructions: "Spalma hummus sulla tortilla, aggiungi pollo a strisce e verdure, arrotola.",
+                        protein: "28g", carbs: "35g", fat: "10g",
+                        shopping: ["Tortillas integrali - 8 pezzi", "Petto di pollo - 800g", "Verdure fresche - mix", "Hummus - 200g"]
+                    },
+                    {
+                        name: "Bowl di salmone e riso",
+                        ingredients: ["80g riso integrale", "100g salmone", "edamame", "alga nori"],
+                        instructions: "Cuoci riso e salmone. Componi la bowl con tutti gli ingredienti, condisci con salsa di soia.",
+                        protein: "30g", carbs: "50g", fat: "15g",
+                        shopping: ["Riso integrale - 500g", "Salmone - 800g", "Edamame - 300g", "Alga nori - 1 confezione"]
+                    }
+                ],
+                "Cena": [
+                    {
+                        name: "Merluzzo al forno con verdure",
+                        ingredients: ["120g merluzzo", "200g verdure mediterranee", "patate novelle"],
+                        instructions: "Inforna merluzzo e verdure a 180°C per 20 minuti con olio, sale e erbe aromatiche.",
+                        protein: "25g", carbs: "30g", fat: "8g",
+                        shopping: ["Merluzzo - 800g", "Verdure mediterranee - 1kg", "Patate novelle - 1kg"]
+                    },
+                    {
+                        name: "Petto di tacchino alle erbe",
+                        ingredients: ["120g petto tacchino", "150g zucchine", "50g riso selvaggio"],
+                        instructions: "Cuoci il tacchino in padella con erbe. Saltare le zucchine e servire con riso selvaggio.",
+                        protein: "32g", carbs: "25g", fat: "6g",
+                        shopping: ["Petto di tacchino - 800g", "Zucchine - 1kg", "Riso selvaggio - 300g"]
+                    },
+                    {
+                        name: "Tofu grigliato con verdure",
+                        ingredients: ["100g tofu", "200g verdure asiatiche", "30g riso integrale"],
+                        instructions: "Griglia il tofu marinato, saltare le verdure con salsa di soia e zenzero.",
+                        protein: "20g", carbs: "35g", fat: "12g",
+                        shopping: ["Tofu - 400g", "Verdure asiatiche - 1kg", "Riso integrale - 500g", "Zenzero - 100g"]
+                    }
+                ],
+                "Spuntino": [
+                    {
+                        name: "Frutta secca e yogurt",
+                        ingredients: ["150g yogurt naturale", "20g mix frutta secca", "1 cucchiaino miele"],
+                        instructions: "Mescola yogurt con frutta secca tritata e miele.",
+                        protein: "12g", carbs: "18g", fat: "8g",
+                        shopping: ["Yogurt naturale - 1kg", "Mix frutta secca - 300g", "Miele - 1 barattolo"]
+                    },
+                    {
+                        name: "Hummus con verdure crude",
+                        ingredients: ["80g hummus", "carote", "cetrioli", "peperoni"],
+                        instructions: "Taglia le verdure a bastoncini e servi con hummus per l'intingolo.",
+                        protein: "8g", carbs: "15g", fat: "6g",
+                        shopping: ["Hummus - 300g", "Carote - 1kg", "Cetrioli - 500g", "Peperoni - 500g"]
+                    },
+                    {
+                        name: "Smoothie proteico",
+                        ingredients: ["200ml latte vegetale", "1/2 banana", "20g proteine in polvere", "spinaci"],
+                        instructions: "Frulla tutti gli ingredienti fino ad ottenere un smoothie cremoso.",
+                        protein: "25g", carbs: "20g", fat: "5g",
+                        shopping: ["Latte vegetale - 1L", "Banane - 1kg", "Proteine in polvere - 1 barattolo", "Spinaci - 200g"]
+                    }
+                ]
+            };
+
+            // Filter based on diet type
+            if (dietType === 'vegetariana') {
+                alternatives["Pranzo"] = alternatives["Pranzo"].filter(meal => 
+                    !meal.name.toLowerCase().includes('pollo') && !meal.name.toLowerCase().includes('salmone')
+                );
+                alternatives["Cena"] = alternatives["Cena"].filter(meal => 
+                    !meal.name.toLowerCase().includes('merluzzo') && !meal.name.toLowerCase().includes('tacchino')
+                );
+            }
+            
+            if (dietType === 'vegana') {
+                alternatives["Colazione"] = alternatives["Colazione"].filter(meal => 
+                    !meal.name.toLowerCase().includes('uovo') && !meal.name.toLowerCase().includes('yogurt')
+                );
+                alternatives["Pranzo"] = alternatives["Pranzo"].filter(meal => 
+                    !meal.name.toLowerCase().includes('pollo') && !meal.name.toLowerCase().includes('salmone') && 
+                    !meal.name.toLowerCase().includes('feta')
+                );
+                alternatives["Cena"] = alternatives["Cena"].filter(meal => 
+                    !meal.name.toLowerCase().includes('merluzzo') && !meal.name.toLowerCase().includes('tacchino')
+                );
+                alternatives["Spuntino"] = alternatives["Spuntino"].filter(meal => 
+                    !meal.name.toLowerCase().includes('yogurt')
+                );
+            }
+
+            return alternatives[mealType] || [];
+        }
+
+        function findTemplateByName(mealName, dietType) {
+            const allTemplates = getMealTemplates(dietType, []);
+            
+            // First check main templates
+            for (const [type, template] of Object.entries(allTemplates)) {
+                if (template.name === mealName) {
+                    return template;
+                }
+            }
+            
+            // Then check alternatives
+            const alternatives = getAlternativeMealTemplates('Colazione', dietType)
+                .concat(getAlternativeMealTemplates('Pranzo', dietType))
+                .concat(getAlternativeMealTemplates('Cena', dietType))
+                .concat(getAlternativeMealTemplates('Spuntino', dietType));
+            
+            return alternatives.find(template => template.name === mealName);
+        }
+
         function generatePdf(planData, userInfo) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -921,16 +1273,19 @@
         function showSection(sectionId) {
             document.getElementById('landing-page').classList.add('hidden');
             document.getElementById('dashboard-container').classList.add('hidden');
+            document.getElementById('plan-preview-page').classList.add('hidden');
+            document.getElementById('success-page').classList.add('hidden');
             document.getElementById(sectionId).classList.remove('hidden');
         }
 
         function showSuccessPage() {
-            document.getElementById('meal-prep-form').classList.add('hidden');
+            document.getElementById('plan-preview-page').classList.add('hidden');
             document.getElementById('success-page').classList.remove('hidden');
         }
 
         function resetToLanding() {
             document.getElementById('success-page').classList.add('hidden');
+            document.getElementById('plan-preview-page').classList.add('hidden');
             document.getElementById('meal-prep-form').classList.remove('hidden');
             currentGeneratedPlan = null;
         }
@@ -978,17 +1333,8 @@
                 // Generate meal plan client-side
                 const mealPlan = generateClientSideMealPlan(formData);
                 
-                // Store the generated plan and user data
-                formData.mealPlan = mealPlan;
-                currentGeneratedPlan = { planData: mealPlan, userInfo: formData };
-                
-                // Save to localStorage for admin dashboard
-                const requests = getRequestsFromLocalStorage();
-                requests.push(formData);
-                saveRequestsToLocalStorage(requests);
-
-                // Show success page
-                showSuccessPage();
+                // Show plan preview instead of success page directly
+                showPlanPreview(mealPlan, formData);
 
             } catch (error) {
                 console.error("Errore durante la generazione del piano pasti:", error);
@@ -1009,10 +1355,58 @@
             }
         });
 
+        // --- Plan Preview Buttons ---
+        document.getElementById('confirm-plan-button').addEventListener('click', () => {
+            if (!currentGeneratedPlan) return;
+            
+            // Save to localStorage for admin dashboard
+            const requests = getRequestsFromLocalStorage();
+            const formDataWithPlan = {
+                ...currentGeneratedPlan.userInfo,
+                mealPlan: currentGeneratedPlan.planData
+            };
+            requests.push(formDataWithPlan);
+            saveRequestsToLocalStorage(requests);
+            
+            // Show success page
+            showSuccessPage();
+        });
+
+        document.getElementById('regenerate-all-button').addEventListener('click', () => {
+            if (!currentGeneratedPlan) return;
+            
+            showLoading();
+            try {
+                const newMealPlan = generateClientSideMealPlan(currentGeneratedPlan.userInfo);
+                showPlanPreview(newMealPlan, currentGeneratedPlan.userInfo);
+                showMessage('Piano Rigenerato!', 'Tutto il piano è stato rigenerato con nuove ricette!');
+            } catch (error) {
+                showMessage('Errore', 'Errore nella rigenerazione del piano completo.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        document.getElementById('back-to-form-button').addEventListener('click', () => {
+            document.getElementById('plan-preview-page').classList.add('hidden');
+            document.getElementById('meal-prep-form').classList.remove('hidden');
+        });
+
         // --- Success Page Buttons ---
-        document.getElementById('view-generated-plan-button').addEventListener('click', () => {
+        document.getElementById('view-final-plan-button').addEventListener('click', () => {
             if (currentGeneratedPlan) {
                 generatePdf(currentGeneratedPlan.planData, currentGeneratedPlan.userInfo);
+            }
+        });
+
+        document.getElementById('send-whatsapp-final-button').addEventListener('click', () => {
+            const userPhone = currentGeneratedPlan?.userInfo?.phone;
+            if (userPhone) {
+                const message = "Ecco il tuo piano pasti personalizzato! Scarica il PDF allegato per tutti i dettagli.";
+                const whatsappUrl = `https://wa.me/${userPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+            } else {
+                showMessage('WhatsApp', 'Numero di telefono non disponibile. Puoi comunque scaricare il PDF!');
             }
         });
 
