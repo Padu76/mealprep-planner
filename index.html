@@ -11,10 +11,6 @@
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- Firebase SDKs (Opzionali - funziona anche senza) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -78,16 +74,37 @@
             50% { transform: scale(1.05); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* Form autosave indicator */
+        .autosave-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .autosave-indicator.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-white text-gray-800">
+
+    <!-- Autosave Indicator -->
+    <div id="autosave-indicator" class="autosave-indicator">✓ Dati salvati</div>
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-500"></div>
             <p class="mt-4 text-white text-lg">Generazione piano in corso...</p>
-            <p class="mt-2 text-white text-sm">Questo potrebbe richiedere qualche minuto</p>
+            <p class="mt-2 text-white text-sm">Creazione ricette personalizzate...</p>
         </div>
     </div>
 
@@ -196,7 +213,7 @@
                     <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
                         <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">1</div>
                         <h3 class="text-xl font-semibold mb-2">Compila il Form</h3>
-                        <p class="text-gray-700">Inserisci i tuoi dati, obiettivi e preferenze alimentari.</p>
+                        <p class="text-gray-700">Inserisci i tuoi dati, obiettivi e preferenze alimentari. I dati vengono salvati automaticamente.</p>
                     </div>
                     <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-white hover:shadow-xl transition duration-300">
                         <div class="w-16 h-16 bg-orange-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
@@ -215,7 +232,18 @@
         <!-- Meal Prep Form Section -->
         <section id="meal-prep-form" class="py-16 md:py-24 bg-white">
             <div class="container mx-auto px-4 max-w-2xl">
-                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Crea il Tuo Piano Personalizzato</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-8">Crea il Tuo Piano Personalizzato</h2>
+                
+                <!-- Form Controls -->
+                <div class="flex justify-center mb-6 space-x-4">
+                    <button id="clear-form-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition duration-300 text-sm">
+                        🗑️ Cancella Dati
+                    </button>
+                    <button id="load-saved-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 text-sm">
+                        📁 Carica Dati Salvati
+                    </button>
+                </div>
+
                 <form id="meal-prep-form-element" class="bg-gray-50 p-8 rounded-lg shadow-lg">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
@@ -376,11 +404,11 @@
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-gray-800">Quanto tempo ci vuole per ricevere il piano?</h3>
-                        <p class="text-gray-700">Il tuo piano personalizzato viene generato immediatamente dopo l'invio del form. In pochi minuti avrai ricette dettagliate e lista della spesa pronta.</p>
+                        <p class="text-gray-700">Il tuo piano personalizzato viene generato immediatamente dopo l'invio del form. In pochi secondi avrai ricette dettagliate e lista della spesa pronta.</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold mb-2 text-gray-800">Posso personalizzare il mio piano?</h3>
-                        <p class="text-gray-700">Assolutamente sì! Il nostro form ti permette di specificare obiettivi, preferenze dietetiche, esclusioni e persino cibi che hai già a casa per un piano veramente su misura.</p>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-800">I miei dati vengono salvati?</h3>
+                        <p class="text-gray-700">Sì! I tuoi dati del form vengono salvati automaticamente nel browser, così non devi reinserirli ogni volta. Puoi sempre cancellarli quando vuoi.</p>
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-gray-800">Come riceverò il mio piano?</h3>
@@ -491,119 +519,96 @@
         // Global variables
         let currentRequestId = null;
         let currentGeneratedPlan = null;
-        const ADMIN_PASSWORD = "mealprep2024"; // Change this to a secure password
+        const ADMIN_PASSWORD = "mealprep2024";
         
-        // Firebase configuration (optional - will work with localStorage if not configured)
-        let db = null;
-        let firebaseEnabled = false;
+        // Auto-save form data
+        let autoSaveTimeout;
+        const FORM_STORAGE_KEY = 'mealPrepFormData';
 
-        // Try to initialize Firebase if available
-        try {
-            // Replace with your Firebase config when ready
-            const firebaseConfig = {
-                // TODO: Add your Firebase config here
-                // apiKey: "your-api-key",
-                // authDomain: "your-project.firebaseapp.com",
-                // projectId: "your-project-id",
-                // etc...
+        // --- Form Auto-Save Functions ---
+        function saveFormData() {
+            const formData = {
+                duration: document.getElementById('duration').value,
+                goal: document.getElementById('goal').value,
+                age: document.getElementById('age').value,
+                weight: document.getElementById('weight').value,
+                height: document.getElementById('height').value,
+                gender: document.getElementById('gender').value,
+                activity_level: document.getElementById('activity_level').value,
+                meals_per_day: document.getElementById('meals_per_day').value,
+                diet: document.getElementById('diet').value,
+                exclusions: document.getElementById('exclusions').value,
+                foods_at_home: document.getElementById('foods_at_home').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                lastSaved: new Date().toISOString()
             };
 
-            // Only initialize if config is provided
-            if (firebaseConfig.apiKey) {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                firebaseEnabled = true;
-                console.log("Firebase inizializzato con successo");
-            } else {
-                console.log("Firebase non configurato, uso localStorage");
-            }
-        } catch (error) {
-            console.log("Firebase non disponibile, uso localStorage:", error.message);
-            firebaseEnabled = false;
+            localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+            showAutoSaveIndicator();
         }
 
-        // --- Data Storage Functions (Hybrid: Firebase + localStorage) ---
-        async function saveRequest(requestData) {
+        function loadFormData() {
             try {
-                if (firebaseEnabled && db) {
-                    // Save to Firebase
-                    const docRef = await db.collection('mealPrepRequests').add({
-                        ...requestData,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log("Salvato su Firebase con ID:", docRef.id);
-                    return docRef.id;
-                } else {
-                    // Save to localStorage
-                    const requests = getRequestsFromLocalStorage();
-                    requestData.id = crypto.randomUUID();
-                    requests.push(requestData);
-                    saveRequestsToLocalStorage(requests);
-                    console.log("Salvato su localStorage con ID:", requestData.id);
-                    return requestData.id;
-                }
-            } catch (error) {
-                console.error("Errore nel salvataggio:", error);
-                // Fallback to localStorage
-                const requests = getRequestsFromLocalStorage();
-                requestData.id = crypto.randomUUID();
-                requests.push(requestData);
-                saveRequestsToLocalStorage(requests);
-                return requestData.id;
-            }
-        }
-
-        async function getRequests() {
-            try {
-                if (firebaseEnabled && db) {
-                    // Get from Firebase
-                    const snapshot = await db.collection('mealPrepRequests')
-                        .orderBy('timestamp', 'desc')
-                        .get();
+                const savedData = localStorage.getItem(FORM_STORAGE_KEY);
+                if (savedData) {
+                    const formData = JSON.parse(savedData);
                     
-                    const requests = [];
-                    snapshot.forEach((doc) => {
-                        requests.push({
-                            id: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    return requests;
-                } else {
-                    // Get from localStorage
-                    return getRequestsFromLocalStorage();
+                    // Fill form fields
+                    document.getElementById('duration').value = formData.duration || '';
+                    document.getElementById('goal').value = formData.goal || '';
+                    document.getElementById('age').value = formData.age || '';
+                    document.getElementById('weight').value = formData.weight || '';
+                    document.getElementById('height').value = formData.height || '';
+                    document.getElementById('gender').value = formData.gender || '';
+                    document.getElementById('activity_level').value = formData.activity_level || '';
+                    document.getElementById('meals_per_day').value = formData.meals_per_day || '';
+                    document.getElementById('diet').value = formData.diet || '';
+                    document.getElementById('exclusions').value = formData.exclusions || '';
+                    document.getElementById('foods_at_home').value = formData.foods_at_home || '';
+                    document.getElementById('email').value = formData.email || '';
+                    document.getElementById('phone').value = formData.phone || '';
+
+                    return true;
                 }
             } catch (error) {
-                console.error("Errore nel recupero dati:", error);
-                // Fallback to localStorage
-                return getRequestsFromLocalStorage();
+                console.error('Errore nel caricamento dati form:', error);
             }
+            return false;
         }
 
-        async function updateRequest(requestId, updateData) {
-            try {
-                if (firebaseEnabled && db) {
-                    // Update Firebase
-                    await db.collection('mealPrepRequests').doc(requestId).update({
-                        ...updateData,
-                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                } else {
-                    // Update localStorage
-                    const requests = getRequestsFromLocalStorage();
-                    const index = requests.findIndex(req => req.id === requestId);
-                    if (index !== -1) {
-                        requests[index] = { ...requests[index], ...updateData };
-                        saveRequestsToLocalStorage(requests);
-                    }
-                }
-            } catch (error) {
-                console.error("Errore nell'aggiornamento:", error);
-                throw error;
-            }
+        function clearFormData() {
+            localStorage.removeItem(FORM_STORAGE_KEY);
+            document.getElementById('meal-prep-form-element').reset();
+            showMessage('Dati Cancellati', 'I dati del form sono stati cancellati.');
         }
 
-        // --- Local Storage Functions (Fallback) ---
+        function showAutoSaveIndicator() {
+            const indicator = document.getElementById('autosave-indicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Add auto-save event listeners to form fields
+        function setupAutoSave() {
+            const formFields = document.querySelectorAll('#meal-prep-form-element input, #meal-prep-form-element select, #meal-prep-form-element textarea');
+            
+            formFields.forEach(field => {
+                field.addEventListener('input', () => {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(saveFormData, 1000); // Save after 1 second of inactivity
+                });
+                
+                field.addEventListener('change', () => {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(saveFormData, 500); // Save immediately on change
+                });
+            });
+        }
+
+        // --- Data Storage Functions ---
         function getRequestsFromLocalStorage() {
             try {
                 const requests = localStorage.getItem('mealPrepRequests');
@@ -674,6 +679,139 @@
             }
         }
 
+        // --- Client-Side Meal Plan Generation ---
+        function generateClientSideMealPlan(data) {
+            const caloriesPerMeal = Math.round(data.calories / data.meals_per_day);
+            
+            const mealTypes = [];
+            if (data.meals_per_day >= 1) mealTypes.push("Colazione");
+            if (data.meals_per_day >= 2) mealTypes.push("Pranzo");
+            if (data.meals_per_day >= 3) mealTypes.push("Cena");
+            if (data.meals_per_day >= 4) mealTypes.push("Spuntino");
+
+            // Define meal templates based on diet type
+            const mealTemplates = getMealTemplates(data.diet, data.exclusions);
+            
+            const recipes = [];
+            const shoppingItems = new Set();
+            
+            for (let day = 1; day <= data.duration; day++) {
+                const dayMeals = [];
+                
+                mealTypes.forEach((mealType, index) => {
+                    const template = mealTemplates[mealType] || mealTemplates["Pranzo"];
+                    const meal = {
+                        type: mealType,
+                        name: template.name,
+                        ingredients: template.ingredients.slice(),
+                        instructions: template.instructions,
+                        calories: caloriesPerMeal,
+                        protein: template.protein,
+                        carbs: template.carbs,
+                        fat: template.fat
+                    };
+                    
+                    // Add ingredients to shopping list
+                    template.shopping.forEach(item => shoppingItems.add(item));
+                    
+                    dayMeals.push(meal);
+                });
+                
+                recipes.push({
+                    day: `Giorno ${day}`,
+                    meals: dayMeals
+                });
+            }
+
+            return {
+                shoppingList: Array.from(shoppingItems),
+                recipes: recipes,
+                nutritionSummary: {
+                    totalCaloriesPerDay: data.calories,
+                    proteinPerDay: Math.round(data.calories * 0.25 / 4) + "g",
+                    carbsPerDay: Math.round(data.calories * 0.45 / 4) + "g",
+                    fatPerDay: Math.round(data.calories * 0.30 / 9) + "g"
+                },
+                mealPrepTips: [
+                    "Prepara tutto la domenica per risparmiare tempo durante la settimana",
+                    "Usa contenitori di vetro per conservare meglio i pasti",
+                    "Congela le porzioni in eccesso per la settimana successiva",
+                    "Varia le spezie per non annoiarti con i sapori",
+                    "Prepara le verdure la sera prima per velocizzare la cottura",
+                    `Piano personalizzato per obiettivo: ${data.goal}`,
+                    `Calorie ottimizzate: ${data.calories} kcal/giorno`
+                ]
+            };
+        }
+
+        function getMealTemplates(dietType, exclusions) {
+            const templates = {
+                "Colazione": {
+                    name: "Avena con frutta e noci",
+                    ingredients: ["50g avena", "200ml latte", "1 banana", "10g noci"],
+                    instructions: "Cuoci l'avena nel latte a fuoco medio per 5 minuti. Aggiungi banana a fette e noci tritate. Dolcifica a piacere.",
+                    protein: "15g",
+                    carbs: "45g", 
+                    fat: "12g",
+                    shopping: ["Avena - 500g", "Latte - 2L", "Banane - 1kg", "Noci - 200g"]
+                },
+                "Pranzo": {
+                    name: "Pollo con riso e verdure",
+                    ingredients: ["120g petto di pollo", "80g riso integrale", "150g verdure miste"],
+                    instructions: "Griglia il pollo con poco olio e spezie. Cuoci il riso in abbondante acqua salata. Saltare le verdure in padella con aglio e olio.",
+                    protein: "35g",
+                    carbs: "50g",
+                    fat: "8g",
+                    shopping: ["Petto di pollo - 1kg", "Riso integrale - 500g", "Verdure miste - 1kg", "Aglio - 1 testa"]
+                },
+                "Cena": {
+                    name: "Salmone con patate dolci",
+                    ingredients: ["100g salmone", "150g patate dolci", "100g broccoli"],
+                    instructions: "Cuoci il salmone al forno a 180°C per 15 minuti. Arrostisci le patate dolci tagliate a cubetti. Cuoci i broccoli al vapore.",
+                    protein: "30g",
+                    carbs: "35g",
+                    fat: "15g",
+                    shopping: ["Salmone - 800g", "Patate dolci - 1.5kg", "Broccoli - 1kg"]
+                },
+                "Spuntino": {
+                    name: "Yogurt greco con miele",
+                    ingredients: ["150g yogurt greco", "1 cucchiaio miele", "10g mandorle"],
+                    instructions: "Mescola yogurt e miele in una ciotola. Aggiungi mandorle tritate grossolanamente.",
+                    protein: "15g",
+                    carbs: "20g",
+                    fat: "8g",
+                    shopping: ["Yogurt greco - 1kg", "Miele - 1 barattolo", "Mandorle - 200g"]
+                }
+            };
+
+            // Adapt templates based on diet type
+            if (dietType === 'vegetariana') {
+                templates["Pranzo"] = {
+                    name: "Quinoa con legumi e verdure",
+                    ingredients: ["80g quinoa", "100g ceci", "150g verdure miste"],
+                    instructions: "Cuoci la quinoa in brodo vegetale. Sciacqua i ceci e uniscili alla quinoa. Aggiungi verdure saltate.",
+                    protein: "20g",
+                    carbs: "55g",
+                    fat: "6g",
+                    shopping: ["Quinoa - 500g", "Ceci in scatola - 800g", "Verdure miste - 1kg", "Brodo vegetale - 1L"]
+                };
+            }
+
+            if (dietType === 'vegana') {
+                templates["Colazione"] = {
+                    name: "Smoothie bowl con frutta",
+                    ingredients: ["1 banana", "100g frutti di bosco", "30g semi di chia", "200ml latte di avena"],
+                    instructions: "Frulla banana e latte di avena. Versa in una bowl e aggiungi frutti di bosco e semi di chia.",
+                    protein: "12g",
+                    carbs: "48g",
+                    fat: "10g",
+                    shopping: ["Banane - 1kg", "Frutti di bosco - 500g", "Semi di chia - 200g", "Latte di avena - 1L"]
+                };
+            }
+
+            return templates;
+        }
+
         function generatePdf(planData, userInfo) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -729,7 +867,7 @@
                     }
                     doc.setFontSize(14);
                     doc.setTextColor(0, 0, 0);
-                    doc.text(`Giorno: ${dayPlan.day}`, 14, y);
+                    doc.text(`${dayPlan.day}`, 14, y);
                     y += 8;
 
                     dayPlan.meals.forEach(meal => {
@@ -794,7 +932,6 @@
         function resetToLanding() {
             document.getElementById('success-page').classList.add('hidden');
             document.getElementById('meal-prep-form').classList.remove('hidden');
-            document.getElementById('meal-prep-form-element').reset();
             currentGeneratedPlan = null;
         }
 
@@ -804,6 +941,7 @@
             showLoading();
 
             const formData = {
+                id: crypto.randomUUID(),
                 duration: parseInt(document.getElementById('duration').value),
                 goal: document.getElementById('goal').value,
                 age: parseInt(document.getElementById('age').value),
@@ -835,41 +973,39 @@
             formData.calories = Math.round(dailyCalories);
 
             try {
-                // Call Netlify Function to generate meal plan
-                const payloadToFunction = { requestData: formData };
+                console.log('Generazione piano lato client...');
                 
-                const response = await fetch('/.netlify/functions/mealplanner', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payloadToFunction)
-                });
+                // Generate meal plan client-side
+                const mealPlan = generateClientSideMealPlan(formData);
+                
+                // Store the generated plan and user data
+                formData.mealPlan = mealPlan;
+                currentGeneratedPlan = { planData: mealPlan, userInfo: formData };
+                
+                // Save to localStorage for admin dashboard
+                const requests = getRequestsFromLocalStorage();
+                requests.push(formData);
+                saveRequestsToLocalStorage(requests);
 
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    throw new Error(`Errore HTTP ${response.status}: ${errorBody.error || 'Errore sconosciuto dalla funzione.'}`);
-                }
-
-                const result = await response.json();
-
-                if (result.mealPlan) {
-                    // Store the generated plan and user data
-                    formData.mealPlan = result.mealPlan;
-                    currentGeneratedPlan = { planData: result.mealPlan, userInfo: formData };
-                    
-                    // Save to storage (Firebase or localStorage)
-                    await saveRequest(formData);
-
-                    // Show success page
-                    showSuccessPage();
-                } else {
-                    throw new Error('Piano pasto non generato correttamente');
-                }
+                // Show success page
+                showSuccessPage();
 
             } catch (error) {
                 console.error("Errore durante la generazione del piano pasti:", error);
                 showMessage('Errore Generazione', `Si è verificato un errore: ${error.message}. Riprova più tardi.`);
             } finally {
                 hideLoading();
+            }
+        });
+
+        // --- Form Control Buttons ---
+        document.getElementById('clear-form-button').addEventListener('click', clearFormData);
+        
+        document.getElementById('load-saved-button').addEventListener('click', () => {
+            if (loadFormData()) {
+                showMessage('Dati Caricati', 'I tuoi dati salvati sono stati caricati nel form.');
+            } else {
+                showMessage('Nessun Dato', 'Non ci sono dati salvati da caricare.');
             }
         });
 
@@ -926,24 +1062,16 @@
         });
 
         // --- Admin Dashboard ---
-        async function loadDashboard() {
-            showLoading();
-            try {
-                const requests = await getRequests();
-                updateStatistics(requests);
-                loadRequestsTable(requests);
-            } catch (error) {
-                console.error("Errore nel caricamento dashboard:", error);
-                showMessage('Errore', 'Impossibile caricare i dati della dashboard');
-            } finally {
-                hideLoading();
-            }
+        function loadDashboard() {
+            const requests = getRequestsFromLocalStorage();
+            updateStatistics(requests);
+            loadRequestsTable(requests);
         }
 
         function updateStatistics(requests) {
             const today = new Date().toISOString().split('T')[0];
             const todayRequests = requests.filter(req => {
-                const reqDate = req.timestamp?.toDate ? req.timestamp.toDate().toISOString().split('T')[0] : new Date(req.timestamp).toISOString().split('T')[0];
+                const reqDate = new Date(req.timestamp).toISOString().split('T')[0];
                 return reqDate === today;
             });
             const plansGenerated = requests.filter(req => req.mealPlan).length;
@@ -956,17 +1084,9 @@
             document.getElementById('average-age').textContent = avgAge;
         }
 
-        async function loadRequestsTable(requests = null) {
+        function loadRequestsTable(requests = null) {
             if (!requests) {
-                showLoading();
-                try {
-                    requests = await getRequests();
-                } catch (error) {
-                    showMessage('Errore', 'Impossibile caricare le richieste');
-                    return;
-                } finally {
-                    hideLoading();
-                }
+                requests = getRequestsFromLocalStorage();
             }
 
             // Apply filters
@@ -976,9 +1096,7 @@
             let filteredRequests = requests.filter(request => {
                 let match = true;
                 if (filterDate) {
-                    const requestDate = request.timestamp?.toDate ? 
-                        request.timestamp.toDate().toISOString().split('T')[0] : 
-                        new Date(request.timestamp).toISOString().split('T')[0];
+                    const requestDate = new Date(request.timestamp).toISOString().split('T')[0];
                     if (requestDate !== filterDate) match = false;
                 }
                 if (filterGoal && filterGoal !== '') {
@@ -988,11 +1106,7 @@
             });
 
             // Sort by timestamp descending
-            filteredRequests.sort((a, b) => {
-                const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
-                const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
-                return dateB - dateA;
-            });
+            filteredRequests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
             const requestsTableBody = document.getElementById('requests-table-body');
             requestsTableBody.innerHTML = '';
@@ -1006,7 +1120,7 @@
                 const row = document.createElement('tr');
                 row.classList.add('hover:bg-gray-50');
 
-                const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                const timestampDate = new Date(data.timestamp);
                 const formattedDate = timestampDate.toLocaleDateString('it-IT');
 
                 row.innerHTML = `
@@ -1038,11 +1152,12 @@
         }
 
         function showRequestDetails(requestId, requests = null) {
-            const data = requests?.find(req => req.id === requestId);
+            if (!requests) requests = getRequestsFromLocalStorage();
+            const data = requests.find(req => req.id === requestId);
 
             if (data) {
                 const detailsContent = document.getElementById('request-details-content');
-                const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                const timestampDate = new Date(data.timestamp);
                 
                 detailsContent.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1093,68 +1208,46 @@
         });
 
         // Admin view plan
-        document.getElementById('admin-view-plan-button').addEventListener('click', async () => {
-            showLoading();
-            try {
-                const requests = await getRequests();
-                const data = requests.find(req => req.id === currentRequestId);
-                if (data && data.mealPlan) {
-                    generatePdf(data.mealPlan, data);
-                } else {
-                    showMessage('Errore', 'Piano non trovato');
-                }
-            } catch (error) {
-                showMessage('Errore', 'Impossibile caricare il piano');
-            } finally {
-                hideLoading();
+        document.getElementById('admin-view-plan-button').addEventListener('click', () => {
+            const requests = getRequestsFromLocalStorage();
+            const data = requests.find(req => req.id === currentRequestId);
+            if (data && data.mealPlan) {
+                generatePdf(data.mealPlan, data);
+            } else {
+                showMessage('Errore', 'Piano non trovato');
             }
         });
 
         // Regenerate plan
-        document.getElementById('regenerate-plan-button').addEventListener('click', async () => {
+        document.getElementById('regenerate-plan-button').addEventListener('click', () => {
             if (!currentRequestId) {
                 showMessage('Errore', 'Nessuna richiesta selezionata');
                 return;
             }
 
+            const requests = getRequestsFromLocalStorage();
+            const requestData = requests.find(req => req.id === currentRequestId);
+            
+            if (!requestData) {
+                showMessage('Errore', 'Richiesta non trovata');
+                return;
+            }
+
             showLoading();
             try {
-                const requests = await getRequests();
-                const requestData = requests.find(req => req.id === currentRequestId);
+                // Regenerate meal plan client-side
+                const newMealPlan = generateClientSideMealPlan(requestData);
                 
-                if (!requestData) {
-                    throw new Error('Richiesta non trovata');
+                // Update localStorage
+                const requestIndex = requests.findIndex(req => req.id === currentRequestId);
+                if (requestIndex !== -1) {
+                    requests[requestIndex].mealPlan = newMealPlan;
+                    saveRequestsToLocalStorage(requests);
                 }
 
-                // Call Netlify Function to regenerate meal plan
-                const payloadToFunction = { requestData: requestData };
-                
-                const response = await fetch('/.netlify/functions/mealplanner', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payloadToFunction)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    throw new Error(`Errore HTTP ${response.status}: ${errorBody.error || 'Errore sconosciuto'}`);
-                }
-
-                const result = await response.json();
-
-                if (result.mealPlan) {
-                    // Update storage with new plan
-                    await updateRequest(currentRequestId, {
-                        mealPlan: result.mealPlan
-                    });
-
-                    showMessage('Piano Rigenerato!', 'Il piano pasti è stato rigenerato con successo.');
-                    loadDashboard(); // Refresh dashboard
-                    document.getElementById('request-details-modal').classList.add('hidden');
-                } else {
-                    throw new Error('Piano pasto non generato correttamente');
-                }
-
+                showMessage('Piano Rigenerato!', 'Il piano pasti è stato rigenerato con successo.');
+                loadDashboard(); // Refresh dashboard
+                document.getElementById('request-details-modal').classList.add('hidden');
             } catch (error) {
                 console.error("Errore durante la rigenerazione:", error);
                 showMessage('Errore Rigenerazione', `Si è verificato un errore: ${error.message}`);
@@ -1164,47 +1257,39 @@
         });
 
         // Export CSV
-        document.getElementById('export-csv').addEventListener('click', async () => {
-            showLoading();
-            try {
-                const requests = await getRequests();
-                let csvContent = "Data,Email,Età,Peso,Altezza,Sesso,Obiettivo,Durata,Dieta,Calorie,Piano Generato\n";
+        document.getElementById('export-csv').addEventListener('click', () => {
+            const requests = getRequestsFromLocalStorage();
+            let csvContent = "Data,Email,Età,Peso,Altezza,Sesso,Obiettivo,Durata,Dieta,Calorie,Piano Generato\n";
 
-                requests.forEach((data) => {
-                    const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
-                    const row = [
-                        timestampDate.toLocaleDateString('it-IT'),
-                        data.email,
-                        data.age,
-                        data.weight,
-                        data.height,
-                        data.gender,
-                        data.goal,
-                        data.duration,
-                        data.diet,
-                        data.calories,
-                        data.mealPlan ? 'Sì' : 'No'
-                    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
+            requests.forEach((data) => {
+                const timestampDate = new Date(data.timestamp);
+                const row = [
+                    timestampDate.toLocaleDateString('it-IT'),
+                    data.email,
+                    data.age,
+                    data.weight,
+                    data.height,
+                    data.gender,
+                    data.goal,
+                    data.duration,
+                    data.diet,
+                    data.calories,
+                    data.mealPlan ? 'Sì' : 'No'
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
 
-                    csvContent += row + "\n";
-                });
+                csvContent += row + "\n";
+            });
 
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', 'richieste_meal_prep.csv');
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
-            } catch (error) {
-                console.error("Errore durante l'esportazione:", error);
-                showMessage('Errore Esportazione', 'Impossibile esportare i dati');
-            } finally {
-                hideLoading();
-            }
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'richieste_meal_prep.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
         });
 
         // Close message modal
@@ -1213,6 +1298,10 @@
         // Page load initialization
         window.addEventListener('load', () => {
             showSection('landing-page');
+            setupAutoSave();
+            
+            // Load saved form data on page load
+            loadFormData();
         });
 
     </script>
