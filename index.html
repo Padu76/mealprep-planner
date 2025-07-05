@@ -10,6 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -483,10 +488,67 @@
     </div>
 
     <script>
+        // Firebase Configuration
+        // TODO: Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
         // Global variables
         let currentRequestId = null;
         let currentGeneratedPlan = null;
         const ADMIN_PASSWORD = "mealprep2024"; // Change this to a secure password
+
+        // --- Firebase Functions ---
+        async function saveRequestToFirebase(requestData) {
+            try {
+                const docRef = await db.collection('mealPrepRequests').add(requestData);
+                console.log("Documento salvato con ID: ", docRef.id);
+                return docRef.id;
+            } catch (error) {
+                console.error("Errore nel salvataggio su Firebase: ", error);
+                throw error;
+            }
+        }
+
+        async function getRequestsFromFirebase() {
+            try {
+                const snapshot = await db.collection('mealPrepRequests')
+                    .orderBy('timestamp', 'desc')
+                    .get();
+                
+                const requests = [];
+                snapshot.forEach((doc) => {
+                    requests.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                return requests;
+            } catch (error) {
+                console.error("Errore nel recupero da Firebase: ", error);
+                return [];
+            }
+        }
+
+        async function updateRequestInFirebase(requestId, updateData) {
+            try {
+                await db.collection('mealPrepRequests').doc(requestId).update(updateData);
+                console.log("Documento aggiornato con successo");
+            } catch (error) {
+                console.error("Errore nell'aggiornamento Firebase: ", error);
+                throw error;
+            }
+        }
 
         // --- Utility Functions ---
         function showMessage(title, message) {
@@ -640,26 +702,6 @@
             document.getElementById('pdf-viewer-modal').classList.remove('hidden');
         }
 
-        // --- Local Storage Functions ---
-        function getRequestsFromLocalStorage() {
-            try {
-                const requests = localStorage.getItem('mealPrepRequests');
-                return requests ? JSON.parse(requests) : [];
-            } catch (e) {
-                console.error("Errore nel recupero dati da localStorage:", e);
-                return [];
-            }
-        }
-
-        function saveRequestsToLocalStorage(requests) {
-            try {
-                localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
-            } catch (e) {
-                console.error("Errore nel salvataggio dati in localStorage:", e);
-                showMessage('Errore di Salvataggio', 'Impossibile salvare i dati localmente.');
-            }
-        }
-
         // --- Section Management ---
         function showSection(sectionId) {
             document.getElementById('landing-page').classList.add('hidden');
@@ -685,7 +727,6 @@
             showLoading();
 
             const formData = {
-                id: crypto.randomUUID(),
                 duration: parseInt(document.getElementById('duration').value),
                 goal: document.getElementById('goal').value,
                 age: parseInt(document.getElementById('age').value),
@@ -699,7 +740,7 @@
                 foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
-                timestamp: new Date().toISOString(),
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 status: 'Completato'
             };
 
@@ -736,12 +777,11 @@
                 if (result.mealPlan) {
                     // Store the generated plan and user data
                     formData.mealPlan = result.mealPlan;
+                    formData.timestamp = new Date().toISOString(); // Use current timestamp for consistency
                     currentGeneratedPlan = { planData: result.mealPlan, userInfo: formData };
                     
-                    // Save to localStorage for admin dashboard
-                    let requests = getRequestsFromLocalStorage();
-                    requests.push(formData);
-                    saveRequestsToLocalStorage(requests);
+                    // Save to Firebase
+                    await saveRequestToFirebase(formData);
 
                     // Show success page
                     showSuccessPage();
@@ -809,15 +849,26 @@
         });
 
         // --- Admin Dashboard ---
-        function loadDashboard() {
-            const requests = getRequestsFromLocalStorage();
-            updateStatistics(requests);
-            loadRequestsTable(requests);
+        async function loadDashboard() {
+            showLoading();
+            try {
+                const requests = await getRequestsFromFirebase();
+                updateStatistics(requests);
+                loadRequestsTable(requests);
+            } catch (error) {
+                console.error("Errore nel caricamento dashboard:", error);
+                showMessage('Errore', 'Impossibile caricare i dati della dashboard');
+            } finally {
+                hideLoading();
+            }
         }
 
         function updateStatistics(requests) {
             const today = new Date().toISOString().split('T')[0];
-            const todayRequests = requests.filter(req => new Date(req.timestamp).toISOString().split('T')[0] === today);
+            const todayRequests = requests.filter(req => {
+                const reqDate = req.timestamp?.toDate ? req.timestamp.toDate().toISOString().split('T')[0] : new Date(req.timestamp).toISOString().split('T')[0];
+                return reqDate === today;
+            });
             const plansGenerated = requests.filter(req => req.mealPlan).length;
             const totalAge = requests.reduce((sum, req) => sum + req.age, 0);
             const avgAge = requests.length > 0 ? Math.round(totalAge / requests.length) : 0;
@@ -828,8 +879,18 @@
             document.getElementById('average-age').textContent = avgAge;
         }
 
-        function loadRequestsTable(requests = null) {
-            if (!requests) requests = getRequestsFromLocalStorage();
+        async function loadRequestsTable(requests = null) {
+            if (!requests) {
+                showLoading();
+                try {
+                    requests = await getRequestsFromFirebase();
+                } catch (error) {
+                    showMessage('Errore', 'Impossibile caricare le richieste');
+                    return;
+                } finally {
+                    hideLoading();
+                }
+            }
 
             // Apply filters
             const filterDate = document.getElementById('filter-date').value;
@@ -838,7 +899,9 @@
             let filteredRequests = requests.filter(request => {
                 let match = true;
                 if (filterDate) {
-                    const requestDate = new Date(request.timestamp).toISOString().split('T')[0];
+                    const requestDate = request.timestamp?.toDate ? 
+                        request.timestamp.toDate().toISOString().split('T')[0] : 
+                        new Date(request.timestamp).toISOString().split('T')[0];
                     if (requestDate !== filterDate) match = false;
                 }
                 if (filterGoal && filterGoal !== '') {
@@ -848,7 +911,11 @@
             });
 
             // Sort by timestamp descending
-            filteredRequests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            filteredRequests.sort((a, b) => {
+                const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                return dateB - dateA;
+            });
 
             const requestsTableBody = document.getElementById('requests-table-body');
             requestsTableBody.innerHTML = '';
@@ -862,7 +929,7 @@
                 const row = document.createElement('tr');
                 row.classList.add('hover:bg-gray-50');
 
-                const timestampDate = new Date(data.timestamp);
+                const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
                 const formattedDate = timestampDate.toLocaleDateString('it-IT');
 
                 row.innerHTML = `
@@ -888,123 +955,24 @@
                 button.addEventListener('click', (e) => {
                     const requestId = e.target.dataset.id;
                     currentRequestId = requestId;
-                    showRequestDetails(requestId);
+                    showRequestDetails(requestId, requests);
                 });
             });
         }
 
-        function showRequestDetails(requestId) {
-            const requests = getRequestsFromLocalStorage();
-            const data = requests.find(req => req.id === requestId);
+        function showRequestDetails(requestId, requests = null) {
+            const data = requests?.find(req => req.id === requestId);
 
             if (data) {
                 const detailsContent = document.getElementById('request-details-content');
+                const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                
                 detailsContent.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <p><strong>Data Richiesta:</strong> ${new Date(data.timestamp).toLocaleString('it-IT')}</p>
+                        <p><strong>Data Richiesta:</strong> ${timestampDate.toLocaleString('it-IT')}</p>
                         <p><strong>Email:</strong> ${data.email}</p>
                         <p><strong>Telefono:</strong> ${data.phone || 'N/A'}</p>
                         <p><strong>Età:</strong> ${data.age} anni</p>
                         <p><strong>Peso:</strong> ${data.weight} kg</p>
                         <p><strong>Altezza:</strong> ${data.height} cm</p>
-                        <p><strong>Sesso:</strong> ${data.gender === 'maschio' ? 'Uomo' : 'Donna'}</p>
-                        <p><strong>Livello Attività:</strong> ${data.activity_level}</p>
-                        <p><strong>Obiettivo:</strong> ${data.goal}</p>
-                        <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
-                        <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
-                        <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
-                    </div>
-                    <div class="mt-4">
-                        <p><strong>Esclusioni:</strong> ${data.exclusions.join(', ') || 'Nessuna'}</p>
-                        <p><strong>Cibi in Casa:</strong> ${data.foods_at_home.join(', ') || 'Nessuno'}</p>
-                        <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
-                    </div>
-                `;
-
-                // Show/hide buttons based on plan existence
-                const viewBtn = document.getElementById('admin-view-plan-button');
-                if (data.mealPlan) {
-                    viewBtn.classList.remove('hidden');
-                } else {
-                    viewBtn.classList.add('hidden');
-                }
-
-                document.getElementById('request-details-modal').classList.remove('hidden');
-            }
-        }
-
-        // Filter event listeners
-        document.getElementById('filter-date').addEventListener('change', () => loadRequestsTable());
-        document.getElementById('filter-goal').addEventListener('change', () => loadRequestsTable());
-        document.getElementById('clear-filters').addEventListener('click', () => {
-            document.getElementById('filter-date').value = '';
-            document.getElementById('filter-goal').value = '';
-            loadRequestsTable();
-        });
-
-        // Modal close
-        document.getElementById('request-details-close-button').addEventListener('click', () => {
-            document.getElementById('request-details-modal').classList.add('hidden');
-        });
-
-        // Admin view plan
-        document.getElementById('admin-view-plan-button').addEventListener('click', () => {
-            const requests = getRequestsFromLocalStorage();
-            const data = requests.find(req => req.id === currentRequestId);
-            if (data && data.mealPlan) {
-                generatePdf(data.mealPlan, data);
-            }
-        });
-
-        // Regenerate plan
-        document.getElementById('regenerate-plan-button').addEventListener('click', async () => {
-            // This would regenerate the plan for the selected user
-            showMessage('Info', 'Funzione di rigenerazione piano in sviluppo');
-        });
-
-        // Export CSV
-        document.getElementById('export-csv').addEventListener('click', () => {
-            const requests = getRequestsFromLocalStorage();
-            let csvContent = "Data,Email,Età,Peso,Altezza,Sesso,Obiettivo,Durata,Dieta,Calorie,Piano Generato\n";
-
-            requests.forEach((data) => {
-                const row = [
-                    new Date(data.timestamp).toLocaleDateString('it-IT'),
-                    data.email,
-                    data.age,
-                    data.weight,
-                    data.height,
-                    data.gender,
-                    data.goal,
-                    data.duration,
-                    data.diet,
-                    data.calories,
-                    data.mealPlan ? 'Sì' : 'No'
-                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
-
-                csvContent += row + "\n";
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'richieste_meal_prep.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
-        });
-
-        // Close message modal
-        document.getElementById('modal-close-button').addEventListener('click', hideMessage);
-
-        // Page load initialization
-        window.addEventListener('load', () => {
-            showSection('landing-page');
-        });
-
-    </script>
-</body>
-</html>
+                        <p><strong>
