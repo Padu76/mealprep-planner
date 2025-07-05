@@ -1,193 +1,5 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Meal Prep Planner</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-white text-gray-800">
-
-  <!-- Loading overlay -->
-  <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="text-white text-xl">Caricamento in corso...</div>
-  </div>
-
-  <!-- Message Modal -->
-  <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded max-w-md w-full">
-      <p id="message-text"></p>
-      <button id="message-close" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Chiudi</button>
-    </div>
-  </div>
-
-  <!-- PDF Viewer Modal -->
-  <div id="pdf-viewer-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded max-w-4xl w-full h-[80vh] p-2 overflow-auto relative">
-      <button id="pdf-viewer-close" class="absolute top-2 right-2 px-3 py-1 bg-red-600 text-white rounded">Chiudi</button>
-      <iframe id="pdf-frame" class="w-full h-full" style="border:none;"></iframe>
-    </div>
-  </div>
-
-  <!-- Request Details Modal -->
-  <div id="request-details-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded max-w-xl w-full p-6 relative">
-      <button id="request-details-close" class="absolute top-2 right-2 px-3 py-1 bg-red-600 text-white rounded">Chiudi</button>
-      <div id="request-details-content" class="overflow-auto max-h-[60vh]"></div>
-      <button id="generate-plan-button" class="mt-4 px-4 py-2 bg-green-600 text-white rounded">Genera Piano</button>
-    </div>
-  </div>
-
-  <!-- Landing Page -->
-  <div id="landing-page" class="min-h-screen p-6 max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-center">Meal Prep Planner</h1>
-    <form id="meal-prep-form-element" class="space-y-4 max-w-lg mx-auto">
-      <!-- Duration -->
-      <label class="block">
-        <span class="text-gray-700">Durata meal prep (giorni)</span>
-        <select id="duration" class="mt-1 block w-full rounded border-gray-300">
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="5" selected>5</option>
-          <option value="7">7</option>
-        </select>
-      </label>
-
-      <!-- Goal -->
-      <label class="block">
-        <span class="text-gray-700">Obiettivo</span>
-        <select id="goal" class="mt-1 block w-full rounded border-gray-300">
-          <option value="">Seleziona...</option>
-          <option value="dimagrimento">Dimagrimento</option>
-          <option value="mantenimento">Mantenimento</option>
-          <option value="aumento massa">Aumento massa</option>
-        </select>
-      </label>
-
-      <!-- Age -->
-      <label class="block">
-        <span class="text-gray-700">Età</span>
-        <input id="age" type="number" min="1" max="120" class="mt-1 block w-full rounded border-gray-300" />
-      </label>
-
-      <!-- Weight -->
-      <label class="block">
-        <span class="text-gray-700">Peso (kg)</span>
-        <input id="weight" type="number" min="20" max="300" step="0.1" class="mt-1 block w-full rounded border-gray-300" />
-      </label>
-
-      <!-- Height -->
-      <label class="block">
-        <span class="text-gray-700">Altezza (cm)</span>
-        <input id="height" type="number" min="100" max="250" step="0.1" class="mt-1 block w-full rounded border-gray-300" />
-      </label>
-
-      <!-- Gender -->
-      <label class="block">
-        <span class="text-gray-700">Genere</span>
-        <select id="gender" class="mt-1 block w-full rounded border-gray-300">
-          <option value="maschio">Maschio</option>
-          <option value="femmina">Femmina</option>
-          <option value="altro">Altro</option>
-        </select>
-      </label>
-
-      <!-- Activity Level -->
-      <label class="block">
-        <span class="text-gray-700">Livello di attività</span>
-        <select id="activity_level" class="mt-1 block w-full rounded border-gray-300">
-          <option value="sedentario">Sedentario</option>
-          <option value="leggero">Leggero</option>
-          <option value="moderato">Moderato</option>
-          <option value="attivo">Attivo</option>
-          <option value="molto attivo">Molto attivo</option>
-        </select>
-      </label>
-
-      <!-- Meals per day -->
-      <label class="block">
-        <span class="text-gray-700">Numero pasti al giorno</span>
-        <select id="meals_per_day" class="mt-1 block w-full rounded border-gray-300">
-          <option value="1">Solo pranzo</option>
-          <option value="2">Pranzo e cena</option>
-          <option value="3">Colazione, pranzo e cena</option>
-          <option value="4">Colazione, spuntino, pranzo e cena</option>
-        </select>
-      </label>
-
-      <!-- Diet -->
-      <label class="block">
-        <span class="text-gray-700">Tipo di dieta</span>
-        <select id="diet" class="mt-1 block w-full rounded border-gray-300">
-          <option value="">Nessuna preferenza</option>
-          <option value="bilanciata">Bilanciata</option>
-          <option value="basso carboidrati">Basso carboidrati</option>
-          <option value="basso grassi">Basso grassi</option>
-          <option value="vegetariana">Vegetariana</option>
-          <option value="vegana">Vegana</option>
-        </select>
-      </label>
-
-      <!-- Exclusions -->
-      <label class="block">
-        <span class="text-gray-700">Alimenti da escludere (separati da virgola)</span>
-        <input id="exclusions" type="text" class="mt-1 block w-full rounded border-gray-300" placeholder="Es: glutine, lattosio" />
-      </label>
-
-      <!-- Foods at home -->
-      <label class="block">
-        <span class="text-gray-700">Alimenti già disponibili a casa (separati da virgola)</span>
-        <input id="foods_at_home" type="text" class="mt-1 block w-full rounded border-gray-300" placeholder="Es: riso, pollo, broccoli" />
-      </label>
-
-      <!-- Email -->
-      <label class="block">
-        <span class="text-gray-700">Email</span>
-        <input id="email" type="email" required class="mt-1 block w-full rounded border-gray-300" />
-      </label>
-
-      <!-- Phone -->
-      <label class="block">
-        <span class="text-gray-700">Telefono</span>
-        <input id="phone" type="tel" class="mt-1 block w-full rounded border-gray-300" />
-      </label>
-
-      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded font-semibold hover:bg-blue-700 transition">
-        Invia richiesta
-      </button>
-    </form>
-
-    <!-- Meal Plan Output -->
-    <div id="mealplan-output" class="whitespace-pre-wrap p-4 bg-gray-100 rounded mt-8 max-w-lg mx-auto"></div>
-  </div>
-
-  <!-- Dashboard -->
-  <div id="dashboard-container" class="hidden max-w-5xl mx-auto p-6">
-    <h2 class="text-2xl font-bold mb-4">Dashboard richieste</h2>
-    <table class="min-w-full border border-gray-300 rounded" >
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="p-2 border border-gray-300">#</th>
-          <th class="p-2 border border-gray-300">Email</th>
-          <th class="p-2 border border-gray-300">Obiettivo</th>
-          <th class="p-2 border border-gray-300">Durata (giorni)</th>
-          <th class="p-2 border border-gray-300">Stato</th>
-          <th class="p-2 border border-gray-300">Azioni</th>
-        </tr>
-      </thead>
-      <tbody id="requests-table-body"></tbody>
-    </table>
-  </div>
-
-  <!-- Script -->
-  <script src="script.js"></script>
-</body>
-</html>
-
-=======
-<!DOCTYPE html>
-<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -224,16 +36,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            flex-wrap: wrap;
         }
         #dashboard-container header h1 {
-            flex-grow: 1; /* Allow title to take available space */
-            min-width: 200px; /* Ensure title doesn't shrink too much */
+            flex-grow: 1;
+            min-width: 200px;
         }
         #dashboard-container header div {
             display: flex;
             align-items: center;
-            gap: 1rem; /* Space between user ID and logout button */
+            gap: 1rem;
         }
         @media (max-width: 768px) {
             #dashboard-container header {
@@ -380,9 +192,9 @@
                             <label for="goal" class="block text-gray-700 text-sm font-bold mb-2">Obiettivo:</label>
                             <select id="goal" name="goal" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                                 <option value="">Seleziona un obiettivo</option>
-                                <option value="weight_loss">Perdita Peso</option>
-                                <option value="muscle_gain">Aumento Massa Muscolare</option>
-                                <option value="maintenance">Mantenimento</option>
+                                <option value="dimagrimento">Dimagrimento</option>
+                                <option value="aumento massa">Aumento Massa Muscolare</option>
+                                <option value="mantenimento">Mantenimento</option>
                             </select>
                         </div>
                         <div>
@@ -401,19 +213,19 @@
                             <label for="gender" class="block text-gray-700 text-sm font-bold mb-2">Sesso:</label>
                             <select id="gender" name="gender" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                                 <option value="">Seleziona il sesso</option>
-                                <option value="male">Uomo</option>
-                                <option value="female">Donna</option>
+                                <option value="maschio">Uomo</option>
+                                <option value="femmina">Donna</option>
                             </select>
                         </div>
                         <div>
                             <label for="activity_level" class="block text-gray-700 text-sm font-bold mb-2">Livello di Attività Fisica:</label>
                             <select id="activity_level" name="activity_level" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                                 <option value="">Seleziona livello</option>
-                                <option value="sedentary">Sedentario (poco o nessun esercizio)</option>
-                                <option value="lightly_active">Leggermente attivo (esercizio leggero 1-3 giorni/settimana)</option>
-                                <option value="moderatamente_active">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
-                                <option value="very_active">Molto attivo (esercizio intenso 6-7 giorni/settimana)</option>
-                                <option value="extra_active">Estremamente attivo (esercizio molto intenso, lavoro fisico)</option>
+                                <option value="sedentario">Sedentario (poco o nessun esercizio)</option>
+                                <option value="leggero">Leggermente attivo (esercizio leggero 1-3 giorni/settimana)</option>
+                                <option value="moderato">Moderatamente attivo (esercizio moderato 3-5 giorni/settimana)</option>
+                                <option value="attivo">Molto attivo (esercizio intenso 6-7 giorni/settimana)</option>
+                                <option value="molto attivo">Estremamente attivo (esercizio molto intenso, lavoro fisico)</option>
                             </select>
                         </div>
                         <div>
@@ -426,13 +238,13 @@
                         <label for="diet" class="block text-gray-700 text-sm font-bold mb-2">Tipo di Dieta:</label>
                         <select id="diet" name="diet" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="">Seleziona tipo di dieta</option>
-                            <option value="standard">Standard</option>
-                            <option value="vegetarian">Vegetariana</option>
-                            <option value="vegan">Vegana</option>
-                            <option value="keto">Keto</option>
-                            <option value="paleo">Paleo</option>
-                            <option value="gluten_free">Senza Glutine</option>
-                            <option value="dairy_free">Senza Lattosio</option>
+                            <option value="bilanciata">Bilanciata</option>
+                            <option value="vegetariana">Vegetariana</option>
+                            <option value="vegana">Vegana</option>
+                            <option value="basso carboidrati">Basso Carboidrati</option>
+                            <option value="basso grassi">Basso Grassi</option>
+                            <option value="senza glutine">Senza Glutine</option>
+                            <option value="senza lattosio">Senza Lattosio</option>
                         </select>
                     </div>
 
@@ -466,7 +278,7 @@
             </div>
         </section>
 
-        <!-- FAQ Section (Optional) -->
+        <!-- FAQ Section -->
         <section class="py-16 md:py-24 bg-gray-100">
             <div class="container mx-auto px-4 max-w-3xl">
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-500 mb-12">Domande Frequenti</h2>
@@ -511,7 +323,6 @@
     <div id="dashboard-container" class="min-h-screen bg-gray-100 p-4 hidden">
         <header class="bg-white shadow-md rounded-lg p-6 mb-6 flex justify-between items-center">
             <h1 class="text-3xl font-bold text-orange-500">Dashboard Amministratore</h1>
-            <!-- Removed user ID display and logout button as authentication is no longer used -->
         </header>
 
         <div class="bg-white shadow-md rounded-lg p-6 mb-6">
@@ -566,7 +377,6 @@
         </div>
     </div>
 
-
     <script>
         // Global variable to store the currently viewed request ID in the dashboard modal
         let currentRequestId = null;
@@ -575,8 +385,6 @@
 
         /**
          * Shows a custom modal message.
-         * @param {string} title - The title of the message.
-         * @param {string} message - The content of the message.
          */
         function showMessage(title, message) {
             document.getElementById('modal-title').textContent = title;
@@ -607,16 +415,11 @@
 
         /**
          * Calculates Basal Metabolic Rate (BMR) using Mifflin-St Jeor Equation.
-         * @param {number} weightKg - Weight in kilograms.
-         * @param {number} heightCm - Height in centimeters.
-         * @param {number} ageYears - Age in years.
-         * @param {string} gender - 'male' or 'female'.
-         * @returns {number} BMR in calories.
          */
         function calculateBMR(weightKg, heightCm, ageYears, gender) {
-            if (gender === 'male') {
+            if (gender === 'maschio') {
                 return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) + 5;
-            } else if (gender === 'female') {
+            } else if (gender === 'femmina') {
                 return (10 * weightKg) + (6.25 * heightCm) - (5 * ageYears) - 161;
             }
             return 0;
@@ -624,34 +427,28 @@
 
         /**
          * Calculates Total Daily Energy Expenditure (TDEE) based on BMR and activity level.
-         * @param {number} bmr - Basal Metabolic Rate.
-         * @param {string} activityLevel - Activity level ('sedentary', 'lightly_active', etc.).
-         * @returns {number} TDEE in calories.
          */
         function calculateTDEE(bmr, activityLevel) {
             const activityMultipliers = {
-                sedentary: 1.2,
-                lightly_active: 1.375,
-                moderatamente_active: 1.55,
-                very_active: 1.725,
-                extra_active: 1.9
+                sedentario: 1.2,
+                leggero: 1.375,
+                moderato: 1.55,
+                attivo: 1.725,
+                'molto attivo': 1.9
             };
             return bmr * (activityMultipliers[activityLevel] || 1.2);
         }
 
         /**
          * Adjusts TDEE based on the user's goal.
-         * @param {number} tdee - Total Daily Energy Expenditure.
-         * @param {string} goal - User's goal ('weight_loss', 'muscle_gain', 'maintenance').
-         * @returns {number} Adjusted daily calorie intake.
          */
         function adjustCaloriesForGoal(tdee, goal) {
             switch (goal) {
-                case 'weight_loss':
+                case 'dimagrimento':
                     return tdee - 500; // Deficit for weight loss
-                case 'muscle_gain':
+                case 'aumento massa':
                     return tdee + 300; // Surplus for muscle gain
-                case 'maintenance':
+                case 'mantenimento':
                 default:
                     return tdee;
             }
@@ -659,8 +456,6 @@
 
         /**
          * Generates a PDF document from meal plan data.
-         * @param {object} planData - The meal plan data including recipes and shopping list.
-         * @param {object} userInfo - User information for the PDF header.
          */
         function generatePdf(planData, userInfo) {
             const { jsPDF } = window.jspdf;
@@ -766,7 +561,6 @@
         // --- Local Storage Functions ---
         /**
          * Loads requests from local storage.
-         * @returns {Array} An array of meal prep request objects.
          */
         function getRequestsFromLocalStorage() {
             try {
@@ -780,7 +574,6 @@
 
         /**
          * Saves requests to local storage.
-         * @param {Array} requests - The array of meal prep request objects to save.
          */
         function saveRequestsToLocalStorage(requests) {
             try {
@@ -960,7 +753,6 @@
 
         /**
          * Shows the details of a specific request in a modal.
-         * @param {string} requestId - The ID of the request document.
          */
         async function showRequestDetails(requestId) {
             showLoading();
@@ -979,7 +771,7 @@
                         <p><strong>Età:</strong> ${data.age} anni</p>
                         <p><strong>Peso:</strong> ${data.weight} kg</p>
                         <p><strong>Altezza:</strong> ${data.height} cm</p>
-                        <p><strong>Sesso:</strong> ${data.gender === 'male' ? 'Uomo' : 'Donna'}</p>
+                        <p><strong>Sesso:</strong> ${data.gender === 'maschio' ? 'Uomo' : 'Donna'}</p>
                         <p><strong>Livello Attività:</strong> ${data.activity_level}</p>
                         <p><strong>Obiettivo:</strong> ${data.goal}</p>
                         <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
@@ -1204,5 +996,3 @@
     </script>
 </body>
 </html>
-
->>>>>>> d8aa047f00f23d9c2484b51fcfbbf51e50c87c62
