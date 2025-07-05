@@ -11,7 +11,7 @@
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Opzionali - funziona anche senza) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
@@ -488,65 +488,138 @@
     </div>
 
     <script>
-        // Firebase Configuration
-        // TODO: Replace with your Firebase config
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         // Global variables
         let currentRequestId = null;
         let currentGeneratedPlan = null;
         const ADMIN_PASSWORD = "mealprep2024"; // Change this to a secure password
+        
+        // Firebase configuration (optional - will work with localStorage if not configured)
+        let db = null;
+        let firebaseEnabled = false;
 
-        // --- Firebase Functions ---
-        async function saveRequestToFirebase(requestData) {
+        // Try to initialize Firebase if available
+        try {
+            // Replace with your Firebase config when ready
+            const firebaseConfig = {
+                // TODO: Add your Firebase config here
+                // apiKey: "your-api-key",
+                // authDomain: "your-project.firebaseapp.com",
+                // projectId: "your-project-id",
+                // etc...
+            };
+
+            // Only initialize if config is provided
+            if (firebaseConfig.apiKey) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                firebaseEnabled = true;
+                console.log("Firebase inizializzato con successo");
+            } else {
+                console.log("Firebase non configurato, uso localStorage");
+            }
+        } catch (error) {
+            console.log("Firebase non disponibile, uso localStorage:", error.message);
+            firebaseEnabled = false;
+        }
+
+        // --- Data Storage Functions (Hybrid: Firebase + localStorage) ---
+        async function saveRequest(requestData) {
             try {
-                const docRef = await db.collection('mealPrepRequests').add(requestData);
-                console.log("Documento salvato con ID: ", docRef.id);
-                return docRef.id;
+                if (firebaseEnabled && db) {
+                    // Save to Firebase
+                    const docRef = await db.collection('mealPrepRequests').add({
+                        ...requestData,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    console.log("Salvato su Firebase con ID:", docRef.id);
+                    return docRef.id;
+                } else {
+                    // Save to localStorage
+                    const requests = getRequestsFromLocalStorage();
+                    requestData.id = crypto.randomUUID();
+                    requests.push(requestData);
+                    saveRequestsToLocalStorage(requests);
+                    console.log("Salvato su localStorage con ID:", requestData.id);
+                    return requestData.id;
+                }
             } catch (error) {
-                console.error("Errore nel salvataggio su Firebase: ", error);
+                console.error("Errore nel salvataggio:", error);
+                // Fallback to localStorage
+                const requests = getRequestsFromLocalStorage();
+                requestData.id = crypto.randomUUID();
+                requests.push(requestData);
+                saveRequestsToLocalStorage(requests);
+                return requestData.id;
+            }
+        }
+
+        async function getRequests() {
+            try {
+                if (firebaseEnabled && db) {
+                    // Get from Firebase
+                    const snapshot = await db.collection('mealPrepRequests')
+                        .orderBy('timestamp', 'desc')
+                        .get();
+                    
+                    const requests = [];
+                    snapshot.forEach((doc) => {
+                        requests.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    return requests;
+                } else {
+                    // Get from localStorage
+                    return getRequestsFromLocalStorage();
+                }
+            } catch (error) {
+                console.error("Errore nel recupero dati:", error);
+                // Fallback to localStorage
+                return getRequestsFromLocalStorage();
+            }
+        }
+
+        async function updateRequest(requestId, updateData) {
+            try {
+                if (firebaseEnabled && db) {
+                    // Update Firebase
+                    await db.collection('mealPrepRequests').doc(requestId).update({
+                        ...updateData,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Update localStorage
+                    const requests = getRequestsFromLocalStorage();
+                    const index = requests.findIndex(req => req.id === requestId);
+                    if (index !== -1) {
+                        requests[index] = { ...requests[index], ...updateData };
+                        saveRequestsToLocalStorage(requests);
+                    }
+                }
+            } catch (error) {
+                console.error("Errore nell'aggiornamento:", error);
                 throw error;
             }
         }
 
-        async function getRequestsFromFirebase() {
+        // --- Local Storage Functions (Fallback) ---
+        function getRequestsFromLocalStorage() {
             try {
-                const snapshot = await db.collection('mealPrepRequests')
-                    .orderBy('timestamp', 'desc')
-                    .get();
-                
-                const requests = [];
-                snapshot.forEach((doc) => {
-                    requests.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-                return requests;
-            } catch (error) {
-                console.error("Errore nel recupero da Firebase: ", error);
+                const requests = localStorage.getItem('mealPrepRequests');
+                return requests ? JSON.parse(requests) : [];
+            } catch (e) {
+                console.error("Errore nel recupero dati da localStorage:", e);
                 return [];
             }
         }
 
-        async function updateRequestInFirebase(requestId, updateData) {
+        function saveRequestsToLocalStorage(requests) {
             try {
-                await db.collection('mealPrepRequests').doc(requestId).update(updateData);
-                console.log("Documento aggiornato con successo");
-            } catch (error) {
-                console.error("Errore nell'aggiornamento Firebase: ", error);
-                throw error;
+                localStorage.setItem('mealPrepRequests', JSON.stringify(requests));
+            } catch (e) {
+                console.error("Errore nel salvataggio dati in localStorage:", e);
+                showMessage('Errore di Salvataggio', 'Impossibile salvare i dati localmente.');
             }
         }
 
@@ -673,20 +746,24 @@
                         doc.setTextColor(80, 80, 80);
                         doc.text("Ingredienti:", 25, y);
                         y += 5;
-                        meal.ingredients.forEach(ingredient => {
-                            if (y > 280) { doc.addPage(); y = 20; }
-                            doc.text(`- ${ingredient}`, 30, y);
-                            y += 5;
-                        });
+                        if (meal.ingredients) {
+                            meal.ingredients.forEach(ingredient => {
+                                if (y > 280) { doc.addPage(); y = 20; }
+                                doc.text(`- ${ingredient}`, 30, y);
+                                y += 5;
+                            });
+                        }
                         y += 3;
                         doc.text("Istruzioni:", 25, y);
                         y += 5;
-                        const instructionsLines = doc.splitTextToSize(meal.instructions, 170);
-                        instructionsLines.forEach(line => {
-                            if (y > 280) { doc.addPage(); y = 20; }
-                            doc.text(line, 30, y);
-                            y += 5;
-                        });
+                        if (meal.instructions) {
+                            const instructionsLines = doc.splitTextToSize(meal.instructions, 170);
+                            instructionsLines.forEach(line => {
+                                if (y > 280) { doc.addPage(); y = 20; }
+                                doc.text(line, 30, y);
+                                y += 5;
+                            });
+                        }
                         y += 8;
                     });
                 });
@@ -740,7 +817,7 @@
                 foods_at_home: document.getElementById('foods_at_home').value.split(',').map(s => s.trim()).filter(s => s),
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                timestamp: new Date().toISOString(),
                 status: 'Completato'
             };
 
@@ -777,11 +854,10 @@
                 if (result.mealPlan) {
                     // Store the generated plan and user data
                     formData.mealPlan = result.mealPlan;
-                    formData.timestamp = new Date().toISOString(); // Use current timestamp for consistency
                     currentGeneratedPlan = { planData: result.mealPlan, userInfo: formData };
                     
-                    // Save to Firebase
-                    await saveRequestToFirebase(formData);
+                    // Save to storage (Firebase or localStorage)
+                    await saveRequest(formData);
 
                     // Show success page
                     showSuccessPage();
@@ -842,6 +918,7 @@
             } else {
                 showMessage('Errore', 'Password non corretta');
             }
+            document.getElementById('admin-password').value = '';
         });
 
         document.getElementById('admin-logout').addEventListener('click', () => {
@@ -852,7 +929,7 @@
         async function loadDashboard() {
             showLoading();
             try {
-                const requests = await getRequestsFromFirebase();
+                const requests = await getRequests();
                 updateStatistics(requests);
                 loadRequestsTable(requests);
             } catch (error) {
@@ -870,7 +947,7 @@
                 return reqDate === today;
             });
             const plansGenerated = requests.filter(req => req.mealPlan).length;
-            const totalAge = requests.reduce((sum, req) => sum + req.age, 0);
+            const totalAge = requests.reduce((sum, req) => sum + (req.age || 0), 0);
             const avgAge = requests.length > 0 ? Math.round(totalAge / requests.length) : 0;
 
             document.getElementById('total-requests').textContent = requests.length;
@@ -883,7 +960,7 @@
             if (!requests) {
                 showLoading();
                 try {
-                    requests = await getRequestsFromFirebase();
+                    requests = await getRequests();
                 } catch (error) {
                     showMessage('Errore', 'Impossibile caricare le richieste');
                     return;
@@ -975,4 +1052,169 @@
                         <p><strong>Età:</strong> ${data.age} anni</p>
                         <p><strong>Peso:</strong> ${data.weight} kg</p>
                         <p><strong>Altezza:</strong> ${data.height} cm</p>
-                        <p><strong>
+                        <p><strong>Sesso:</strong> ${data.gender === 'maschio' ? 'Uomo' : 'Donna'}</p>
+                        <p><strong>Livello Attività:</strong> ${data.activity_level}</p>
+                        <p><strong>Obiettivo:</strong> ${data.goal}</p>
+                        <p><strong>Durata Meal Prep:</strong> ${data.duration} giorni</p>
+                        <p><strong>Dieta Scelta:</strong> ${data.diet}</p>
+                        <p><strong>Pasti al Giorno:</strong> ${data.meals_per_day}</p>
+                    </div>
+                    <div class="mt-4">
+                        <p><strong>Esclusioni:</strong> ${data.exclusions?.join(', ') || 'Nessuna'}</p>
+                        <p><strong>Cibi in Casa:</strong> ${data.foods_at_home?.join(', ') || 'Nessuno'}</p>
+                        <p><strong>Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
+                    </div>
+                `;
+
+                // Show/hide buttons based on plan existence
+                const viewBtn = document.getElementById('admin-view-plan-button');
+                if (data.mealPlan) {
+                    viewBtn.classList.remove('hidden');
+                } else {
+                    viewBtn.classList.add('hidden');
+                }
+
+                document.getElementById('request-details-modal').classList.remove('hidden');
+            }
+        }
+
+        // Filter event listeners
+        document.getElementById('filter-date').addEventListener('change', () => loadRequestsTable());
+        document.getElementById('filter-goal').addEventListener('change', () => loadRequestsTable());
+        document.getElementById('clear-filters').addEventListener('click', () => {
+            document.getElementById('filter-date').value = '';
+            document.getElementById('filter-goal').value = '';
+            loadRequestsTable();
+        });
+
+        // Modal close
+        document.getElementById('request-details-close-button').addEventListener('click', () => {
+            document.getElementById('request-details-modal').classList.add('hidden');
+        });
+
+        // Admin view plan
+        document.getElementById('admin-view-plan-button').addEventListener('click', async () => {
+            showLoading();
+            try {
+                const requests = await getRequests();
+                const data = requests.find(req => req.id === currentRequestId);
+                if (data && data.mealPlan) {
+                    generatePdf(data.mealPlan, data);
+                } else {
+                    showMessage('Errore', 'Piano non trovato');
+                }
+            } catch (error) {
+                showMessage('Errore', 'Impossibile caricare il piano');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Regenerate plan
+        document.getElementById('regenerate-plan-button').addEventListener('click', async () => {
+            if (!currentRequestId) {
+                showMessage('Errore', 'Nessuna richiesta selezionata');
+                return;
+            }
+
+            showLoading();
+            try {
+                const requests = await getRequests();
+                const requestData = requests.find(req => req.id === currentRequestId);
+                
+                if (!requestData) {
+                    throw new Error('Richiesta non trovata');
+                }
+
+                // Call Netlify Function to regenerate meal plan
+                const payloadToFunction = { requestData: requestData };
+                
+                const response = await fetch('/.netlify/functions/mealplanner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadToFunction)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`Errore HTTP ${response.status}: ${errorBody.error || 'Errore sconosciuto'}`);
+                }
+
+                const result = await response.json();
+
+                if (result.mealPlan) {
+                    // Update storage with new plan
+                    await updateRequest(currentRequestId, {
+                        mealPlan: result.mealPlan
+                    });
+
+                    showMessage('Piano Rigenerato!', 'Il piano pasti è stato rigenerato con successo.');
+                    loadDashboard(); // Refresh dashboard
+                    document.getElementById('request-details-modal').classList.add('hidden');
+                } else {
+                    throw new Error('Piano pasto non generato correttamente');
+                }
+
+            } catch (error) {
+                console.error("Errore durante la rigenerazione:", error);
+                showMessage('Errore Rigenerazione', `Si è verificato un errore: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Export CSV
+        document.getElementById('export-csv').addEventListener('click', async () => {
+            showLoading();
+            try {
+                const requests = await getRequests();
+                let csvContent = "Data,Email,Età,Peso,Altezza,Sesso,Obiettivo,Durata,Dieta,Calorie,Piano Generato\n";
+
+                requests.forEach((data) => {
+                    const timestampDate = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                    const row = [
+                        timestampDate.toLocaleDateString('it-IT'),
+                        data.email,
+                        data.age,
+                        data.weight,
+                        data.height,
+                        data.gender,
+                        data.goal,
+                        data.duration,
+                        data.diet,
+                        data.calories,
+                        data.mealPlan ? 'Sì' : 'No'
+                    ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
+
+                    csvContent += row + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'richieste_meal_prep.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage('Esportazione Completata', 'I dati sono stati esportati in un file CSV.');
+            } catch (error) {
+                console.error("Errore durante l'esportazione:", error);
+                showMessage('Errore Esportazione', 'Impossibile esportare i dati');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Close message modal
+        document.getElementById('modal-close-button').addEventListener('click', hideMessage);
+
+        // Page load initialization
+        window.addEventListener('load', () => {
+            showSection('landing-page');
+        });
+
+    </script>
+</body>
+</html>
