@@ -1,228 +1,217 @@
 // netlify/functions/mealplanner.js
-// netlify/functions/mealplanner.js
-const Anthropic = require('@anthropic-ai/sdk');
 
-exports.handler = async (event) => {
+const fetch = require('node-fetch');
+
+exports.handler = async (event, context) => {
+  // Gestisci solo richieste POST
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Metodo non consentito' };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
     const { requestData } = JSON.parse(event.body);
-
-    const claudeApiKey = process.env.CLAUDE_API_KEY;
-    if (!claudeApiKey) {
-      console.error("Errore: CLAUDE_API_KEY non configurata nelle variabili d'ambiente di Netlify.");
+    
+    if (!requestData) {
       return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Chiave API Claude non configurata correttamente." }),
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing request data' })
       };
     }
 
-    const anthropic = new Anthropic({
-      apiKey: claudeApiKey,
+    // Costruisci il prompt per Claude
+    const prompt = createMealPrepPrompt(requestData);
+
+    // Chiama l'API di Claude
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022', // Modello aggiornato
+        max_tokens: 4000,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
     });
 
-    const safeJoin = (arr, separator = ', ') => {
-      if (Array.isArray(arr) && arr.length > 0) {
-        return arr.join(separator);
-      }
-      return 'Nessuna';
-    };
-
-    // Calcolo calorie stimate con formula di Harris-Benedict
-    const calculateCalories = (age, weight, height, gender, activityLevel, goal) => {
-      let bmr;
-      if (gender === 'maschio') {
-        bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
-      } else {
-        bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
-      }
-
-      const activityMultipliers = {
-        'sedentario': 1.2,
-        'leggero': 1.375,
-        'moderato': 1.55,
-        'attivo': 1.725,
-        'molto attivo': 1.9
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Errore API Claude:', errorData);
+      return {
+        statusCode: response.status,
+        body: JSON.stringify({ 
+          error: `Errore API Claude: ${response.status}`,
+          details: errorData
+        })
       };
-
-      let calories = bmr * (activityMultipliers[activityLevel] || 1.2);
-
-      // Aggiusta per l'obiettivo
-      if (goal === 'dimagrimento') calories *= 0.8;
-      else if (goal === 'aumento massa') calories *= 1.2;
-
-      return Math.round(calories);
-    };
-
-    const estimatedCalories = calculateCalories(
-      requestData.age, 
-      requestData.weight, 
-      requestData.height, 
-      requestData.gender, 
-      requestData.activity_level, 
-      requestData.goal
-    );
-
-    const prompt = `Genera un piano meal prep dettagliato per ${requestData.duration} giorni.
-
-PROFILO UTENTE:
-- EtÖ: ${requestData.age} anni
-- Peso: ${requestData.weight}kg
-- Altezza: ${requestData.height}cm
-- Genere: ${requestData.gender}
-- Livello attivitÖ: ${requestData.activity_level}
-- Obiettivo: ${requestData.goal}
-- Calorie giornaliere stimate: ${estimatedCalories} kcal
-- Pasti al giorno: ${requestData.meals_per_day}
-- Tipo dieta: ${requestData.diet || 'Nessuna preferenza'}
-- Esclusioni: ${safeJoin(requestData.exclusions)}
-- Cibi giÖ disponibili: ${safeJoin(requestData.foods_at_home)}
-
-REQUISITI:
-1. Crea ${requestData.meals_per_day} pasti per ogni giorno
-2. Ottimizza per ridurre sprechi usando ingredienti comuni
-3. Ricette facili e veloci da preparare
-4. Adatte all'obiettivo calorico
-5. Considera le esclusioni alimentari
-
-FORMATO OUTPUT (solo JSON valido):
-{
-  "dailyCalories": ${estimatedCalories},
-  "totalDays": ${requestData.duration},
-  "recipes": [
-    {
-      "day": 1,
-      "dayName": "Lunedç",
-      "meals": [
-        {
-          "type": "Colazione",
-          "name": "Nome ricetta",
-          "ingredients": [
-            "200g ingrediente 1",
-            "100g ingrediente 2"
-          ],
-          "instructions": "Istruzioni step-by-step",
-          "calories": 400,
-          "prepTime": "10 min"
-        }
-      ]
-    }
-  ],
-  "shoppingList": {
-    "proteine": ["pollo 1kg", "uova 12 pz"],
-    "carboidrati": ["riso 500g", "pasta 500g"],
-    "verdure": ["broccoli 500g", "spinaci 300g"],
-    "condimenti": ["olio evo 250ml", "sale q.b."],
-    "altro": ["latte 1L"]
-  },
-  "prepInstructions": [
-    "Domenica: Cuoci tutto il riso per la settimana",
-    "Domenica: Prepara le proteine in batch"
-  ],
-  "nutritionSummary": {
-    "avgCaloriesPerDay": ${estimatedCalories},
-    "avgProteinPerDay": "120g",
-    "avgCarbsPerDay": "180g",
-    "avgFatPerDay": "60g"
-  }
-}
-
-Genera solo il JSON, senza testo aggiuntivo.`;
-
-    console.log(`?? Chiamata Claude API in corso...`);
-
-    const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
-      max_tokens: 4000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
-
-    console.log(`? Risposta Claude ricevuta`);
-    
-    const mealPlanContent = response.content[0].text;
-
-    // Prova a estrarre il JSON se Claude ha aggiunto del testo
-    let cleanedContent = mealPlanContent.trim();
-    
-    // Rimuovi eventuali backticks o prefissi
-    if (cleanedContent.startsWith('```json')) {
-      cleanedContent = cleanedContent.replace(/```json\n/, '').replace(/\n```$/, '');
-    } else if (cleanedContent.startsWith('```')) {
-      cleanedContent = cleanedContent.replace(/```\n/, '').replace(/\n```$/, '');
     }
 
-    let mealPlanParsed;
+    const claudeResponse = await response.json();
+    
+    // Estrai il contenuto della risposta
+    const mealPlanContent = claudeResponse.content[0].text;
+    
+    // Prova a parsare il JSON dal contenuto
+    let mealPlan;
     try {
-      mealPlanParsed = JSON.parse(cleanedContent);
-    } catch (parseError) {
-      console.error("Errore nel parsing JSON dalla risposta Claude:", parseError);
-      console.error("Contenuto grezzo:", mealPlanContent);
+      // Cerca il JSON nella risposta (potrebbe essere dentro blocchi di codice)
+      const jsonMatch = mealPlanContent.match(/```json\n([\s\S]*?)\n```/) || 
+                       mealPlanContent.match(/```\n([\s\S]*?)\n```/) ||
+                       [null, mealPlanContent];
       
-      // Fallback: cerca il JSON nell'output
-      const jsonMatch = mealPlanContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          mealPlanParsed = JSON.parse(jsonMatch[0]);
-        } catch (secondParseError) {
-          return {
-            statusCode: 500,
-            body: JSON.stringify({ 
-              error: "L'AI non ha restituito un JSON valido.", 
-              rawResponse: mealPlanContent.substring(0, 1000) 
-            }),
-          };
-        }
-      } else {
-        return {
-          statusCode: 500,
-          body: JSON.stringify({ 
-            error: "Impossibile estrarre JSON dalla risposta", 
-            rawResponse: mealPlanContent.substring(0, 1000) 
-          }),
-        };
-      }
+      mealPlan = JSON.parse(jsonMatch[1] || mealPlanContent);
+    } catch (parseError) {
+      console.error('Errore nel parsing del JSON:', parseError);
+      console.log('Contenuto ricevuto:', mealPlanContent);
+      
+      // Se il parsing fallisce, crea una struttura di base
+      mealPlan = createFallbackPlan(requestData, mealPlanContent);
     }
-
-    // Aggiungi metadati della richiesta
-    mealPlanParsed.requestInfo = {
-      email: requestData.email,
-      goal: requestData.goal,
-      duration: requestData.duration,
-      generatedAt: new Date().toISOString()
-    };
 
     return {
       statusCode: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type"
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        success: true,
-        mealPlan: mealPlanParsed 
-      }),
+        mealPlan: mealPlan,
+        success: true 
+      })
     };
+
   } catch (error) {
-    console.error(`? Errore nella funzione mealplanner:`, error);
+    console.error('Errore nella funzione mealplanner:', error);
     return {
       statusCode: 500,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
-      },
       body: JSON.stringify({ 
-        success: false,
-        error: error.message || "Errore interno nella funzione",
-        details: error.stack ? error.stack.substring(0, 500) : null
-      }),
+        error: 'Errore interno del server',
+        details: error.message
+      })
     };
   }
 };
+
+function createMealPrepPrompt(data) {
+  return `
+Crea un piano meal prep personalizzato per un utente con queste caratteristiche:
+
+**DATI UTENTE:**
+- Et√†: ${data.age} anni
+- Peso: ${data.weight} kg
+- Altezza: ${data.height} cm
+- Sesso: ${data.gender}
+- Livello attivit√†: ${data.activity_level}
+- Obiettivo: ${data.goal}
+- Durata meal prep: ${data.duration} giorni
+- Pasti al giorno: ${data.meals_per_day}
+- Tipo di dieta: ${data.diet}
+- Calorie giornaliere target: ${data.calories} kcal
+- Esclusioni alimentari: ${data.exclusions?.join(', ') || 'Nessuna'}
+- Alimenti gi√† disponibili: ${data.foods_at_home?.join(', ') || 'Nessuno'}
+
+**ISTRUZIONI:**
+1. Crea un piano meal prep pratico e realistico
+2. Considera gli alimenti gi√† disponibili per ridurre gli sprechi
+3. Rispetta tutte le esclusioni alimentari
+4. Bilancia i macronutrienti secondo l'obiettivo
+5. Fornisci ricette semplici e veloci da preparare
+6. Calcola le porzioni per il numero di giorni richiesto
+
+**FORMATO RISPOSTA:**
+Rispondi SOLO con un JSON valido in questo formato:
+
+\`\`\`json
+{
+  "shoppingList": [
+    "ingrediente 1 - quantit√†",
+    "ingrediente 2 - quantit√†",
+    "ingrediente 3 - quantit√†"
+  ],
+  "recipes": [
+    {
+      "day": "Giorno 1",
+      "meals": [
+        {
+          "type": "Colazione",
+          "name": "Nome piatto",
+          "ingredients": ["ingrediente 1", "ingrediente 2"],
+          "instructions": "Istruzioni dettagliate di preparazione",
+          "calories": 400,
+          "protein": "25g",
+          "carbs": "45g",
+          "fat": "15g"
+        }
+      ]
+    }
+  ],
+  "nutritionSummary": {
+    "totalCaloriesPerDay": ${data.calories},
+    "proteinPerDay": "XXXg",
+    "carbsPerDay": "XXXg", 
+    "fatPerDay": "XXXg"
+  },
+  "mealPrepTips": [
+    "Consiglio 1",
+    "Consiglio 2",
+    "Consiglio 3"
+  ]
+}
+\`\`\`
+
+Assicurati che il JSON sia perfettamente formattato e valido.
+`;
+}
+
+function createFallbackPlan(data, rawContent) {
+  // Piano di fallback se il parsing JSON fallisce
+  return {
+    shoppingList: [
+      "Pollo - 1kg",
+      "Riso integrale - 500g",
+      "Broccoli - 500g",
+      "Olio d'oliva - 250ml",
+      "Uova - 12 pezzi"
+    ],
+    recipes: [
+      {
+        day: "Giorno 1",
+        meals: [
+          {
+            type: "Pranzo",
+            name: "Pollo con riso e verdure",
+            ingredients: ["150g pollo", "80g riso", "100g broccoli"],
+            instructions: "Cuoci il pollo in padella, prepara il riso e cuoci i broccoli al vapore.",
+            calories: Math.round(data.calories / data.meals_per_day),
+            protein: "30g",
+            carbs: "40g", 
+            fat: "15g"
+          }
+        ]
+      }
+    ],
+    nutritionSummary: {
+      totalCaloriesPerDay: data.calories,
+      proteinPerDay: "120g",
+      carbsPerDay: "200g",
+      fatPerDay: "80g"
+    },
+    mealPrepTips: [
+      "Prepara tutto la domenica per la settimana",
+      "Usa contenitori di vetro per conservare i pasti",
+      "Varia le spezie per non annoiarti"
+    ],
+    note: "Piano generato automaticamente - contenuto originale: " + rawContent.substring(0, 200)
+  };
+}
