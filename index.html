@@ -815,12 +815,17 @@
         </div>
     </div>
 
+    <!-- Carica variabili d'ambiente da Netlify -->
+    <script>
+        window.CLAUDE_API_KEY = '{{CLAUDE_API_KEY}}';
+    </script>
+
     <script>
         // === CLAUDE AI CONFIGURATION ===
         const CLAUDE_API_CONFIG = {
-            useAnthropicAPI: false,
-            apiKey: '',
-            useProxy: true,
+            useAnthropicAPI: true,
+            apiKey: window.CLAUDE_API_KEY || '',
+            useProxy: false,
             proxyEndpoint: 'https://meal-prep-backend-j6xm11vqk-andreas-projects-ee49b818.vercel.app/api/meal-plan-generator',
             useFallback: true
         };
@@ -992,25 +997,43 @@
         async function generateAdvancedMealPlan(userData) {
             console.log('🤖 Tentativo generazione con Claude AI...');
             
-            if (CLAUDE_API_CONFIG.useProxy && CLAUDE_API_CONFIG.proxyEndpoint) {
+            // Direct Anthropic API (if configured)
+            if (CLAUDE_API_CONFIG.useAnthropicAPI && CLAUDE_API_CONFIG.apiKey) {
                 try {
-                    const response = await fetch(CLAUDE_API_CONFIG.proxyEndpoint, {
+                    const prompt = createMealPlanPrompt(userData);
+                    
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'x-api-key': CLAUDE_API_CONFIG.apiKey,
+                            'anthropic-version': '2023-06-01'
                         },
-                        body: JSON.stringify(userData)
+                        body: JSON.stringify({
+                            model: 'claude-3-sonnet-20240229',
+                            max_tokens: 4000,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: prompt
+                                }
+                            ]
+                        })
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Errore HTTP: ${response.status}`);
+                        throw new Error(`Errore API Anthropic: ${response.status}`);
                     }
 
                     const result = await response.json();
-                    console.log('✅ Piano generato con Claude AI');
-                    return result;
+                    const planText = result.content[0].text;
+                    
+                    // Parse Claude response
+                    const parsedPlan = parseClaudeResponse(planText);
+                    console.log('✅ Piano generato con Claude API diretta');
+                    return parsedPlan;
                 } catch (error) {
-                    console.warn('⚠️ Claude AI non disponibile:', error.message);
+                    console.warn('⚠️ Claude API diretta non disponibile:', error.message);
                     if (CLAUDE_API_CONFIG.useFallback) {
                         console.log('🔄 Uso fallback locale...');
                         return generateClientSideMealPlan(userData);
@@ -2072,20 +2095,6 @@ Requisiti:
                 
                 detailsContent.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <p><strong class="text-white">Data Richiesta:</strong> ${timestampDate.toLocaleString('it-IT')}</p>
-                        <p><strong class="text-white">Email:</strong> ${data.email}</p>
-                        <p><strong class="text-white">Telefono:</strong> ${data.phone || 'N/A'}</p>
-                        <p><strong class="text-white">Età:</strong> ${data.age} anni</p>
-                        <p><strong class="text-white">Peso:</strong> ${data.weight} kg</p>
-                        <p><strong class="text-white">Altezza:</strong> ${data.height} cm</p>
-                        <p><strong class="text-white">Sesso:</strong> ${data.gender === 'maschio' ? 'Uomo' : 'Donna'}</p>
-                        <p><strong class="text-white">Livello Attività:</strong> ${data.activity_level}</p>
-                        <p><strong class="text-white">Obiettivo:</strong> ${data.goal}</p>
-                        <p><strong class="text-white">Durata Meal Prep:</strong> ${data.duration} giorni</p>
-                        <p><strong class="text-white">Dieta Scelta:</strong> ${data.diet}</p>
-                        <p><strong class="text-white">Pasti al Giorno:</strong> ${data.meals_per_day}</p>
-                    </div>
-                    <div class="mt-4">
                         <p><strong class="text-white">Esclusioni:</strong> ${data.exclusions?.join(', ') || 'Nessuna'}</p>
                         <p><strong class="text-white">Cibi in Casa:</strong> ${data.foods_at_home?.join(', ') || 'Nessuno'}</p>
                         <p><strong class="text-white">Calorie Giornaliere Stimate:</strong> ${data.calories} kcal</p>
@@ -2231,49 +2240,46 @@ Requisiti:
 
     </script>
 </body>
-</html>SideMealPlan(userData);
-                    }
-                    throw error;
+</html> class="text-white">Data Richiesta:</strong> ${timestampDate.toLocaleString('it-IT')}</p>
+                        <p><strong class="text-white">Email:</strong> ${data.email}</p>
+                        <p><strong class="text-white">Telefono:</strong> ${data.phone || 'N/A'}</p>
+                        <p><strong class="text-white">Età:</strong> ${data.age} anni</p>
+                        <p><strong class="text-white">Peso:</strong> ${data.weight} kg</p>
+                        <p><strong class="text-white">Altezza:</strong> ${data.height} cm</p>
+                        <p><strong class="text-white">Sesso:</strong> ${data.gender === 'maschio' ? 'Uomo' : 'Donna'}</p>
+                        <p><strong class="text-white">Livello Attività:</strong> ${data.activity_level}</p>
+                        <p><strong class="text-white">Obiettivo:</strong> ${data.goal}</p>
+                        <p><strong class="text-white">Durata Meal Prep:</strong> ${data.duration} giorni</p>
+                        <p><strong class="text-white">Dieta Scelta:</strong> ${data.diet}</p>
+                        <p><strong class="text-white">Pasti al Giorno:</strong> ${data.meals_per_day}</p>
+                    </div>
+                    <div class="mt-4">
+                        <p><strong class="text-white">Esclusioni:</strong> ${data.exclusions?.join(', ') || 'Nessuna'}</p>
+                        <p><strong;
                 }
             }
 
-            // Direct Anthropic API (if configured)
-            if (CLAUDE_API_CONFIG.useAnthropicAPI && CLAUDE_API_CONFIG.apiKey) {
+            if (CLAUDE_API_CONFIG.useProxy && CLAUDE_API_CONFIG.proxyEndpoint) {
                 try {
-                    const prompt = createMealPlanPrompt(userData);
-                    
-                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    const response = await fetch(CLAUDE_API_CONFIG.proxyEndpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'x-api-key': CLAUDE_API_CONFIG.apiKey,
-                            'anthropic-version': '2023-06-01'
                         },
-                        body: JSON.stringify({
-                            model: 'claude-3-sonnet-20240229',
-                            max_tokens: 4000,
-                            messages: [
-                                {
-                                    role: 'user',
-                                    content: prompt
-                                }
-                            ]
-                        })
+                        body: JSON.stringify(userData)
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Errore API Anthropic: ${response.status}`);
+                        throw new Error(`Errore HTTP: ${response.status}`);
                     }
 
                     const result = await response.json();
-                    const planText = result.content[0].text;
-                    
-                    // Parse Claude response
-                    const parsedPlan = parseClaudeResponse(planText);
-                    console.log('✅ Piano generato con Claude API diretta');
-                    return parsedPlan;
+                    console.log('✅ Piano generato con Claude AI');
+                    return result;
                 } catch (error) {
-                    console.warn('⚠️ Claude API diretta non disponibile:', error.message);
+                    console.warn('⚠️ Claude AI non disponibile:', error.message);
                     if (CLAUDE_API_CONFIG.useFallback) {
                         console.log('🔄 Uso fallback locale...');
-                        return generateClient
+                        return generateClientSideMealPlan(userData);
+                    }
+                    throw error
