@@ -180,6 +180,32 @@
         .hover\:text-orange-500:hover {
             color: #9FCC9F !important;
         }
+
+        /* Meal prep image styles */
+        .meal-prep-icon {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #8FBC8F;
+            margin: 0 auto 15px auto;
+            display: block;
+        }
+
+        .benefits-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(143, 188, 143, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .benefits-image:hover {
+            border-color: rgba(143, 188, 143, 0.6);
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -260,32 +286,32 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-green-400 mb-12" style="color: #8FBC8F;">Perché Scegliere Meal Prep Planner?</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-400 text-4xl mb-4 text-center" style="color: #8FBC8F;">💡</div>
+                        <img src="meal-prep-containers.jpg" alt="Risparmio di Tempo" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Risparmio di Tempo</h3>
                         <p class="text-gray-300 text-center">Prepara i tuoi pasti per più giorni in una sola sessione, liberando tempo prezioso durante la settimana.</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-400 text-4xl mb-4 text-center" style="color: #8FBC8F;">💰</div>
+                        <img src="meal-prep-variety.jpg" alt="Riduzione degli Sprechi" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Riduzione degli Sprechi</h3>
                         <p class="text-gray-300 text-center">Una lista spesa precisa ti aiuta a comprare solo ciò che serve, riducendo gli sprechi alimentari e il budget.</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-500 text-4xl mb-4 text-center">💪</div>
+                        <img src="meal-prep-preview.jpg" alt="Obiettivi Raggiungibili" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Obiettivi Raggiungibili</h3>
                         <p class="text-gray-300 text-center">Piani personalizzati per perdita peso, aumento massa o mantenimento, con calcolo calorico dettagliato.</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-400 text-4xl mb-4 text-center" style="color: #8FBC8F;">🍽️</div>
+                        <img src="meal-prep-process.jpg" alt="Ricette Varie e Gustose" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Ricette Varie e Gustose</h3>
                         <p class="text-gray-300 text-center">Scopri nuove ricette adatte alle tue preferenze e restrizioni alimentari.</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-500 text-4xl mb-4 text-center">📱</div>
+                        <img src="meal-prep-final.jpg" alt="Mobile-Friendly" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Mobile-Friendly</h3>
                         <p class="text-gray-300 text-center">Accedi ai tuoi piani e ricette ovunque, dal tuo smartphone o tablet.</p>
                     </div>
                     <div class="bg-gray-800 p-8 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <div class="text-green-400 text-4xl mb-4 text-center" style="color: #8FBC8F;">✨</div>
+                        <img src="meal-prep-containers.jpg" alt="Semplice e Intuitivo" class="meal-prep-icon">
                         <h3 class="text-xl font-semibold text-center mb-4 text-white">Semplice e Intuitivo</h3>
                         <p class="text-gray-300 text-center">Un'interfaccia chiara e facile da usare per tutti.</p>
                     </div>
@@ -1789,4 +1815,3 @@
     </script>
 </body>
 </html>
-            
