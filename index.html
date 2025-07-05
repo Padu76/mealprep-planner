@@ -181,8 +181,144 @@
             color: #9FCC9F !important;
         }
 
-        /* Meal prep image styles */
-        .meal
+        /* Meal prep card styles - CORRETTI */
+        .meal-prep-card {
+            background: #374151;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #4B5563;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .meal-prep-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .meal-prep-card-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            object-position: center;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid #8FBC8F;
+        }
+
+        .meal-prep-card:hover .meal-prep-card-image {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .meal-prep-card-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meal-prep-card-content h3 {
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .meal-prep-card-content p {
+            color: #D1D5DB;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        /* Step cards */
+        .step-card {
+            background: #374151;
+            border: 1px solid #4B5563;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .step-number {
+            background-color: #8FBC8F;
+            color: #1a1a1a;
+        }
+
+        /* FAQ cards */
+        .faq-card {
+            background: #374151;
+            border: 1px solid #4B5563;
+        }
+
+        /* Animation classes */
+        .animate-fade-in-down {
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .animate-bounce-in {
+            animation: bounceIn 1s ease-out 0.4s both;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Placeholder images using CSS gradients and emojis */
+        .placeholder-image {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            background: linear-gradient(135deg, #8FBC8F 0%, #9FCC9F 100%);
+            border-bottom: 3px solid #8FBC8F;
+            color: #1a1a1a;
+        }
+
+        .placeholder-time { background: linear-gradient(135deg, #FF9A8B 0%, #FECFEF 100%); }
+        .placeholder-waste { background: linear-gradient(135deg, #A8E6CF 0%, #DCEDC8 100%); }
+        .placeholder-goals { background: linear-gradient(135deg, #FFB347 0%, #FFCC5C 100%); }
+        .placeholder-recipes { background: linear-gradient(135deg, #AEC6CF 0%, #C3E4ED 100%); }
+        .placeholder-mobile { background: linear-gradient(135deg, #DDA0DD 0%, #E6E6FA 100%); }
+        .placeholder-simple { background: linear-gradient(135deg, #98D8C8 0%, #F7DC6F 100%); }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -262,48 +398,67 @@
             <div class="container mx-auto px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-green-400 mb-12" style="color: #8FBC8F;">Perché Scegliere Meal Prep Planner?</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-containers.jpg" alt="Risparmio di Tempo" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Risparmio di Tempo</h3>
-                            <p class="text-gray-300">Prepara i tuoi pasti per più giorni in una sola sessione, liberando tempo prezioso durante la settimana.</p>
+                    
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-time">
+                            ⏰
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Risparmio di Tempo</h3>
+                            <p>Prepara i tuoi pasti per più giorni in una sola sessione, liberando tempo prezioso durante la settimana.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-variety.jpg" alt="Riduzione degli Sprechi" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Riduzione degli Sprechi</h3>
-                            <p class="text-gray-300">Una lista spesa precisa ti aiuta a comprare solo ciò che serve, riducendo gli sprechi alimentari e il budget.</p>
+
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-waste">
+                            🗑️
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Riduzione degli Sprechi</h3>
+                            <p>Una lista spesa precisa ti aiuta a comprare solo ciò che serve, riducendo gli sprechi alimentari e il budget.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-preview.jpg" alt="Obiettivi Raggiungibili" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Obiettivi Raggiungibili</h3>
-                            <p class="text-gray-300">Piani personalizzati per perdita peso, aumento massa o mantenimento, con calcolo calorico dettagliato.</p>
+
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-goals">
+                            🎯
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Obiettivi Raggiungibili</h3>
+                            <p>Piani personalizzati per perdita peso, aumento massa o mantenimento, con calcolo calorico dettagliato.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-process.jpg" alt="Ricette Varie e Gustose" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Ricette Varie e Gustose</h3>
-                            <p class="text-gray-300">Scopri nuove ricette adatte alle tue preferenze e restrizioni alimentari.</p>
+
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-recipes">
+                            🍽️
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Ricette Varie e Gustose</h3>
+                            <p>Scopri nuove ricette adatte alle tue preferenze e restrizioni alimentari.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-final.jpg" alt="Mobile-Friendly" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Mobile-Friendly</h3>
-                            <p class="text-gray-300">Accedi ai tuoi piani e ricette ovunque, dal tuo smartphone o tablet.</p>
+
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-mobile">
+                            📱
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Mobile-Friendly</h3>
+                            <p>Accedi ai tuoi piani e ricette ovunque, dal tuo smartphone o tablet.</p>
                         </div>
                     </div>
-                    <div class="bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition duration-300 transform hover:-translate-y-2 border border-gray-700">
-                        <img src="meal-prep-containers.jpg" alt="Semplice e Intuitivo" class="meal-prep-card-image">
-                        <div class="benefits-card-content">
-                            <h3 class="text-xl font-semibold mb-4 text-white">Semplice e Intuitivo</h3>
-                            <p class="text-gray-300">Un'interfaccia chiara e facile da usare per tutti.</p>
+
+                    <div class="meal-prep-card">
+                        <div class="placeholder-image placeholder-simple">
+                            ✨
+                        </div>
+                        <div class="meal-prep-card-content">
+                            <h3>Semplice e Intuitivo</h3>
+                            <p>Un'interfaccia chiara e facile da usare per tutti.</p>
                         </div>
                     </div>
+
                 </div>
             </div>
         </section>
@@ -313,23 +468,23 @@
             <div class="container mx-auto px-4">
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-green-400 mb-12" style="color: #8FBC8F;">Come Funziona in 4 Semplici Passi</h2>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-gray-700 hover:shadow-xl transition duration-300 border border-gray-600">
-                        <div class="w-16 h-16 text-black rounded-full flex items-center justify-center text-3xl font-bold mb-4" style="background-color: #8FBC8F;">1</div>
+                    <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                        <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">1</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Compila il Form</h3>
                         <p class="text-gray-300">Inserisci i tuoi dati, obiettivi e preferenze alimentari. I dati vengono salvati automaticamente.</p>
                     </div>
-                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-gray-700 hover:shadow-xl transition duration-300 border border-gray-600">
-                        <div class="w-16 h-16 text-black rounded-full flex items-center justify-center text-3xl font-bold mb-4" style="background-color: #8FBC8F;">2</div>
+                    <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                        <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Vedi l'Anteprima</h3>
                         <p class="text-gray-300">Il sistema genera un piano personalizzato che puoi visualizzare e modificare prima di confermarlo.</p>
                     </div>
-                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-gray-700 hover:shadow-xl transition duration-300 border border-gray-600">
-                        <div class="w-16 h-16 text-black rounded-full flex items-center justify-center text-3xl font-bold mb-4" style="background-color: #8FBC8F;">3</div>
+                    <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                        <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">3</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Personalizza</h3>
                         <p class="text-gray-300">Cambia singoli pasti che non ti piacciono con alternative deliziose adatte alle tue preferenze.</p>
                     </div>
-                    <div class="flex flex-col items-center text-center p-6 rounded-lg shadow-md bg-gray-700 hover:shadow-xl transition duration-300 border border-gray-600">
-                        <div class="w-16 h-16 text-black rounded-full flex items-center justify-center text-3xl font-bold mb-4" style="background-color: #8FBC8F;">4</div>
+                    <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                        <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">4</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Scarica e Prepara!</h3>
                         <p class="text-gray-300">Scarica il PDF o ricevilo su WhatsApp e goditi pasti sani e deliziosi per tutta la settimana.</p>
                     </div>
@@ -551,19 +706,19 @@
             <div class="container mx-auto px-4 max-w-3xl">
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-green-400 mb-12" style="color: #8FBC8F;">Domande Frequenti</h2>
                 <div class="space-y-4">
-                    <div class="bg-gray-700 p-6 rounded-lg shadow-md border border-gray-600">
+                    <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">Cos'è il meal prep?</h3>
                         <p class="text-gray-300">Il meal prep è l'atto di preparare pasti o ricette in anticipo, solitamente per 3-7 giorni, per avere pasti pronti da consumare in seguito. Aiuta a risparmiare tempo, denaro e a mantenere una dieta equilibrata.</p>
                     </div>
-                    <div class="bg-gray-700 p-6 rounded-lg shadow-md border border-gray-600">
+                    <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">Posso modificare il piano prima di scaricarlo?</h3>
                         <p class="text-gray-300">Assolutamente sì! Dopo la generazione vedrai un'anteprima completa dove puoi cambiare singoli pasti che non ti piacciono. Clicca "Cambia" su qualsiasi ricetta per ottenere alternative.</p>
                     </div>
-                    <div class="bg-gray-700 p-6 rounded-lg shadow-md border border-gray-600">
+                    <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">I miei dati vengono salvati?</h3>
                         <p class="text-gray-300">Sì! I tuoi dati del form vengono salvati automaticamente nel browser, così non devi reinserirli ogni volta. Puoi sempre cancellarli quando vuoi.</p>
                     </div>
-                    <div class="bg-gray-700 p-6 rounded-lg shadow-md border border-gray-600">
+                    <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">Come riceverò il mio piano?</h3>
                         <p class="text-gray-300">Una volta confermato il piano, potrai scaricarlo come PDF per tenerlo sempre con te, o riceverlo direttamente su WhatsApp per comodità.</p>
                     </div>
