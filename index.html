@@ -331,7 +331,7 @@
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500" style="border-color: #8FBC8F #8FBC8F transparent transparent;"></div>
             <p class="mt-4 text-white text-lg">Generazione piano in corso...</p>
-            <p class="mt-2 text-white text-sm">Creazione ricette personalizzate...</p>
+            <p class="mt-2 text-white text-sm">Creazione ricette personalizzate con Claude AI...</p>
         </div>
     </div>
 
@@ -385,7 +385,7 @@
                     Rivoluziona la Tua Alimentazione con <br class="hidden md:inline">Meal Prep Planner
                 </h1>
                 <p class="text-lg md:text-xl mb-8 opacity-90 animate-fade-in-up">
-                    Piani Pasti Personalizzati, Lista Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.
+                    Piani Pasti Personalizzati con Claude AI, Lista Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.
                 </p>
                 <a href="#meal-prep-form" class="bg-black text-white hover:bg-gray-800 font-bold py-3 px-8 rounded-full text-lg md:text-xl shadow-lg transition duration-300 transform hover:scale-105 animate-bounce-in">
                     Inizia Ora!
@@ -464,12 +464,12 @@
                     <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
                         <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">2</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Vedi l'Anteprima</h3>
-                        <p class="text-gray-300">Il sistema genera un piano personalizzato che puoi visualizzare e modificare prima di confermarlo.</p>
+                        <p class="text-gray-300">Claude AI genera un piano personalizzato che puoi visualizzare e modificare prima di confermarlo.</p>
                     </div>
                     <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
                         <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">3</div>
                         <h3 class="text-xl font-semibold mb-2 text-white">Personalizza</h3>
-                        <p class="text-gray-300">Cambia singoli pasti che non ti piacciono con alternative deliziose adatte alle tue preferenze.</p>
+                        <p class="text-gray-300">Cambia singoli pasti che non ti piacciono con alternative deliziose generate da Claude AI.</p>
                     </div>
                     <div class="step-card flex flex-col items-center text-center p-6 rounded-lg shadow-md hover:shadow-xl transition duration-300">
                         <div class="step-number w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-4">4</div>
@@ -637,7 +637,7 @@
             <div class="success-animation max-w-2xl mx-auto">
                 <div class="text-6xl mb-6">🎉</div>
                 <h2 class="text-3xl font-bold text-green-400 mb-4" style="color: #8FBC8F;">Piano Confermato con Successo!</h2>
-                <p class="text-lg text-gray-300 mb-8">Il tuo piano pasti personalizzato è pronto. Puoi scaricarlo come PDF o riceverlo direttamente su WhatsApp.</p>
+                <p class="text-lg text-gray-300 mb-8">Il tuo piano pasti personalizzato con Claude AI è pronto. Puoi scaricarlo come PDF o riceverlo direttamente su WhatsApp.</p>
                 
                 <div class="bg-gray-800 p-6 rounded-lg mb-8 border border-gray-600">
                     <h3 class="text-xl font-semibold mb-4 text-white">Il tuo piano include:</h3>
@@ -697,6 +697,10 @@
                     <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">Cos'è il meal prep?</h3>
                         <p class="text-gray-300">Il meal prep è l'atto di preparare pasti o ricette in anticipo, solitamente per 3-7 giorni, per avere pasti pronti da consumare in seguito. Aiuta a risparmiare tempo, denaro e a mantenere una dieta equilibrata.</p>
+                    </div>
+                    <div class="faq-card p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-2 text-white">Come funziona Claude AI nel meal prep?</h3>
+                        <p class="text-gray-300">Claude AI analizza le tue preferenze, obiettivi e restrizioni alimentari per generare ricette originali e personalizzate. Ogni piano è unico e ottimizzato per le tue esigenze specifiche.</p>
                     </div>
                     <div class="faq-card p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-2 text-white">Posso modificare il piano prima di scaricarlo?</h3>
@@ -812,6 +816,15 @@
     </div>
 
     <script>
+        // === CLAUDE AI CONFIGURATION ===
+        const CLAUDE_API_CONFIG = {
+            useAnthropicAPI: false,
+            apiKey: '',
+            useProxy: true,
+            proxyEndpoint: 'https://meal-prep-backend-j6xm11vqk-andreas-projects-ee49b818.vercel.app/api/meal-plan-generator',
+            useFallback: true
+        };
+
         // Global variables
         let currentRequestId = null;
         let currentGeneratedPlan = null;
@@ -975,8 +988,117 @@
             }
         }
 
-        // --- Client-Side Meal Plan Generation ---
+        // === CLAUDE AI INTEGRATION ===
+        async function generateAdvancedMealPlan(userData) {
+            console.log('🤖 Tentativo generazione con Claude AI...');
+            
+            if (CLAUDE_API_CONFIG.useProxy && CLAUDE_API_CONFIG.proxyEndpoint) {
+                try {
+                    const response = await fetch(CLAUDE_API_CONFIG.proxyEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Errore HTTP: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ Piano generato con Claude AI');
+                    return result;
+                } catch (error) {
+                    console.warn('⚠️ Claude AI non disponibile:', error.message);
+                    if (CLAUDE_API_CONFIG.useFallback) {
+                        console.log('🔄 Uso fallback locale...');
+                        return generateClientSideMealPlan(userData);
+                    }
+                    throw error;
+                }
+            }
+
+            // Fallback to local generation
+            console.log('📱 Uso generazione locale come fallback');
+            return generateClientSideMealPlan(userData);
+        }
+
+        function createMealPlanPrompt(userData) {
+            return `Crea un piano pasti personalizzato in formato JSON per questi dati:
+
+Utente:
+- Età: ${userData.age} anni
+- Peso: ${userData.weight} kg
+- Altezza: ${userData.height} cm
+- Sesso: ${userData.gender}
+- Obiettivo: ${userData.goal}
+- Livello attività: ${userData.activity_level}
+- Durata: ${userData.duration} giorni
+- Pasti al giorno: ${userData.meals_per_day}
+- Tipo dieta: ${userData.diet}
+- Calorie target: ${userData.calories} kcal/giorno
+- Esclusioni: ${userData.exclusions?.join(', ') || 'Nessuna'}
+- Cibi disponibili: ${userData.foods_at_home?.join(', ') || 'Nessuno'}
+
+Restituisci SOLO un JSON valido con questa struttura:
+{
+  "shoppingList": ["ingrediente con quantità", ...],
+  "recipes": [
+    {
+      "day": "Giorno 1",
+      "meals": [
+        {
+          "type": "Colazione/Pranzo/Cena/Spuntino",
+          "name": "Nome ricetta",
+          "ingredients": ["ingrediente 1", "ingrediente 2", ...],
+          "instructions": "Istruzioni dettagliate step-by-step",
+          "calories": numero,
+          "protein": "XXg",
+          "carbs": "XXg", 
+          "fat": "XXg",
+          "prepTime": "XX minuti",
+          "cookTime": "XX minuti"
+        }
+      ]
+    }
+  ],
+  "nutritionSummary": {
+    "totalCaloriesPerDay": ${userData.calories},
+    "proteinPerDay": "XXg",
+    "carbsPerDay": "XXg", 
+    "fatPerDay": "XXg"
+  },
+  "mealPrepTips": ["consiglio 1", "consiglio 2", ...]
+}
+
+Requisiti:
+- Ricette creative e variegate
+- Ingredienti facilmente reperibili in Italia
+- Istruzioni dettagliate e chiare
+- Rispetta le esclusioni alimentari
+- Ottimizza per meal prep (conservazione)
+- Lista spesa organizzata per categorie`;
+        }
+
+        function parseClaudeResponse(responseText) {
+            try {
+                // Extract JSON from Claude's response
+                const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[0]);
+                }
+                throw new Error('Formato JSON non trovato nella risposta');
+            } catch (error) {
+                console.error('Errore parsing risposta Claude:', error);
+                throw new Error('Risposta Claude non valida');
+            }
+        }
+
+        // --- Client-Side Meal Plan Generation (FALLBACK) ---
         function generateClientSideMealPlan(data) {
+            console.log('📱 Generazione piano lato client (fallback)');
+            
             const caloriesPerMeal = Math.round(data.calories / data.meals_per_day);
             
             const mealTypes = [];
@@ -984,6 +1106,8 @@
             if (data.meals_per_day >= 2) mealTypes.push("Pranzo");
             if (data.meals_per_day >= 3) mealTypes.push("Cena");
             if (data.meals_per_day >= 4) mealTypes.push("Spuntino");
+            if (data.meals_per_day >= 5) mealTypes.push("Merenda");
+            if (data.meals_per_day >= 6) mealTypes.push("Spuntino Serale");
 
             // Define meal templates based on diet type
             const mealTemplates = getMealTemplates(data.diet, data.exclusions);
@@ -1004,7 +1128,9 @@
                         calories: caloriesPerMeal,
                         protein: template.protein,
                         carbs: template.carbs,
-                        fat: template.fat
+                        fat: template.fat,
+                        prepTime: template.prepTime || "15 minuti",
+                        cookTime: template.cookTime || "20 minuti"
                     };
                     
                     // Add ingredients to shopping list
@@ -1045,63 +1171,100 @@
                 "Colazione": {
                     name: "Avena con frutta e noci",
                     ingredients: ["50g avena", "200ml latte", "1 banana", "10g noci"],
-                    instructions: "Cuoci l'avena nel latte a fuoco medio per 5 minuti. Aggiungi banana a fette e noci tritate. Dolcifica a piacere.",
-                    protein: "15g",
-                    carbs: "45g", 
-                    fat: "12g",
-                    shopping: ["Avena - 500g", "Latte - 2L", "Banane - 1kg", "Noci - 200g"]
+                    instructions: "Cuoci l'avena nel latte a fuoco medio per 5 minuti mescolando spesso. Aggiungi banana a fette e noci tritate. Dolcifica a piacere con miele o stevia. Perfetto per il meal prep: prepara 3-4 porzioni e conserva in frigo.",
+                    protein: "15g", carbs: "45g", fat: "12g",
+                    prepTime: "10 minuti", cookTime: "5 minuti",
+                    shopping: ["Avena - 500g", "Latte - 2L", "Banane - 1kg", "Noci - 200g", "Miele - 1 barattolo"]
                 },
                 "Pranzo": {
-                    name: "Pollo con riso e verdure",
-                    ingredients: ["120g petto di pollo", "80g riso integrale", "150g verdure miste"],
-                    instructions: "Griglia il pollo con poco olio e spezie. Cuoci il riso in abbondante acqua salata. Saltare le verdure in padella con aglio e olio.",
-                    protein: "35g",
-                    carbs: "50g",
-                    fat: "8g",
-                    shopping: ["Petto di pollo - 1kg", "Riso integrale - 500g", "Verdure miste - 1kg", "Aglio - 1 testa"]
+                    name: "Pollo grigliato con riso e verdure",
+                    ingredients: ["120g petto di pollo", "80g riso integrale", "150g verdure miste", "1 cucchiaio olio EVO"],
+                    instructions: "Condisci il pollo con sale, pepe e rosmarino. Griglia per 6-8 minuti per lato fino a cottura completa. Cuoci il riso in abbondante acqua salata per 18-20 minuti. Saltare le verdure in padella con aglio e olio per 5-7 minuti. Assembla nei contenitori per meal prep.",
+                    protein: "35g", carbs: "50g", fat: "8g",
+                    prepTime: "15 minuti", cookTime: "25 minuti",
+                    shopping: ["Petto di pollo - 1kg", "Riso integrale - 500g", "Verdure miste - 1kg", "Aglio - 1 testa", "Olio EVO - 1L", "Rosmarino fresco"]
                 },
                 "Cena": {
-                    name: "Salmone con patate dolci",
-                    ingredients: ["100g salmone", "150g patate dolci", "100g broccoli"],
-                    instructions: "Cuoci il salmone al forno a 180°C per 15 minuti. Arrostisci le patate dolci tagliate a cubetti. Cuoci i broccoli al vapore.",
-                    protein: "30g",
-                    carbs: "35g",
-                    fat: "15g",
-                    shopping: ["Salmone - 800g", "Patate dolci - 1.5kg", "Broccoli - 1kg"]
+                    name: "Salmone al forno con patate dolci",
+                    ingredients: ["100g salmone", "150g patate dolci", "100g broccoli", "Limone", "Erbe aromatiche"],
+                    instructions: "Preriscalda forno a 180°C. Taglia le patate dolci a cubetti e condisci con olio e sale. Inforna per 20 minuti. Aggiungi il salmone condito con limone e erbe, cuoci altri 12-15 minuti. Cuoci i broccoli al vapore negli ultimi 8 minuti. Ottimo per 3-4 giorni in frigo.",
+                    protein: "30g", carbs: "35g", fat: "15g",
+                    prepTime: "10 minuti", cookTime: "35 minuti",
+                    shopping: ["Salmone - 800g", "Patate dolci - 1.5kg", "Broccoli - 1kg", "Limoni - 4 pezzi", "Erbe aromatiche miste"]
                 },
                 "Spuntino": {
-                    name: "Yogurt greco con miele",
-                    ingredients: ["150g yogurt greco", "1 cucchiaio miele", "10g mandorle"],
-                    instructions: "Mescola yogurt e miele in una ciotola. Aggiungi mandorle tritate grossolanamente.",
-                    protein: "15g",
-                    carbs: "20g",
-                    fat: "8g",
-                    shopping: ["Yogurt greco - 1kg", "Miele - 1 barattolo", "Mandorle - 200g"]
+                    name: "Yogurt greco con miele e mandorle",
+                    ingredients: ["150g yogurt greco", "1 cucchiaio miele", "10g mandorle", "Cannella"],
+                    instructions: "Mescola yogurt greco con miele in una ciotola. Aggiungi mandorle tritate grossolanamente e una spolverata di cannella. Prepara in contenitori singoli per 3-4 giorni. Conserva in frigo e consuma entro 4 giorni.",
+                    protein: "15g", carbs: "20g", fat: "8g",
+                    prepTime: "5 minuti", cookTime: "0 minuti",
+                    shopping: ["Yogurt greco - 1kg", "Miele - 1 barattolo", "Mandorle - 200g", "Cannella in polvere"]
+                },
+                "Merenda": {
+                    name: "Frullato proteico con frutti di bosco",
+                    ingredients: ["200ml latte vegetale", "100g frutti di bosco", "20g proteine in polvere", "5g semi di lino"],
+                    instructions: "Frulla tutti gli ingredienti fino a ottenere una consistenza cremosa. Aggiungi ghiaccio se preferisci più freddo. Puoi preparare la base e congelare i frutti in porzioni pronte. Perfetto post-allenamento.",
+                    protein: "25g", carbs: "18g", fat: "6g",
+                    prepTime: "5 minuti", cookTime: "0 minuti",
+                    shopping: ["Latte vegetale - 1L", "Frutti di bosco surgelati - 500g", "Proteine in polvere - 1 barattolo", "Semi di lino - 200g"]
+                },
+                "Spuntino Serale": {
+                    name: "Ricotta con noci e miele",
+                    ingredients: ["100g ricotta", "10g noci", "1 cucchiaino miele", "Cannella"],
+                    instructions: "Mescola delicatamente la ricotta con il miele. Aggiungi le noci tritate e una spolverata di cannella. Spuntino leggero e ricco di proteine, perfetto prima di dormire. Prepara al momento per la migliore freschezza.",
+                    protein: "12g", carbs: "12g", fat: "8g",
+                    prepTime: "3 minuti", cookTime: "0 minuti",
+                    shopping: ["Ricotta fresca - 500g", "Noci - 200g", "Miele - 1 barattolo", "Cannella in polvere"]
                 }
             };
 
             // Adapt templates based on diet type
             if (dietType === 'vegetariana') {
                 templates["Pranzo"] = {
-                    name: "Quinoa con legumi e verdure",
-                    ingredients: ["80g quinoa", "100g ceci", "150g verdure miste"],
-                    instructions: "Cuoci la quinoa in brodo vegetale. Sciacqua i ceci e uniscili alla quinoa. Aggiungi verdure saltate.",
-                    protein: "20g",
-                    carbs: "55g",
-                    fat: "6g",
-                    shopping: ["Quinoa - 500g", "Ceci in scatola - 800g", "Verdure miste - 1kg", "Brodo vegetale - 1L"]
+                    name: "Bowl di quinoa con legumi e verdure",
+                    ingredients: ["80g quinoa", "100g ceci", "150g verdure grigliate", "Tahini", "Limone"],
+                    instructions: "Cuoci la quinoa in brodo vegetale per 15 minuti. Sciacqua i ceci e rosolali in padella con spezie. Griglia le verdure fino a doratura. Componi la bowl e condisci con tahini diluito con limone. Conserva separatamente condimento e verdure.",
+                    protein: "20g", carbs: "55g", fat: "8g",
+                    prepTime: "15 minuti", cookTime: "20 minuti",
+                    shopping: ["Quinoa - 500g", "Ceci in scatola - 800g", "Verdure miste - 1kg", "Tahini - 1 barattolo", "Brodo vegetale - 1L"]
+                };
+                
+                templates["Cena"] = {
+                    name: "Frittata di verdure con insalata",
+                    ingredients: ["3 uova", "150g verdure miste", "50g formaggio", "Insalata verde", "Olio EVO"],
+                    instructions: "Sbatti le uova in una ciotola. Saltare le verdure in padella antiaderente, aggiungi le uova e cuoci come una frittata. Aggiungi formaggio negli ultimi minuti. Servi con insalata fresca condita. Ottima anche fredda il giorno dopo.",
+                    protein: "22g", carbs: "8g", fat: "18g",
+                    prepTime: "10 minuti", cookTime: "15 minuti",
+                    shopping: ["Uova - 12 pezzi", "Verdure miste - 1kg", "Formaggio - 200g", "Insalata - 2 cespi", "Olio EVO - 1L"]
                 };
             }
 
             if (dietType === 'vegana') {
                 templates["Colazione"] = {
-                    name: "Smoothie bowl con frutta",
-                    ingredients: ["1 banana", "100g frutti di bosco", "30g semi di chia", "200ml latte di avena"],
-                    instructions: "Frulla banana e latte di avena. Versa in una bowl e aggiungi frutti di bosco e semi di chia.",
-                    protein: "12g",
-                    carbs: "48g",
-                    fat: "10g",
-                    shopping: ["Banane - 1kg", "Frutti di bosco - 500g", "Semi di chia - 200g", "Latte di avena - 1L"]
+                    name: "Smoothie bowl energetico",
+                    ingredients: ["1 banana", "100g frutti di bosco", "30g semi di chia", "200ml latte di avena", "Granola"],
+                    instructions: "Frulla banana, frutti di bosco e latte di avena fino a consistenza cremosa. Versa in una bowl e aggiungi semi di chia e granola sopra. Lascia riposare 5 minuti perché i semi si idratino. Perfetto anche preparato la sera prima.",
+                    protein: "12g", carbs: "48g", fat: "12g",
+                    prepTime: "10 minuti", cookTime: "0 minuti",
+                    shopping: ["Banane - 1kg", "Frutti di bosco - 500g", "Semi di chia - 200g", "Latte di avena - 2L", "Granola - 400g"]
+                };
+
+                templates["Pranzo"] = {
+                    name: "Buddha bowl con tofu e quinoa",
+                    ingredients: ["80g quinoa", "100g tofu", "Verdure arcobaleno", "Avocado", "Salsa tahini"],
+                    instructions: "Cuoci la quinoa in brodo vegetale. Marina il tofu con salsa di soia e spezie, poi griglia fino a doratura. Prepara verdure crude e cotte. Componi la bowl con tutti gli ingredienti e condisci con salsa tahini. Conserva condimento separato.",
+                    protein: "18g", carbs: "50g", fat: "16g",
+                    prepTime: "20 minuti", cookTime: "25 minuti",
+                    shopping: ["Quinoa - 500g", "Tofu - 400g", "Verdure miste - 1.5kg", "Avocado - 4 pezzi", "Tahini - 1 barattolo", "Salsa di soia"]
+                };
+
+                templates["Cena"] = {
+                    name: "Zuppa di lenticchie e verdure",
+                    ingredients: ["120g lenticchie rosse", "200g verdure miste", "Brodo vegetale", "Spezie", "Pane integrale"],
+                    instructions: "Soffriggi le verdure in olio EVO. Aggiungi lenticchie e brodo vegetale, cuoci per 20 minuti. Frulla parzialmente per consistenza cremosa. Condisci con spezie a piacere. Servi con pane integrale tostato. Si conserva 4-5 giorni in frigo.",
+                    protein: "16g", carbs: "45g", fat: "6g",
+                    prepTime: "15 minuti", cookTime: "25 minuti",
+                    shopping: ["Lenticchie rosse - 500g", "Verdure miste - 1kg", "Brodo vegetale - 2L", "Spezie miste", "Pane integrale - 1 pagnotta"]
                 };
             }
 
@@ -1152,6 +1315,8 @@
                                     <span class="bg-green-600 text-white px-2 py-1 rounded text-xs" style="background-color: #8FBC8F; color: #1a1a1a;">🥩 ${meal.protein}</span>
                                     <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">🍞 ${meal.carbs}</span>
                                     <span class="bg-purple-600 text-white px-2 py-1 rounded text-xs">🥑 ${meal.fat}</span>
+                                    ${meal.prepTime ? `<span class="bg-gray-600 text-white px-2 py-1 rounded text-xs">⏱️ Prep: ${meal.prepTime}</span>` : ''}
+                                    ${meal.cookTime ? `<span class="bg-gray-600 text-white px-2 py-1 rounded text-xs">🔥 Cottura: ${meal.cookTime}</span>` : ''}
                                 </div>
                             </div>
                             <div class="text-sm text-gray-300">
@@ -1187,11 +1352,49 @@
             const shoppingContainer = document.getElementById('shopping-list-preview');
             shoppingContainer.innerHTML = '';
             
+            // Organize shopping list by categories
+            const categories = {
+                'Proteine': [],
+                'Carboidrati': [],
+                'Verdure/Frutta': [],
+                'Latticini': [],
+                'Condimenti': [],
+                'Altro': []
+            };
+
             shoppingList.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'bg-gray-700 p-2 rounded border text-gray-300 border-gray-600';
-                itemDiv.innerHTML = `<span class="text-green-400" style="color: #8FBC8F;">•</span> ${item}`;
-                shoppingContainer.appendChild(itemDiv);
+                const lowerItem = item.toLowerCase();
+                if (lowerItem.includes('pollo') || lowerItem.includes('salmone') || lowerItem.includes('uova') || lowerItem.includes('tofu') || lowerItem.includes('proteine')) {
+                    categories['Proteine'].push(item);
+                } else if (lowerItem.includes('riso') || lowerItem.includes('quinoa') || lowerItem.includes('avena') || lowerItem.includes('pane') || lowerItem.includes('pasta')) {
+                    categories['Carboidrati'].push(item);
+                } else if (lowerItem.includes('verdure') || lowerItem.includes('frutta') || lowerItem.includes('banane') || lowerItem.includes('broccoli') || lowerItem.includes('patate')) {
+                    categories['Verdure/Frutta'].push(item);
+                } else if (lowerItem.includes('latte') || lowerItem.includes('yogurt') || lowerItem.includes('formaggio') || lowerItem.includes('ricotta')) {
+                    categories['Latticini'].push(item);
+                } else if (lowerItem.includes('olio') || lowerItem.includes('aceto') || lowerItem.includes('spezie') || lowerItem.includes('sale') || lowerItem.includes('miele')) {
+                    categories['Condimenti'].push(item);
+                } else {
+                    categories['Altro'].push(item);
+                }
+            });
+
+            Object.entries(categories).forEach(([category, items]) => {
+                if (items.length > 0) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'col-span-full mb-4';
+                    categoryDiv.innerHTML = `
+                        <h4 class="text-green-400 font-semibold mb-2" style="color: #8FBC8F;">${category}</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            ${items.map(item => `
+                                <div class="bg-gray-700 p-2 rounded border text-gray-300 border-gray-600">
+                                    <span class="text-green-400" style="color: #8FBC8F;">•</span> ${item}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    shoppingContainer.appendChild(categoryDiv);
+                }
             });
         }
 
@@ -1208,35 +1411,61 @@
             });
         }
 
-        function regenerateSingleMeal(dayIndex, mealIndex, mealType) {
+        async function regenerateSingleMeal(dayIndex, mealIndex, mealType) {
             if (!currentGeneratedPlan) return;
             
             showLoading();
             
             try {
                 const { planData, userInfo } = currentGeneratedPlan;
-                const caloriesPerMeal = Math.round(userInfo.calories / userInfo.meals_per_day);
                 
-                // Get alternative meal templates
-                const alternativeTemplates = getAlternativeMealTemplates(mealType, userInfo.diet);
-                
-                // Select a random alternative template
-                const selectedTemplate = alternativeTemplates[Math.floor(Math.random() * alternativeTemplates.length)];
-                
-                // Create new meal
-                const newMeal = {
-                    type: mealType,
-                    name: selectedTemplate.name,
-                    ingredients: selectedTemplate.ingredients.slice(),
-                    instructions: selectedTemplate.instructions,
-                    calories: caloriesPerMeal,
-                    protein: selectedTemplate.protein,
-                    carbs: selectedTemplate.carbs,
-                    fat: selectedTemplate.fat
-                };
-                
-                // Update the plan data
-                planData.recipes[dayIndex].meals[mealIndex] = newMeal;
+                // Try to regenerate with Claude AI first
+                try {
+                    console.log(`🤖 Rigenerazione ${mealType} con Claude AI...`);
+                    
+                    const singleMealData = {
+                        ...userInfo,
+                        requestType: 'singleMeal',
+                        mealType: mealType,
+                        dayNumber: dayIndex + 1
+                    };
+
+                    const newMealResponse = await generateAdvancedMealPlan(singleMealData);
+                    
+                    if (newMealResponse && newMealResponse.recipes && newMealResponse.recipes[0] && newMealResponse.recipes[0].meals[0]) {
+                        const newMeal = newMealResponse.recipes[0].meals[0];
+                        
+                        // Update the plan data
+                        planData.recipes[dayIndex].meals[mealIndex] = newMeal;
+                        
+                        console.log('✅ Pasto rigenerato con Claude AI');
+                    } else {
+                        throw new Error('Risposta Claude non valida per singolo pasto');
+                    }
+                } catch (claudeError) {
+                    console.warn('⚠️ Claude AI non disponibile per singolo pasto, uso fallback');
+                    
+                    // Fallback to local generation
+                    const caloriesPerMeal = Math.round(userInfo.calories / userInfo.meals_per_day);
+                    const alternativeTemplates = getAlternativeMealTemplates(mealType, userInfo.diet);
+                    const selectedTemplate = alternativeTemplates[Math.floor(Math.random() * alternativeTemplates.length)];
+                    
+                    const newMeal = {
+                        type: mealType,
+                        name: selectedTemplate.name,
+                        ingredients: selectedTemplate.ingredients.slice(),
+                        instructions: selectedTemplate.instructions,
+                        calories: caloriesPerMeal,
+                        protein: selectedTemplate.protein,
+                        carbs: selectedTemplate.carbs,
+                        fat: selectedTemplate.fat,
+                        prepTime: selectedTemplate.prepTime,
+                        cookTime: selectedTemplate.cookTime
+                    };
+                    
+                    planData.recipes[dayIndex].meals[mealIndex] = newMeal;
+                    console.log('✅ Pasto rigenerato con fallback locale');
+                }
                 
                 // Regenerate shopping list
                 const shoppingItems = new Set();
@@ -1270,94 +1499,74 @@
             const alternatives = {
                 "Colazione": [
                     {
-                        name: "Pancakes proteici",
-                        ingredients: ["2 uova", "30g avena", "100ml latte", "1 cucchiaino miele"],
-                        instructions: "Frulla tutti gli ingredienti. Cuoci in padella antiaderente per formare piccoli pancakes.",
+                        name: "Pancakes proteici ai frutti di bosco",
+                        ingredients: ["2 uova", "30g avena", "100ml latte", "50g frutti di bosco", "1 cucchiaino miele"],
+                        instructions: "Frulla uova, avena e latte fino a ottenere un composto liscio. Cuoci in padella antiaderente formando piccoli pancakes. Cuoci 2-3 minuti per lato. Servi con frutti di bosco e miele. Conserva i pancakes cotti in frigo per 3 giorni.",
                         protein: "18g", carbs: "35g", fat: "10g",
-                        shopping: ["Uova - 12 pezzi", "Avena - 500g", "Latte - 1L", "Miele - 1 barattolo"]
+                        prepTime: "10 minuti", cookTime: "10 minuti",
+                        shopping: ["Uova - 12 pezzi", "Avena - 500g", "Latte - 1L", "Frutti di bosco - 300g", "Miele - 1 barattolo"]
                     },
                     {
-                        name: "Toast integrale con avocado",
-                        ingredients: ["2 fette pane integrale", "1/2 avocado", "1 uovo", "pomodorini"],
-                        instructions: "Tosta il pane, spalma l'avocado schiacciato, aggiungi l'uovo in camicia e pomodorini.",
-                        protein: "15g", carbs: "40g", fat: "14g",
-                        shopping: ["Pane integrale - 1 pagnotta", "Avocado - 4 pezzi", "Uova - 12 pezzi", "Pomodorini - 500g"]
-                    },
-                    {
-                        name: "Smoothie bowl energetico",
-                        ingredients: ["1 banana", "100g frutti misti", "200ml yogurt greco", "15g granola"],
-                        instructions: "Frulla banana e yogurt, versa in una bowl, aggiungi frutti e granola sopra.",
-                        protein: "20g", carbs: "45g", fat: "8g",
-                        shopping: ["Banane - 1kg", "Frutti misti - 500g", "Yogurt greco - 1kg", "Granola - 400g"]
+                        name: "Toast integrale con avocado e uovo",
+                        ingredients: ["2 fette pane integrale", "1/2 avocado maturo", "1 uovo", "Pomodorini ciliegia", "Sale, pepe"],
+                        instructions: "Tosta il pane fino a doratura. Schiaccia l'avocado con una forchetta e spalma sul pane. Cuoci l'uovo in camicia o sodo. Aggiungi pomodorini tagliati e l'uovo sopra l'avocado. Condisci con sale e pepe. Consuma fresco.",
+                        protein: "15g", carbs: "40g", fat: "16g",
+                        prepTime: "8 minuti", cookTime: "5 minuti",
+                        shopping: ["Pane integrale - 1 pagnotta", "Avocado - 4 pezzi", "Uova - 12 pezzi", "Pomodorini - 250g"]
                     }
                 ],
                 "Pranzo": [
                     {
-                        name: "Insalata di quinoa e verdure",
-                        ingredients: ["80g quinoa", "150g verdure grigliate", "50g feta", "olive"],
-                        instructions: "Cuoci la quinoa, griglia le verdure, mescola tutto con feta sbriciolata e olive.",
-                        protein: "18g", carbs: "45g", fat: "12g",
-                        shopping: ["Quinoa - 500g", "Verdure miste - 1kg", "Feta - 200g", "Olive - 200g"]
+                        name: "Insalata di quinoa mediterranea",
+                        ingredients: ["80g quinoa", "100g pomodorini", "50g cetrioli", "40g olive", "30g feta", "Basilico fresco"],
+                        instructions: "Cuoci la quinoa in brodo vegetale per 15 minuti. Lascia raffreddare. Taglia pomodorini e cetrioli a cubetti. Mescola quinoa fredda con verdure, olive e feta sbriciolata. Condisci con olio EVO, limone e basilico. Ottima per 3-4 giorni.",
+                        protein: "18g", carbs: "45g", fat: "14g",
+                        prepTime: "15 minuti", cookTime: "15 minuti",
+                        shopping: ["Quinoa - 500g", "Pomodorini - 500g", "Cetrioli - 3 pezzi", "Olive - 200g", "Feta - 200g", "Basilico - 1 mazzetto"]
                     },
                     {
-                        name: "Wrap di pollo e verdure",
-                        ingredients: ["1 tortilla integrale", "100g pollo grigliato", "verdure fresche", "hummus"],
-                        instructions: "Spalma hummus sulla tortilla, aggiungi pollo a strisce e verdure, arrotola.",
-                        protein: "28g", carbs: "35g", fat: "10g",
-                        shopping: ["Tortillas integrali - 8 pezzi", "Petto di pollo - 800g", "Verdure fresche - mix", "Hummus - 200g"]
-                    },
-                    {
-                        name: "Bowl di salmone e riso",
-                        ingredients: ["80g riso integrale", "100g salmone", "edamame", "alga nori"],
-                        instructions: "Cuoci riso e salmone. Componi la bowl con tutti gli ingredienti, condisci con salsa di soia.",
-                        protein: "30g", carbs: "50g", fat: "15g",
-                        shopping: ["Riso integrale - 500g", "Salmone - 800g", "Edamame - 300g", "Alga nori - 1 confezione"]
+                        name: "Wrap di pollo e hummus",
+                        ingredients: ["1 tortilla integrale", "100g pollo grigliato", "2 cucchiai hummus", "Lattuga", "Pomodoro", "Carote julienne"],
+                        instructions: "Spalma hummus su tutta la tortilla. Disponi lattuga, pomodoro a fette e carote. Aggiungi pollo grigliato a strisce. Arrotola stretto partendo da un lato. Taglia a metà e avvolgi in carta da forno. Si conserva 2 giorni in frigo.",
+                        protein: "28g", carbs: "35g", fat: "12g",
+                        prepTime: "10 minuti", cookTime: "0 minuti",
+                        shopping: ["Tortillas integrali - 8 pezzi", "Petto di pollo - 800g", "Hummus - 200g", "Lattuga - 1 cespo", "Pomodori - 3 pezzi", "Carote - 500g"]
                     }
                 ],
                 "Cena": [
                     {
-                        name: "Merluzzo al forno con verdure",
-                        ingredients: ["120g merluzzo", "200g verdure mediterranee", "patate novelle"],
-                        instructions: "Inforna merluzzo e verdure a 180°C per 20 minuti con olio, sale e erbe aromatiche.",
-                        protein: "25g", carbs: "30g", fat: "8g",
-                        shopping: ["Merluzzo - 800g", "Verdure mediterranee - 1kg", "Patate novelle - 1kg"]
+                        name: "Merluzzo in crosta di erbe con verdure",
+                        ingredients: ["120g merluzzo", "200g verdure mediterranee", "Pangrattato integrale", "Erbe miste", "Limone"],
+                        instructions: "Preriscalda forno a 180°C. Mescola pangrattato con erbe tritate. Spennella il pesce con olio e limone, ricopri con la crosta. Taglia le verdure e condisci. Inforna tutto per 20-25 minuti. Il pesce è pronto quando si sfalda facilmente.",
+                        protein: "25g", carbs: "25g", fat: "8g",
+                        prepTime: "15 minuti", cookTime: "25 minuti",
+                        shopping: ["Merluzzo - 800g", "Verdure mediterranee - 1kg", "Pangrattato integrale - 200g", "Erbe miste", "Limoni - 3 pezzi"]
                     },
                     {
-                        name: "Petto di tacchino alle erbe",
-                        ingredients: ["120g petto tacchino", "150g zucchine", "50g riso selvaggio"],
-                        instructions: "Cuoci il tacchino in padella con erbe. Saltare le zucchine e servire con riso selvaggio.",
-                        protein: "32g", carbs: "25g", fat: "6g",
-                        shopping: ["Petto di tacchino - 800g", "Zucchine - 1kg", "Riso selvaggio - 300g"]
-                    },
-                    {
-                        name: "Tofu grigliato con verdure",
-                        ingredients: ["100g tofu", "200g verdure asiatiche", "30g riso integrale"],
-                        instructions: "Griglia il tofu marinato, saltare le verdure con salsa di soia e zenzero.",
-                        protein: "20g", carbs: "35g", fat: "12g",
-                        shopping: ["Tofu - 400g", "Verdure asiatiche - 1kg", "Riso integrale - 500g", "Zenzero - 100g"]
+                        name: "Curry di lenticchie e verdure",
+                        ingredients: ["100g lenticchie rosse", "200g verdure miste", "Latte di cocco", "Curry in polvere", "Zenzero fresco"],
+                        instructions: "Soffriggi le verdure con zenzero grattugiato. Aggiungi lenticchie, curry e latte di cocco. Cuoci a fuoco medio per 20 minuti mescolando. Aggiusta di sale e spezie. Servi con riso basmati. Si conserva 4-5 giorni e migliora di sapore.",
+                        protein: "16g", carbs: "40g", fat: "12g",
+                        prepTime: "10 minuti", cookTime: "25 minuti",
+                        shopping: ["Lenticchie rosse - 500g", "Verdure curry - 1kg", "Latte di cocco - 2 lattine", "Curry in polvere", "Zenzero fresco - 50g"]
                     }
                 ],
                 "Spuntino": [
                     {
-                        name: "Frutta secca e yogurt",
-                        ingredients: ["150g yogurt naturale", "20g mix frutta secca", "1 cucchiaino miele"],
-                        instructions: "Mescola yogurt con frutta secca tritata e miele.",
-                        protein: "12g", carbs: "18g", fat: "8g",
-                        shopping: ["Yogurt naturale - 1kg", "Mix frutta secca - 300g", "Miele - 1 barattolo"]
+                        name: "Energy balls al cocco",
+                        ingredients: ["80g datteri", "30g mandorle", "20g cocco rapé", "1 cucchiaio burro di mandorle"],
+                        instructions: "Ammolla i datteri in acqua calda per 10 minuti. Tritura mandorle grossolanamente. Frulla datteri scolati con burro di mandorle fino a formare una pasta. Aggiungi mandorle e forma palline. Rotola nel cocco. Conserva in frigo per 1 settimana.",
+                        protein: "8g", carbs: "25g", fat: "12g",
+                        prepTime: "20 minuti", cookTime: "0 minuti",
+                        shopping: ["Datteri - 300g", "Mandorle - 200g", "Cocco rapé - 150g", "Burro di mandorle - 1 barattolo"]
                     },
                     {
-                        name: "Hummus con verdure crude",
-                        ingredients: ["80g hummus", "carote", "cetrioli", "peperoni"],
-                        instructions: "Taglia le verdure a bastoncini e servi con hummus per l'intingolo.",
-                        protein: "8g", carbs: "15g", fat: "6g",
-                        shopping: ["Hummus - 300g", "Carote - 1kg", "Cetrioli - 500g", "Peperoni - 500g"]
-                    },
-                    {
-                        name: "Smoothie proteico",
-                        ingredients: ["200ml latte vegetale", "1/2 banana", "20g proteine in polvere", "spinaci"],
-                        instructions: "Frulla tutti gli ingredienti fino ad ottenere un smoothie cremoso.",
-                        protein: "25g", carbs: "20g", fat: "5g",
-                        shopping: ["Latte vegetale - 1L", "Banane - 1kg", "Proteine in polvere - 1 barattolo", "Spinaci - 200g"]
+                        name: "Hummus con bastoncini di verdure",
+                        ingredients: ["80g hummus", "1 carota", "1 cetriolo", "1 peperone", "Sedano"],
+                        instructions: "Lava e taglia tutte le verdure a bastoncini uniformi. Conserva in acqua fredda per mantenerle croccanti. Servi con hummus come salsa. Prepara i bastoncini la sera prima e tienili in contenitori ermetici. Hummus si conserva 5 giorni in frigo.",
+                        protein: "8g", carbs: "18g", fat: "8g",
+                        prepTime: "10 minuti", cookTime: "0 minuti",
+                        shopping: ["Hummus - 300g", "Carote - 500g", "Cetrioli - 3 pezzi", "Peperoni - 3 pezzi", "Sedano - 1 cespo"]
                     }
                 ]
             };
@@ -1365,26 +1574,22 @@
             // Filter based on diet type
             if (dietType === 'vegetariana') {
                 alternatives["Pranzo"] = alternatives["Pranzo"].filter(meal => 
-                    !meal.name.toLowerCase().includes('pollo') && !meal.name.toLowerCase().includes('salmone')
+                    !meal.name.toLowerCase().includes('pollo')
                 );
                 alternatives["Cena"] = alternatives["Cena"].filter(meal => 
-                    !meal.name.toLowerCase().includes('merluzzo') && !meal.name.toLowerCase().includes('tacchino')
+                    !meal.name.toLowerCase().includes('merluzzo')
                 );
             }
             
             if (dietType === 'vegana') {
                 alternatives["Colazione"] = alternatives["Colazione"].filter(meal => 
-                    !meal.name.toLowerCase().includes('uovo') && !meal.name.toLowerCase().includes('yogurt')
+                    !meal.name.toLowerCase().includes('uovo') && !meal.name.toLowerCase().includes('latte') && !meal.ingredients.some(ing => ing.toLowerCase().includes('uovo') || ing.toLowerCase().includes('latte'))
                 );
                 alternatives["Pranzo"] = alternatives["Pranzo"].filter(meal => 
-                    !meal.name.toLowerCase().includes('pollo') && !meal.name.toLowerCase().includes('salmone') && 
-                    !meal.name.toLowerCase().includes('feta')
+                    !meal.name.toLowerCase().includes('pollo') && !meal.name.toLowerCase().includes('feta')
                 );
                 alternatives["Cena"] = alternatives["Cena"].filter(meal => 
-                    !meal.name.toLowerCase().includes('merluzzo') && !meal.name.toLowerCase().includes('tacchino')
-                );
-                alternatives["Spuntino"] = alternatives["Spuntino"].filter(meal => 
-                    !meal.name.toLowerCase().includes('yogurt')
+                    !meal.name.toLowerCase().includes('merluzzo')
                 );
             }
 
@@ -1420,20 +1625,41 @@
             doc.setFontSize(24);
             doc.setTextColor(143, 188, 143);
             doc.text("Il Tuo Piano Pasti Personalizzato", 105, y, { align: 'center' });
+            y += 8;
+            doc.setFontSize(14);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Generato con Claude AI", 105, y, { align: 'center' });
             y += 10;
             doc.setFontSize(12);
-            doc.setTextColor(100, 100, 100);
             doc.text(`Generato per: ${userInfo.email || 'N/A'}`, 105, y, { align: 'center' });
             y += 7;
             doc.text(`Obiettivo: ${userInfo.goal || 'N/A'} | Durata: ${userInfo.duration || 'N/A'} giorni`, 105, y, { align: 'center' });
             y += 15;
+
+            // Nutrition Summary
+            if (planData.nutritionSummary) {
+                doc.setFontSize(16);
+                doc.setTextColor(143, 188, 143);
+                doc.text("Riassunto Nutrizionale", 14, y);
+                y += 8;
+                doc.setFontSize(11);
+                doc.setTextColor(50, 50, 50);
+                doc.text(`Calorie giornaliere: ${planData.nutritionSummary.totalCaloriesPerDay} kcal`, 20, y);
+                y += 6;
+                doc.text(`Proteine: ${planData.nutritionSummary.proteinPerDay}`, 20, y);
+                y += 6;
+                doc.text(`Carboidrati: ${planData.nutritionSummary.carbsPerDay}`, 20, y);
+                y += 6;
+                doc.text(`Grassi: ${planData.nutritionSummary.fatPerDay}`, 20, y);
+                y += 12;
+            }
 
             // Shopping List
             doc.setFontSize(18);
             doc.setTextColor(143, 188, 143);
             doc.text("Lista della Spesa", 14, y);
             y += 10;
-            doc.setFontSize(12);
+            doc.setFontSize(11);
             doc.setTextColor(50, 50, 50);
 
             if (planData.shoppingList && planData.shoppingList.length > 0) {
@@ -1442,16 +1668,46 @@
                         doc.addPage();
                         y = 20;
                     }
-                    doc.text(`- ${item}`, 20, y);
-                    y += 7;
+                    doc.text(`• ${item}`, 20, y);
+                    y += 6;
                 });
             } else {
                 doc.text("Nessun articolo nella lista della spesa.", 20, y);
-                y += 7;
+                y += 6;
             }
             y += 10;
 
+            // Meal Prep Tips
+            if (planData.mealPrepTips && planData.mealPrepTips.length > 0) {
+                if (y > 250) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.setFontSize(16);
+                doc.setTextColor(143, 188, 143);
+                doc.text("Consigli per il Meal Prep", 14, y);
+                y += 8;
+                doc.setFontSize(10);
+                doc.setTextColor(50, 50, 50);
+                
+                planData.mealPrepTips.forEach(tip => {
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    const tipLines = doc.splitTextToSize(`• ${tip}`, 180);
+                    tipLines.forEach(line => {
+                        doc.text(line, 20, y);
+                        y += 5;
+                    });
+                    y += 2;
+                });
+                y += 10;
+            }
+
             // Recipes
+            doc.addPage();
+            y = 20;
             doc.setFontSize(18);
             doc.setTextColor(143, 188, 143);
             doc.text("Ricette Dettagliate", 14, y);
@@ -1459,17 +1715,17 @@
 
             if (planData.recipes && planData.recipes.length > 0) {
                 planData.recipes.forEach(dayPlan => {
-                    if (y > 270) {
+                    if (y > 260) {
                         doc.addPage();
                         y = 20;
                     }
                     doc.setFontSize(14);
                     doc.setTextColor(0, 0, 0);
                     doc.text(`${dayPlan.day}`, 14, y);
-                    y += 8;
+                    y += 10;
 
                     dayPlan.meals.forEach(meal => {
-                        if (y > 260) {
+                        if (y > 250) {
                             doc.addPage();
                             y = 20;
                         }
@@ -1478,6 +1734,19 @@
                         doc.text(`${meal.type}: ${meal.name}`, 20, y);
                         y += 7;
 
+                        // Nutrition info
+                        if (meal.prepTime || meal.cookTime) {
+                            doc.setFontSize(10);
+                            doc.setTextColor(100, 100, 100);
+                            let timeInfo = '';
+                            if (meal.prepTime) timeInfo += `Prep: ${meal.prepTime}`;
+                            if (meal.cookTime) timeInfo += ` | Cottura: ${meal.cookTime}`;
+                            if (timeInfo) {
+                                doc.text(timeInfo, 25, y);
+                                y += 5;
+                            }
+                        }
+
                         doc.setFontSize(10);
                         doc.setTextColor(80, 80, 80);
                         doc.text("Ingredienti:", 25, y);
@@ -1485,7 +1754,7 @@
                         if (meal.ingredients) {
                             meal.ingredients.forEach(ingredient => {
                                 if (y > 280) { doc.addPage(); y = 20; }
-                                doc.text(`- ${ingredient}`, 30, y);
+                                doc.text(`• ${ingredient}`, 30, y);
                                 y += 5;
                             });
                         }
@@ -1574,12 +1843,12 @@
             formData.calories = Math.round(dailyCalories);
 
             try {
-                console.log('Generazione piano lato client...');
+                console.log('🚀 Avvio generazione piano pasti...');
                 
-                // Generate meal plan client-side
-                const mealPlan = generateClientSideMealPlan(formData);
+                // Try Claude AI generation first
+                const mealPlan = await generateAdvancedMealPlan(formData);
                 
-                // Show plan preview instead of success page directly
+                // Show plan preview
                 showPlanPreview(mealPlan, formData);
 
             } catch (error) {
@@ -1618,15 +1887,17 @@
             showSuccessPage();
         });
 
-        document.getElementById('regenerate-all-button').addEventListener('click', () => {
+        document.getElementById('regenerate-all-button').addEventListener('click', async () => {
             if (!currentGeneratedPlan) return;
             
             showLoading();
             try {
-                const newMealPlan = generateClientSideMealPlan(currentGeneratedPlan.userInfo);
+                console.log('🔄 Rigenerazione completa del piano...');
+                const newMealPlan = await generateAdvancedMealPlan(currentGeneratedPlan.userInfo);
                 showPlanPreview(newMealPlan, currentGeneratedPlan.userInfo);
                 showMessage('Piano Rigenerato!', 'Tutto il piano è stato rigenerato con nuove ricette!');
             } catch (error) {
+                console.error('Errore rigenerazione:', error);
                 showMessage('Errore', 'Errore nella rigenerazione del piano completo.');
             } finally {
                 hideLoading();
@@ -1648,7 +1919,7 @@
         document.getElementById('send-whatsapp-final-button').addEventListener('click', () => {
             const userPhone = currentGeneratedPlan?.userInfo?.phone;
             if (userPhone) {
-                const message = "Ecco il tuo piano pasti personalizzato! Scarica il PDF allegato per tutti i dettagli.";
+                const message = "Ecco il tuo piano pasti personalizzato generato con Claude AI! Scarica il PDF allegato per tutti i dettagli.";
                 const whatsappUrl = `https://wa.me/${userPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
@@ -1666,7 +1937,7 @@
         document.getElementById('send-whatsapp-button').addEventListener('click', () => {
             const userPhone = currentGeneratedPlan?.userInfo?.phone;
             if (userPhone) {
-                const message = "Ecco il tuo piano pasti personalizzato! Scarica il PDF allegato per tutti i dettagli.";
+                const message = "Ecco il tuo piano pasti personalizzato generato con Claude AI! Scarica il PDF allegato per tutti i dettagli.";
                 const whatsappUrl = `https://wa.me/${userPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
             } else {
@@ -1859,7 +2130,7 @@
         });
 
         // Regenerate plan
-        document.getElementById('regenerate-plan-button').addEventListener('click', () => {
+        document.getElementById('regenerate-plan-button').addEventListener('click', async () => {
             if (!currentRequestId) {
                 showMessage('Errore', 'Nessuna richiesta selezionata');
                 return;
@@ -1875,8 +2146,10 @@
 
             showLoading();
             try {
-                // Regenerate meal plan client-side
-                const newMealPlan = generateClientSideMealPlan(requestData);
+                console.log('🔄 Rigenerazione piano admin con Claude AI...');
+                
+                // Regenerate meal plan with Claude AI
+                const newMealPlan = await generateAdvancedMealPlan(requestData);
                 
                 // Update localStorage
                 const requestIndex = requests.findIndex(req => req.id === currentRequestId);
@@ -1885,7 +2158,7 @@
                     saveRequestsToLocalStorage(requests);
                 }
 
-                showMessage('Piano Rigenerato!', 'Il piano pasti è stato rigenerato con successo.');
+                showMessage('Piano Rigenerato!', 'Il piano pasti è stato rigenerato con successo usando Claude AI.');
                 loadDashboard(); // Refresh dashboard
                 document.getElementById('request-details-modal').classList.add('hidden');
             } catch (error) {
@@ -1942,8 +2215,65 @@
             
             // Load saved form data on page load
             loadFormData();
+            
+            // Log configuration status
+            console.log('🔧 Configurazione Claude AI:', CLAUDE_API_CONFIG);
+            if (CLAUDE_API_CONFIG.useProxy && CLAUDE_API_CONFIG.proxyEndpoint) {
+                console.log('✅ Proxy endpoint configurato:', CLAUDE_API_CONFIG.proxyEndpoint);
+            }
+            if (CLAUDE_API_CONFIG.useAnthropicAPI && CLAUDE_API_CONFIG.apiKey) {
+                console.log('✅ API Key Anthropic configurata');
+            }
+            if (CLAUDE_API_CONFIG.useFallback) {
+                console.log('✅ Fallback locale abilitato');
+            }
         });
 
     </script>
 </body>
-</html>
+</html>SideMealPlan(userData);
+                    }
+                    throw error;
+                }
+            }
+
+            // Direct Anthropic API (if configured)
+            if (CLAUDE_API_CONFIG.useAnthropicAPI && CLAUDE_API_CONFIG.apiKey) {
+                try {
+                    const prompt = createMealPlanPrompt(userData);
+                    
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': CLAUDE_API_CONFIG.apiKey,
+                            'anthropic-version': '2023-06-01'
+                        },
+                        body: JSON.stringify({
+                            model: 'claude-3-sonnet-20240229',
+                            max_tokens: 4000,
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: prompt
+                                }
+                            ]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Errore API Anthropic: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const planText = result.content[0].text;
+                    
+                    // Parse Claude response
+                    const parsedPlan = parseClaudeResponse(planText);
+                    console.log('✅ Piano generato con Claude API diretta');
+                    return parsedPlan;
+                } catch (error) {
+                    console.warn('⚠️ Claude API diretta non disponibile:', error.message);
+                    if (CLAUDE_API_CONFIG.useFallback) {
+                        console.log('🔄 Uso fallback locale...');
+                        return generateClient
