@@ -264,21 +264,63 @@ export default function MealPrepPlanner() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)',
+      color: 'white',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
       {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-2 rounded-lg">
-              <Utensils className="h-6 w-6" />
+      <header style={{
+        background: 'rgba(17, 24, 39, 0.9)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #374151',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              padding: '8px',
+              borderRadius: '8px'
+            }}>
+              <Utensils style={{ height: '24px', width: '24px' }} />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #6ee7b7 0%, #34d399 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
               Meal Prep Planner
             </h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-gray-300">
-              <Users className="h-4 w-4" />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              color: '#d1d5db'
+            }}>
+              <Users style={{ height: '16px', width: '16px' }} />
               <span>Plan • Cook • Enjoy</span>
             </div>
           </div>
@@ -286,23 +328,42 @@ export default function MealPrepPlanner() {
       </header>
 
       {/* Navigation */}
-      <nav className="bg-gray-800/50 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-8">
+      <nav style={{
+        background: 'rgba(31, 41, 55, 0.5)',
+        borderBottom: '1px solid #374151'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '0 16px'
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: '32px'
+          }}>
             {tabs.map(tab => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'border-emerald-500 text-emerald-400'
-                      : 'border-transparent text-gray-400 hover:text-gray-300'
-                  }`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '16px 8px',
+                    borderBottom: activeTab === tab.id ? '2px solid #10b981' : '2px solid transparent',
+                    color: activeTab === tab.id ? '#34d399' : '#9ca3af',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{tab.label}</span>
+                  <Icon style={{ height: '20px', width: '20px' }} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
@@ -311,53 +372,117 @@ export default function MealPrepPlanner() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main style={{
+        maxWidth: '1280px',
+        margin: '0 auto',
+        padding: '32px 16px'
+      }}>
         {/* Meal Planner Tab */}
         {activeTab === 'planner' && (
-          <div className="space-y-8">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Date Selection */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center space-x-2">
-                  <Calendar className="h-6 w-6 text-emerald-400" />
+            <div style={{
+              background: 'rgba(31, 41, 55, 0.5)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: '16px',
+              padding: '24px',
+              border: '1px solid #374151'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '24px'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Calendar style={{ height: '24px', width: '24px', color: '#34d399' }} />
                   <span>Meal Planning</span>
                 </h2>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  style={{
+                    background: '#374151',
+                    border: '1px solid #4b5563',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}
                 />
               </div>
 
               {/* Current Day Plan */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '24px'
+              }}>
                 {['breakfast', 'lunch', 'dinner', 'snack'].map(mealType => {
                   const currentPlan = getCurrentMealPlan();
                   const meal = currentPlan?.meals[mealType as keyof MealPlan['meals']];
 
                   return (
-                    <div key={mealType} className="bg-gray-700/50 rounded-xl p-4 border border-gray-600">
-                      <h3 className="font-semibold text-lg mb-3 capitalize text-emerald-400">
+                    <div key={mealType} style={{
+                      background: 'rgba(55, 65, 81, 0.5)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: '1px solid #4b5563'
+                    }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        marginBottom: '12px',
+                        textTransform: 'capitalize',
+                        color: '#34d399'
+                      }}>
                         {mealType}
                       </h3>
                       
                       {meal ? (
-                        <div className="space-y-3">
-                          <div className="bg-gray-600/50 rounded-lg p-3">
-                            <h4 className="font-medium text-white mb-2">{meal.name}</h4>
-                            <div className="flex items-center space-x-4 text-sm text-gray-300">
-                              <span className="flex items-center space-x-1">
-                                <Clock className="h-4 w-4" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{
+                            background: 'rgba(75, 85, 99, 0.5)',
+                            borderRadius: '8px',
+                            padding: '12px'
+                          }}>
+                            <h4 style={{
+                              fontSize: '16px',
+                              fontWeight: '500',
+                              color: 'white',
+                              marginBottom: '8px'
+                            }}>
+                              {meal.name}
+                            </h4>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px',
+                              fontSize: '14px',
+                              color: '#d1d5db'
+                            }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock style={{ height: '16px', width: '16px' }} />
                                 <span>{meal.prepTime + meal.cookTime}m</span>
                               </span>
-                              <span className="flex items-center space-x-1">
-                                <Users className="h-4 w-4" />
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Users style={{ height: '16px', width: '16px' }} />
                                 <span>{meal.servings}</span>
                               </span>
                             </div>
                             {meal.nutrition && (
-                              <div className="mt-2 text-xs text-gray-400">
+                              <div style={{
+                                marginTop: '8px',
+                                fontSize: '12px',
+                                color: '#9ca3af'
+                              }}>
                                 {meal.nutrition.calories} cal • {meal.nutrition.protein}g protein
                               </div>
                             )}
@@ -371,20 +496,45 @@ export default function MealPrepPlanner() {
                               );
                               setMealPlans(updatedPlans);
                             }}
-                            className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg py-2 px-3 transition-colors text-sm"
+                            style={{
+                              width: '100%',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              color: '#f87171',
+                              borderRadius: '8px',
+                              padding: '8px 12px',
+                              border: 'none',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
                           >
                             Remove
                           </button>
                         </div>
                       ) : (
-                        <div className="text-center py-8">
-                          <div className="text-gray-500 mb-3">No meal planned</div>
-                          <div className="space-y-2">
+                        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                          <div style={{
+                            color: '#6b7280',
+                            marginBottom: '12px'
+                          }}>
+                            No meal planned
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {recipes.slice(0, 3).map(recipe => (
                               <button
                                 key={recipe.id}
                                 onClick={() => addMealToPlan(recipe, mealType as keyof MealPlan['meals'])}
-                                className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg py-2 px-3 transition-colors text-sm"
+                                style={{
+                                  width: '100%',
+                                  background: 'rgba(16, 185, 129, 0.2)',
+                                  color: '#34d399',
+                                  borderRadius: '8px',
+                                  padding: '8px 12px',
+                                  border: 'none',
+                                  fontSize: '14px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
                               >
                                 + {recipe.name}
                               </button>
@@ -398,24 +548,55 @@ export default function MealPrepPlanner() {
               </div>
 
               {/* Generate Shopping List */}
-              <div className="mt-6 text-center">
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
                 <button
                   onClick={generateShoppingList}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center space-x-2 mx-auto"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: 'white',
+                    fontWeight: '600',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    margin: '0 auto',
+                    transition: 'all 0.2s'
+                  }}
                 >
-                  <ShoppingCart className="h-5 w-5" />
+                  <ShoppingCart style={{ height: '20px', width: '20px' }} />
                   <span>Generate Shopping List</span>
                 </button>
               </div>
             </div>
 
             {/* Weekly Overview */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-              <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                <Target className="h-5 w-5 text-emerald-400" />
+            <div style={{
+              background: 'rgba(31, 41, 55, 0.5)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: '16px',
+              padding: '24px',
+              border: '1px solid #374151'
+            }}>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: 'bold',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <Target style={{ height: '20px', width: '20px', color: '#34d399' }} />
                 <span>This Week's Meals</span>
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(7, 1fr)',
+                gap: '16px'
+              }}>
                 {Array.from({ length: 7 }, (_, i) => {
                   const date = new Date();
                   date.setDate(date.getDate() - date.getDay() + i);
@@ -424,18 +605,32 @@ export default function MealPrepPlanner() {
                   const mealCount = plan ? Object.values(plan.meals).filter(Boolean).length : 0;
 
                   return (
-                    <div key={i} className="bg-gray-700/30 rounded-lg p-3 text-center">
-                      <div className="text-sm font-medium text-gray-300 mb-1">
+                    <div key={i} style={{
+                      background: 'rgba(55, 65, 81, 0.3)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#d1d5db',
+                        marginBottom: '4px'
+                      }}>
                         {date.toLocaleDateString('en', { weekday: 'short' })}
                       </div>
-                      <div className="text-xs text-gray-400 mb-2">
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#9ca3af',
+                        marginBottom: '8px'
+                      }}>
                         {date.toLocaleDateString('en', { month: 'short', day: 'numeric' })}
                       </div>
-                      <div className="text-sm">
+                      <div style={{ fontSize: '14px' }}>
                         {mealCount > 0 ? (
-                          <span className="text-emerald-400">{mealCount} meals</span>
+                          <span style={{ color: '#34d399' }}>{mealCount} meals</span>
                         ) : (
-                          <span className="text-gray-500">No meals</span>
+                          <span style={{ color: '#6b7280' }}>No meals</span>
                         )}
                       </div>
                     </div>
@@ -448,224 +643,211 @@ export default function MealPrepPlanner() {
 
         {/* Recipes Tab */}
         {activeTab === 'recipes' && (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Header */}
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold flex items-center space-x-2">
-                <ChefHat className="h-6 w-6 text-emerald-400" />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <ChefHat style={{ height: '24px', width: '24px', color: '#34d399' }} />
                 <span>Recipe Collection</span>
               </h2>
               <button
                 onClick={() => setIsAddingRecipe(true)}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  color: 'white',
+                  fontWeight: '600',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s'
+                }}
               >
-                <Plus className="h-5 w-5" />
+                <Plus style={{ height: '20px', width: '20px' }} />
                 <span>Add Recipe</span>
               </button>
             </div>
 
-            {/* Add Recipe Form */}
-            {isAddingRecipe && (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-                <h3 className="text-xl font-bold mb-4">Add New Recipe</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Recipe Name</label>
-                      <input
-                        type="text"
-                        value={newRecipe.name || ''}
-                        onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        placeholder="Enter recipe name"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Prep Time (min)</label>
-                        <input
-                          type="number"
-                          value={newRecipe.prepTime || 0}
-                          onChange={(e) => setNewRecipe({ ...newRecipe, prepTime: parseInt(e.target.value) })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Cook Time (min)</label>
-                        <input
-                          type="number"
-                          value={newRecipe.cookTime || 0}
-                          onChange={(e) => setNewRecipe({ ...newRecipe, cookTime: parseInt(e.target.value) })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Servings</label>
-                        <input
-                          type="number"
-                          value={newRecipe.servings || 1}
-                          onChange={(e) => setNewRecipe({ ...newRecipe, servings: parseInt(e.target.value) })}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Difficulty</label>
-                      <select
-                        value={newRecipe.difficulty || 'Easy'}
-                        onChange={(e) => setNewRecipe({ ...newRecipe, difficulty: e.target.value as Recipe['difficulty'] })}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      >
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Ingredients</label>
-                      {(newRecipe.ingredients || ['']).map((ingredient, index) => (
-                        <div key={index} className="flex space-x-2 mb-2">
-                          <input
-                            type="text"
-                            value={ingredient}
-                            onChange={(e) => updateIngredient(index, e.target.value)}
-                            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                            placeholder="Enter ingredient"
-                          />
-                          {index === (newRecipe.ingredients || []).length - 1 && (
-                            <button
-                              onClick={addIngredientInput}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Instructions</label>
-                      {(newRecipe.instructions || ['']).map((instruction, index) => (
-                        <div key={index} className="flex space-x-2 mb-2">
-                          <textarea
-                            value={instruction}
-                            onChange={(e) => updateInstruction(index, e.target.value)}
-                            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                            placeholder="Enter instruction step"
-                            rows={2}
-                          />
-                          {index === (newRecipe.instructions || []).length - 1 && (
-                            <button
-                              onClick={addInstructionInput}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-4 mt-6">
-                  <button
-                    onClick={() => setIsAddingRecipe(false)}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
-                  >
-                    <X className="h-4 w-4" />
-                    <span>Cancel</span>
-                  </button>
-                  <button
-                    onClick={addRecipe}
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    <span>Save Recipe</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Recipe Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '24px'
+            }}>
               {recipes.map(recipe => (
-                <div key={recipe.id} className="bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700 hover:border-emerald-500/50 transition-all duration-200">
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-bold text-white">{recipe.name}</h3>
-                      <div className="flex space-x-2">
+                <div key={recipe.id} style={{
+                  background: 'rgba(31, 41, 55, 0.5)',
+                  backdropFilter: 'blur(4px)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  border: '1px solid #374151',
+                  transition: 'all 0.2s'
+                }}>
+                  <div style={{ padding: '24px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '16px'
+                    }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: 'bold',
+                        color: 'white'
+                      }}>
+                        {recipe.name}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           onClick={() => setEditingRecipe(recipe)}
-                          className="text-gray-400 hover:text-emerald-400 transition-colors"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#9ca3af',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            transition: 'color 0.2s'
+                          }}
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit3 style={{ height: '16px', width: '16px' }} />
                         </button>
                         <button
                           onClick={() => deleteRecipe(recipe.id)}
-                          className="text-gray-400 hover:text-red-400 transition-colors"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#9ca3af',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            transition: 'color 0.2s'
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 style={{ height: '16px', width: '16px' }} />
                         </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4 text-sm text-gray-300 mb-4">
-                      <span className="flex items-center space-x-1">
-                        <Clock className="h-4 w-4" />
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '16px',
+                      fontSize: '14px',
+                      color: '#d1d5db',
+                      marginBottom: '16px'
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock style={{ height: '16px', width: '16px' }} />
                         <span>{recipe.prepTime + recipe.cookTime}m</span>
                       </span>
-                      <span className="flex items-center space-x-1">
-                        <Users className="h-4 w-4" />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users style={{ height: '16px', width: '16px' }} />
                         <span>{recipe.servings}</span>
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        recipe.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                        recipe.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        background: recipe.difficulty === 'Easy' ? 'rgba(34, 197, 94, 0.2)' :
+                                   recipe.difficulty === 'Medium' ? 'rgba(234, 179, 8, 0.2)' :
+                                   'rgba(239, 68, 68, 0.2)',
+                        color: recipe.difficulty === 'Easy' ? '#4ade80' :
+                               recipe.difficulty === 'Medium' ? '#facc15' :
+                               '#f87171'
+                      }}>
                         {recipe.difficulty}
                       </span>
                     </div>
 
                     {recipe.nutrition && (
-                      <div className="bg-gray-700/50 rounded-lg p-3 mb-4">
-                        <div className="text-sm text-gray-300">
-                          <div className="grid grid-cols-2 gap-2">
-                            <span>{recipe.nutrition.calories} cal</span>
-                            <span>{recipe.nutrition.protein}g protein</span>
-                            <span>{recipe.nutrition.carbs}g carbs</span>
-                            <span>{recipe.nutrition.fat}g fat</span>
-                          </div>
+                      <div style={{
+                        background: 'rgba(55, 65, 81, 0.5)',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{
+                          fontSize: '14px',
+                          color: '#d1d5db',
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '8px'
+                        }}>
+                          <span>{recipe.nutrition.calories} cal</span>
+                          <span>{recipe.nutrition.protein}g protein</span>
+                          <span>{recipe.nutrition.carbs}g carbs</span>
+                          <span>{recipe.nutrition.fat}g fat</span>
                         </div>
                       </div>
                     )}
 
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-emerald-400">Ingredients:</h4>
-                      <ul className="text-sm text-gray-300 space-y-1">
+                    <div style={{ marginBottom: '16px' }}>
+                      <h4 style={{
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        color: '#34d399',
+                        marginBottom: '8px'
+                      }}>
+                        Ingredients:
+                      </h4>
+                      <ul style={{
+                        fontSize: '14px',
+                        color: '#d1d5db',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
+                      }}>
                         {recipe.ingredients.slice(0, 3).map((ingredient, index) => (
-                          <li key={index} className="flex items-center space-x-2">
-                            <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            <div style={{
+                              width: '4px',
+                              height: '4px',
+                              background: '#34d399',
+                              borderRadius: '50%'
+                            }}></div>
                             <span>{ingredient}</span>
                           </li>
                         ))}
                         {recipe.ingredients.length > 3 && (
-                          <li className="text-gray-400">+{recipe.ingredients.length - 3} more</li>
+                          <li style={{ color: '#9ca3af' }}>
+                            +{recipe.ingredients.length - 3} more
+                          </li>
                         )}
                       </ul>
                     </div>
 
                     {recipe.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
                         {recipe.tags.map((tag, index) => (
-                          <span key={index} className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs">
+                          <span key={index} style={{
+                            background: 'rgba(16, 185, 129, 0.2)',
+                            color: '#34d399',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                          }}>
                             {tag}
                           </span>
                         ))}
@@ -680,70 +862,166 @@ export default function MealPrepPlanner() {
 
         {/* Shopping List Tab */}
         {activeTab === 'shopping' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold flex items-center space-x-2">
-                <ShoppingCart className="h-6 w-6 text-emerald-400" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <ShoppingCart style={{ height: '24px', width: '24px', color: '#34d399' }} />
                 <span>Shopping List</span>
               </h2>
               <button
                 onClick={generateShoppingList}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  color: 'white',
+                  fontWeight: '600',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
               >
                 Regenerate List
               </button>
             </div>
 
             {shoppingList.length > 0 ? (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-                <div className="space-y-3">
+              <div style={{
+                background: 'rgba(31, 41, 55, 0.5)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: '16px',
+                padding: '24px',
+                border: '1px solid #374151'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {shoppingList.map(item => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg">
+                    <div key={item.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      background: 'rgba(55, 65, 81, 0.3)',
+                      borderRadius: '8px'
+                    }}>
                       <button
                         onClick={() => toggleShoppingItem(item.id)}
-                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          item.checked 
-                            ? 'bg-emerald-500 border-emerald-500' 
-                            : 'border-gray-400 hover:border-emerald-400'
-                        }`}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: item.checked ? '2px solid #10b981' : '2px solid #6b7280',
+                          background: item.checked ? '#10b981' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
                       >
-                        {item.checked && <CheckCircle className="h-3 w-3 text-white" />}
+                        {item.checked && <CheckCircle style={{ height: '12px', width: '12px', color: 'white' }} />}
                       </button>
-                      <div className="flex-1">
-                        <div className={`font-medium ${item.checked ? 'line-through text-gray-400' : 'text-white'}`}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          color: item.checked ? '#9ca3af' : 'white',
+                          textDecoration: item.checked ? 'line-through' : 'none'
+                        }}>
                           {item.name}
                         </div>
-                        <div className="text-sm text-gray-400">{item.quantity}</div>
+                        <div style={{
+                          fontSize: '14px',
+                          color: '#9ca3af'
+                        }}>
+                          {item.quantity}
+                        </div>
                       </div>
                       <button
                         onClick={() => setShoppingList(shoppingList.filter(i => i.id !== item.id))}
-                        className="text-gray-400 hover:text-red-400 transition-colors"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#9ca3af',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          transition: 'color 0.2s'
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 style={{ height: '16px', width: '16px' }} />
                       </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-600">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">
-                      {shoppingList.filter(item => item.checked).length} of {shoppingList.length} items completed
-                    </span>
-                    <span className="text-emerald-400">
-                      {Math.round((shoppingList.filter(item => item.checked).length / shoppingList.length) * 100)}% complete
-                    </span>
-                  </div>
+                <div style={{
+                  marginTop: '24px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid #4b5563',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '14px'
+                }}>
+                  <span style={{ color: '#9ca3af' }}>
+                    {shoppingList.filter(item => item.checked).length} of {shoppingList.length} items completed
+                  </span>
+                  <span style={{ color: '#34d399' }}>
+                    {Math.round((shoppingList.filter(item => item.checked).length / shoppingList.length) * 100)}% complete
+                  </span>
                 </div>
               </div>
             ) : (
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-12 border border-gray-700 text-center">
-                <ShoppingCart className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-400 mb-2">No Shopping List Yet</h3>
-                <p className="text-gray-500 mb-6">Plan some meals first, then generate your shopping list</p>
+              <div style={{
+                background: 'rgba(31, 41, 55, 0.5)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: '16px',
+                padding: '48px',
+                border: '1px solid #374151',
+                textAlign: 'center'
+              }}>
+                <ShoppingCart style={{
+                  height: '64px',
+                  width: '64px',
+                  color: '#6b7280',
+                  margin: '0 auto 16px'
+                }} />
+                <h3 style={{
+                  fontSize: '20px',
+                  fontWeight: '500',
+                  color: '#9ca3af',
+                  marginBottom: '8px'
+                }}>
+                  No Shopping List Yet
+                </h3>
+                <p style={{
+                  color: '#6b7280',
+                  marginBottom: '24px'
+                }}>
+                  Plan some meals first, then generate your shopping list
+                </p>
                 <button
                   onClick={() => setActiveTab('planner')}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: 'white',
+                    fontWeight: '600',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
                 >
                   Go to Meal Planner
                 </button>
@@ -754,17 +1032,33 @@ export default function MealPrepPlanner() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900/50 border-t border-gray-700 mt-16">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <Heart className="h-5 w-5 text-red-400" />
-              <span className="text-gray-400">Made with love for healthy eating</span>
-            </div>
-            <p className="text-gray-500 text-sm">
-              Plan your meals, organize your recipes, and make healthy eating simple.
-            </p>
+      <footer style={{
+        background: 'rgba(17, 24, 39, 0.5)',
+        borderTop: '1px solid #374151',
+        marginTop: '64px'
+      }}>
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '32px 16px',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginBottom: '16px'
+          }}>
+            <Heart style={{ height: '20px', width: '20px', color: '#f87171' }} />
+            <span style={{ color: '#9ca3af' }}>Made with love for healthy eating</span>
           </div>
+          <p style={{
+            color: '#6b7280',
+            fontSize: '14px'
+          }}>
+            Plan your meals, organize your recipes, and make healthy eating simple.
+          </p>
         </div>
       </footer>
     </div>
