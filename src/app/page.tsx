@@ -1,1121 +1,772 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Plus, Trash2, Edit3, Save, X, ChefHat, ShoppingCart, Users, Target, Star, Utensils, Heart, CheckCircle } from 'lucide-react';
 
-export default function HomePage() {
-  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
-  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPlan, setGeneratedPlan] = useState<any>(null);
-  const [parsedPlan, setParsedPlan] = useState<any>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [isReplacing, setIsReplacing] = useState<string | null>(null);
-  const [hasSavedData, setHasSavedData] = useState(false);
-  const [formData, setFormData] = useState({
-    nome: '',
-    eta: '',
-    sesso: '',
-    peso: '',
-    altezza: '',
-    attivita: '',
-    obiettivo: '',
-    allergie: '',
-    preferenze: '',
-    pasti: '',
-    durata: '',
-    varieta: ''
+// Types
+interface Recipe {
+  id: string;
+  name: string;
+  ingredients: string[];
+  instructions: string[];
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  tags: string[];
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  image?: string;
+}
+
+interface MealPlan {
+  id: string;
+  date: string;
+  meals: {
+    breakfast?: Recipe;
+    lunch?: Recipe;
+    dinner?: Recipe;
+    snack?: Recipe;
+  };
+}
+
+interface ShoppingItem {
+  id: string;
+  name: string;
+  quantity: string;
+  category: string;
+  checked: boolean;
+}
+
+// Sample data
+const sampleRecipes: Recipe[] = [
+  {
+    id: '1',
+    name: 'Grilled Chicken Salad',
+    ingredients: ['chicken breast', 'mixed greens', 'cherry tomatoes', 'cucumber', 'olive oil', 'lemon'],
+    instructions: ['Season chicken with salt and pepper', 'Grill chicken for 6-8 minutes per side', 'Slice chicken and serve over greens', 'Drizzle with olive oil and lemon'],
+    prepTime: 15,
+    cookTime: 20,
+    servings: 4,
+    difficulty: 'Easy',
+    tags: ['healthy', 'protein', 'gluten-free'],
+    nutrition: { calories: 320, protein: 35, carbs: 8, fat: 15 }
+  },
+  {
+    id: '2',
+    name: 'Quinoa Buddha Bowl',
+    ingredients: ['quinoa', 'sweet potato', 'chickpeas', 'avocado', 'tahini', 'spinach'],
+    instructions: ['Cook quinoa according to package directions', 'Roast sweet potato and chickpeas', 'Assemble bowl with quinoa, vegetables, and tahini dressing'],
+    prepTime: 20,
+    cookTime: 30,
+    servings: 2,
+    difficulty: 'Medium',
+    tags: ['vegan', 'healthy', 'fiber'],
+    nutrition: { calories: 450, protein: 18, carbs: 65, fat: 12 }
+  },
+  {
+    id: '3',
+    name: 'Salmon with Roasted Vegetables',
+    ingredients: ['salmon fillet', 'broccoli', 'bell peppers', 'zucchini', 'garlic', 'herbs'],
+    instructions: ['Preheat oven to 400°F', 'Season salmon and vegetables', 'Roast for 15-20 minutes', 'Serve immediately'],
+    prepTime: 10,
+    cookTime: 20,
+    servings: 4,
+    difficulty: 'Easy',
+    tags: ['seafood', 'omega-3', 'low-carb'],
+    nutrition: { calories: 380, protein: 42, carbs: 12, fat: 18 }
+  }
+];
+
+export default function MealPrepPlanner() {
+  const [activeTab, setActiveTab] = useState('planner');
+  const [recipes, setRecipes] = useState<Recipe[]>(sampleRecipes);
+  const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
+  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isAddingRecipe, setIsAddingRecipe] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+
+  // New recipe form state
+  const [newRecipe, setNewRecipe] = useState<Partial<Recipe>>({
+    name: '',
+    ingredients: [''],
+    instructions: [''],
+    prepTime: 0,
+    cookTime: 0,
+    servings: 1,
+    difficulty: 'Easy',
+    tags: [],
   });
 
-  // Funzione per generare lista della spesa consolidata
-  const generateShoppingList = (days: any[]) => {
-    const ingredients: { [key: string]: { quantity: number, unit: string } } = {};
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedRecipes = localStorage.getItem('mealPrepRecipes');
+    const savedMealPlans = localStorage.getItem('mealPrepPlans');
+    const savedShoppingList = localStorage.getItem('mealPrepShopping');
+
+    if (savedRecipes) {
+      setRecipes(JSON.parse(savedRecipes));
+    }
+    if (savedMealPlans) {
+      setMealPlans(JSON.parse(savedMealPlans));
+    }
+    if (savedShoppingList) {
+      setShoppingList(JSON.parse(savedShoppingList));
+    }
+  }, []);
+
+  // Save data to localStorage whenever state changes
+  useEffect(() => {
+    localStorage.setItem('mealPrepRecipes', JSON.stringify(recipes));
+  }, [recipes]);
+
+  useEffect(() => {
+    localStorage.setItem('mealPrepPlans', JSON.stringify(mealPlans));
+  }, [mealPlans]);
+
+  useEffect(() => {
+    localStorage.setItem('mealPrepShopping', JSON.stringify(shoppingList));
+  }, [shoppingList]);
+
+  // Add new recipe
+  const addRecipe = () => {
+    if (newRecipe.name && newRecipe.ingredients && newRecipe.instructions) {
+      const recipe: Recipe = {
+        id: Date.now().toString(),
+        name: newRecipe.name,
+        ingredients: newRecipe.ingredients.filter(ing => ing.trim() !== ''),
+        instructions: newRecipe.instructions.filter(inst => inst.trim() !== ''),
+        prepTime: newRecipe.prepTime || 0,
+        cookTime: newRecipe.cookTime || 0,
+        servings: newRecipe.servings || 1,
+        difficulty: newRecipe.difficulty || 'Easy',
+        tags: newRecipe.tags || [],
+      };
+      setRecipes([...recipes, recipe]);
+      setNewRecipe({
+        name: '',
+        ingredients: [''],
+        instructions: [''],
+        prepTime: 0,
+        cookTime: 0,
+        servings: 1,
+        difficulty: 'Easy',
+        tags: [],
+      });
+      setIsAddingRecipe(false);
+    }
+  };
+
+  // Delete recipe
+  const deleteRecipe = (id: string) => {
+    setRecipes(recipes.filter(recipe => recipe.id !== id));
+  };
+
+  // Add meal to plan
+  const addMealToPlan = (recipe: Recipe, mealType: keyof MealPlan['meals']) => {
+    const existingPlan = mealPlans.find(plan => plan.date === selectedDate);
     
-    days.forEach(day => {
-      Object.values(day.meals).forEach((meal: any) => {
-        meal.ingredienti.forEach((ingredient: string) => {
-          // Estrai quantità e nome ingrediente
-          const match = ingredient.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)\s+(.+)$/);
-          if (match) {
-            const [, qty, unit, name] = match;
-            const key = `${name} (${unit})`;
-            ingredients[key] = ingredients[key] || { quantity: 0, unit };
-            ingredients[key].quantity += parseFloat(qty);
-          } else {
-            // Ingrediente senza quantità specifica
-            const key = ingredient;
-            ingredients[key] = ingredients[key] || { quantity: 1, unit: 'pz' };
-            ingredients[key].quantity += 1;
-          }
-        });
+    if (existingPlan) {
+      const updatedPlans = mealPlans.map(plan => 
+        plan.date === selectedDate 
+          ? { ...plan, meals: { ...plan.meals, [mealType]: recipe } }
+          : plan
+      );
+      setMealPlans(updatedPlans);
+    } else {
+      const newPlan: MealPlan = {
+        id: Date.now().toString(),
+        date: selectedDate,
+        meals: { [mealType]: recipe }
+      };
+      setMealPlans([...mealPlans, newPlan]);
+    }
+  };
+
+  // Generate shopping list from meal plans
+  const generateShoppingList = () => {
+    const ingredients: { [key: string]: number } = {};
+    
+    mealPlans.forEach(plan => {
+      Object.values(plan.meals).forEach(meal => {
+        if (meal) {
+          meal.ingredients.forEach(ingredient => {
+            ingredients[ingredient] = (ingredients[ingredient] || 0) + 1;
+          });
+        }
       });
     });
-    
-    return ingredients;
+
+    const newShoppingList: ShoppingItem[] = Object.entries(ingredients).map(([ingredient, count]) => ({
+      id: Date.now().toString() + Math.random(),
+      name: ingredient,
+      quantity: count > 1 ? `${count} portions` : '1 portion',
+      category: 'General',
+      checked: false
+    }));
+
+    setShoppingList(newShoppingList);
+    setActiveTab('shopping');
   };
 
-  // Funzione per generare il documento completo
-  const generateCompleteDocument = (parsedPlan: any) => {
-    const shoppingList = generateShoppingList(parsedPlan.days);
-    const totalCalories = parsedPlan.days.reduce((sum: number, day: any) => 
-      sum + Object.values(day.meals).reduce((daySum: number, meal: any) => daySum + meal.calorie, 0), 0
-    );
-    
-    return `Meal Prep Planner - Piano Personalizzato
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-👤 DATI UTENTE
-• Nome: ${formData.nome}
-• Età: ${formData.eta} anni
-• Sesso: ${formData.sesso}
-• Peso: ${formData.peso} kg
-• Altezza: ${formData.altezza} cm
-• Livello attività: ${formData.attivita}
-• Obiettivo: ${formData.obiettivo}
-• Durata piano: ${formData.durata} giorni
-• Pasti al giorno: ${formData.pasti}
-• Varietà: ${formData.varieta === 'ripetuti' ? 'Stessi pasti tutti i giorni' : 'Pasti diversi per giorno'}
-
-🎯 RIEPILOGO PIANO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-• Totale calorie piano: ${totalCalories.toLocaleString()} kcal
-• Media giornaliera: ${Math.round(totalCalories / parsedPlan.days.length).toLocaleString()} kcal/giorno
-• Numero ricette: ${Object.keys(parsedPlan.days[0].meals).length} per giorno
-• Allergie/Intolleranze: ${formData.allergie || 'Nessuna'}
-• Preferenze: ${formData.preferenze || 'Nessuna'}
-
-🛒 LISTA DELLA SPESA CONSOLIDATA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🥬 VERDURE E ORTAGGI
-${Object.entries(shoppingList)
-  .filter(([name]) => name.toLowerCase().includes('pomodor') || name.toLowerCase().includes('sedano') || 
-    name.toLowerCase().includes('carota') || name.toLowerCase().includes('cipolla') || 
-    name.toLowerCase().includes('aglio') || name.toLowerCase().includes('fungh') || 
-    name.toLowerCase().includes('rucola') || name.toLowerCase().includes('verdur'))
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
-
-🍖 CARNE E PESCE
-${Object.entries(shoppingList)
-  .filter(([name]) => name.toLowerCase().includes('manzo') || name.toLowerCase().includes('salmone') || 
-    name.toLowerCase().includes('pollo') || name.toLowerCase().includes('merluzzo') || 
-    name.toLowerCase().includes('carne'))
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
-
-🥛 LATTICINI E UOVA
-${Object.entries(shoppingList)
-  .filter(([name]) => name.toLowerCase().includes('uovo') || name.toLowerCase().includes('yogurt') || 
-    name.toLowerCase().includes('latte') || name.toLowerCase().includes('parmigiano') || 
-    name.toLowerCase().includes('formaggio'))
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
-
-🌾 CEREALI E LEGUMI
-${Object.entries(shoppingList)
-  .filter(([name]) => name.toLowerCase().includes('pasta') || name.toLowerCase().includes('pane') || 
-    name.toLowerCase().includes('avena') || name.toLowerCase().includes('quinoa') || 
-    name.toLowerCase().includes('fagioli') || name.toLowerCase().includes('riso'))
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
-
-🥑 FRUTTA E ALTRO
-${Object.entries(shoppingList)
-  .filter(([name]) => name.toLowerCase().includes('avocado') || name.toLowerCase().includes('limone') || 
-    name.toLowerCase().includes('banana') || name.toLowerCase().includes('frutti') || 
-    name.toLowerCase().includes('granola') || name.toLowerCase().includes('miele') || 
-    name.toLowerCase().includes('olio') || name.toLowerCase().includes('aceto'))
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
-
-📅 PROGRAMMA GIORNALIERO DETTAGLIATO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${parsedPlan.days.map((day: any, index: number) => `
-${day.day.toUpperCase()}
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-
-🌅 COLAZIONE: ${day.meals.colazione.nome}
-   🔥 ${day.meals.colazione.calorie} kcal | 🥩 ${day.meals.colazione.proteine}g | 🍞 ${day.meals.colazione.carboidrati}g | 🥑 ${day.meals.colazione.grassi}g
-   
-☀️ PRANZO: ${day.meals.pranzo.nome}
-   🔥 ${day.meals.pranzo.calorie} kcal | 🥩 ${day.meals.pranzo.proteine}g | 🍞 ${day.meals.pranzo.carboidrati}g | 🥑 ${day.meals.pranzo.grassi}g
-   
-🌙 CENA: ${day.meals.cena.nome}
-   🔥 ${day.meals.cena.calorie} kcal | 🥩 ${day.meals.cena.proteine}g | 🍞 ${day.meals.cena.carboidrati}g | 🥑 ${day.meals.cena.grassi}g
-
-📊 TOTALE GIORNO: ${day.meals.colazione.calorie + day.meals.pranzo.calorie + day.meals.cena.calorie} kcal
-`).join('')}
-
-👨‍🍳 RICETTE PASSO-PASSO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${Object.entries(parsedPlan.days[0].meals).map(([mealType, meal]: [string, any]) => `
-🍽️ ${meal.nome.toUpperCase()}
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-
-📊 VALORI NUTRIZIONALI:
-• Calorie: ${meal.calorie} kcal
-• Proteine: ${meal.proteine}g
-• Carboidrati: ${meal.carboidrati}g  
-• Grassi: ${meal.grassi}g
-
-🛒 INGREDIENTI:
-${meal.ingredienti.map((ing: string, idx: number) => `${idx + 1}. ${ing}`).join('\n')}
-
-👩‍🍳 PREPARAZIONE:
-${meal.preparazione}
-
-⏱️ TEMPO PREPARAZIONE: 15-20 minuti
-🍽️ PORZIONI: 1 persona
-
-`).join('')}
-
-💡 CONSIGLI UTILI
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 MEAL PREP:
-• Prepara gli ingredienti la domenica per tutta la settimana
-• Conserva i pasti in contenitori ermetici in frigorifero
-• Alcuni piatti si possono congelare per un uso futuro
-
-🥗 CONSERVAZIONE:
-• Massimo 3-4 giorni in frigorifero
-• Congela le porzioni che non consumi subito
-• Riscalda sempre bene prima del consumo
-
-🍴 VARIAZIONI:
-• Puoi sostituire verdure simili (broccoli/cavolfiori)
-• Adatta le spezie ai tuoi gusti
-• Aggiungi erbe fresche per più sapore
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🍽️ Buon appetito e buon meal prep! 
-Generated by Meal Prep Planner - ${new Date().toLocaleDateString('it-IT')}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  // Toggle shopping item
+  const toggleShoppingItem = (id: string) => {
+    setShoppingList(shoppingList.map(item => 
+      item.id === id ? { ...item, checked: !item.checked } : item
+    ));
   };
 
-  // Funzione per parsare il piano AI in struttura dati GRAFICA
-  const parsePlanFromAI = (aiResponse: string) => {
-    // Dati mock strutturati per l'anteprima grafica
-    const mockPlan = {
-      days: [
-        {
-          day: "Giorno 1",
-          meals: {
-            colazione: {
-              nome: "Toast Avocado e Uovo in Camicia",
-              calorie: 633,
-              proteine: 32,
-              carboidrati: 87,
-              grassi: 18,
-              ingredienti: [
-                "2 fette pane integrale (60g)",
-                "1/2 avocado maturo (80g)",
-                "1 uovo fresco biologico",
-                "1 cucchiaino aceto bianco",
-                "Succo di 1/4 limone",
-                "Sale e pepe q.b.",
-                "Scaglie di peperoncino (opzionale)"
-              ],
-              preparazione: "Porta a bollore una casseruola d'acqua con l'aceto. Tosta il pane fino a doratura. In una ciotola, schiaccia l'avocado con una forchetta, aggiungi succo di limone, sale e pepe. Crea un vortice nell'acqua caliente e immergi delicatamente l'uovo per 3-4 minuti. Spalma l'avocado sul pane tostato, adagia sopra l'uovo scodellato e condisci con pepe e peperoncino."
-            },
-            pranzo: {
-              nome: "Pasta e Fagioli",
-              calorie: 886,
-              proteine: 66,
-              carboidrati: 100,
-              grassi: 25,
-              ingredienti: [
-                "75g pasta corta",
-                "100g fagioli borlotti lessati",
-                "1/2 costa di sedano (15g)",
-                "1/4 carota (20g)",
-                "1/4 cipolla (25g)",
-                "1/2 spicchio aglio",
-                "100g passata di pomodoro",
-                "200ml brodo vegetale",
-                "Rosmarino fresco",
-                "1 cucchiaio olio extravergine"
-              ],
-              preparazione: "Prepara un soffritto con sedano, carota e cipolla tritati. Soffriggi in olio con aglio e rosmarino per 5 minuti. Aggiungi metà fagioli schiacciati e quelli interi. Incorpora la passata e cuoci 10 minuti. Aggiungi brodo e pasta, cuoci mescolando spesso fino a consistenza cremosa."
-            },
-            cena: {
-              nome: "Tagliata di Manzo ai Funghi",
-              calorie: 759,
-              proteine: 66,
-              carboidrati: 66,
-              grassi: 25,
-              ingredienti: [
-                "120g controfiletto di manzo",
-                "60g funghi porcini freschi",
-                "1/2 spicchio aglio",
-                "Prezzemolo fresco (3g)",
-                "40g rucola",
-                "20g scaglie di Parmigiano",
-                "1 cucchiaio olio extravergine",
-                "Sale, pepe, rosmarino q.b."
-              ],
-              preparazione: "Porta la carne a temperatura ambiente. Pulisci e affetta i porcini. Cuoci la carne 3-4 minuti per lato. Lascia riposare 5 minuti. Saltare i porcini con aglio e prezzemolo. Taglia la carne, servi su rucola con porcini e Parmigiano."
-            }
-          }
-        },
-        {
-          day: "Giorno 2",
-          meals: {
-            colazione: {
-              nome: "Bowl Energetico Yogurt e Granola",
-              calorie: 633,
-              proteine: 32,
-              carboidrati: 87,
-              grassi: 18,
-              ingredienti: [
-                "150g yogurt greco 0% grassi",
-                "30g granola artigianale",
-                "1/2 banana matura (60g)",
-                "10g noci di pecan tritate",
-                "1 cucchiaino burro di mandorle",
-                "1 cucchiaino miele",
-                "5g bacche di goji"
-              ],
-              preparazione: "In una bowl, versa lo yogurt greco. Taglia la banana a rondelle e disponila sopra. Aggiungi la granola, le noci tritate e le bacche di goji. Concludi con il burro di mandorle e il miele."
-            },
-            pranzo: {
-              nome: "Salmone in Crosta di Erbe",
-              calorie: 886,
-              proteine: 66,
-              carboidrati: 100,
-              grassi: 25,
-              ingredienti: [
-                "120g filetto di salmone",
-                "1 cucchiaio pangrattato (10g)",
-                "Prezzemolo fresco (5g)",
-                "1/2 spicchio aglio",
-                "Zest di 1/4 limone",
-                "1 cucchiaio olio extravergine",
-                "100g verdure miste di stagione",
-                "Sale e pepe q.b."
-              ],
-              preparazione: "Preriscalda il forno a 200°C. Mescola pangrattato, prezzemolo tritato, aglio e zest di limone. Condisci il salmone con olio, sale e pepe. Ricopri con la crosta di erbe. Cuoci in forno 12-15 minuti. Servi con verdure saltate."
-            },
-            cena: {
-              nome: "Tagliata di Manzo ai Funghi",
-              calorie: 759,
-              proteine: 66,
-              carboidrati: 66,
-              grassi: 25,
-              ingredienti: [
-                "120g controfiletto di manzo",
-                "60g funghi porcini freschi",
-                "1/2 spicchio aglio",
-                "Prezzemolo fresco (3g)",
-                "40g rucola",
-                "20g scaglie di Parmigiano",
-                "1 cucchiaio olio extravergine",
-                "Sale, pepe, rosmarino q.b."
-              ],
-              preparazione: "Porta la carne a temperatura ambiente. Pulisci e affetta i porcini. Cuoci la carne 3-4 minuti per lato. Lascia riposare 5 minuti. Saltare i porcini con aglio e prezzemolo. Taglia la carne, servi su rucola con porcini e Parmigiano."
-            }
-          }
-        }
-      ]
-    };
-
-    // Duplica i giorni in base alla durata e varietà scelta
-    const numDays = parseInt(formData.durata) || 1;
-    const allDays = [];
-    
-    if (formData.varieta === 'ripetuti') {
-      // STESSI PASTI TUTTI I GIORNI - ripete sempre il Giorno 1
-      for (let i = 0; i < numDays; i++) {
-        allDays.push({
-          ...mockPlan.days[0], // Sempre il primo giorno
-          day: `Giorno ${i + 1}`
-        });
-      }
-    } else {
-      // PASTI DIVERSI - alterna tra i giorni disponibili
-      for (let i = 0; i < numDays; i++) {
-        allDays.push({
-          ...mockPlan.days[i % 2],
-          day: `Giorno ${i + 1}`
-        });
-      }
-    }
-
-    return { ...mockPlan, days: allDays };
+  // Add ingredient input
+  const addIngredientInput = () => {
+    setNewRecipe({
+      ...newRecipe,
+      ingredients: [...(newRecipe.ingredients || []), '']
+    });
   };
 
-  // Test connessione API all'avvio
-  useEffect(() => {
-    const testAPI = async () => {
-      try {
-        const response = await fetch('/api/test-connection');
-        if (response.ok) {
-          setApiStatus('connected');
-        } else {
-          setApiStatus('error');
-        }
-      } catch (error) {
-        setApiStatus('error');
-      }
-    };
-    testAPI();
-
-    // Carica automaticamente i dati salvati come "preferiti"
-    loadSavedData();
-  }, []);
-
-  const checkSavedData = () => {
-    const savedData = localStorage.getItem('mealPrepFormData');
-    setHasSavedData(!!savedData);
+  // Add instruction input
+  const addInstructionInput = () => {
+    setNewRecipe({
+      ...newRecipe,
+      instructions: [...(newRecipe.instructions || []), '']
+    });
   };
 
-  // Carica automaticamente i dati salvati
-  const loadSavedData = () => {
-    const savedData = localStorage.getItem('mealPrepFormData');
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
-        setHasSavedData(true);
-      } catch (error) {
-        console.error('Errore nel caricamento dei dati salvati');
-      }
-    }
+  // Update ingredient
+  const updateIngredient = (index: number, value: string) => {
+    const updatedIngredients = [...(newRecipe.ingredients || [])];
+    updatedIngredients[index] = value;
+    setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
   };
 
-  // Cancella i dati salvati
-  const clearSavedData = () => {
-    if (confirm('Sei sicuro di voler cancellare i dati salvati e inserire nuovi dati?')) {
-      localStorage.removeItem('mealPrepFormData');
-      setHasSavedData(false);
-      setFormData({
-        nome: '', eta: '', sesso: '', peso: '', altezza: '', attivita: '', 
-        obiettivo: '', allergie: '', preferenze: '', pasti: '', durata: '', varieta: ''
-      });
-      alert('✅ Dati cancellati! Puoi inserire nuovi dati.');
-    }
+  // Update instruction
+  const updateInstruction = (index: number, value: string) => {
+    const updatedInstructions = [...(newRecipe.instructions || [])];
+    updatedInstructions[index] = value;
+    setNewRecipe({ ...newRecipe, instructions: updatedInstructions });
   };
 
-  // Auto-save form data come "preferiti"
-  const handleInputChange = (field: string, value: string) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-    
-    // Clear existing timeout
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-    
-    // Set new timeout for auto-save
-    const timeout = setTimeout(() => {
-      localStorage.setItem('mealPrepFormData', JSON.stringify(newFormData));
-      setHasSavedData(true);
-      console.log('Dati salvati automaticamente come preferiti');
-    }, 1000);
-    
-    setAutoSaveTimeout(timeout);
+  // Get current meal plan
+  const getCurrentMealPlan = () => {
+    return mealPlans.find(plan => plan.date === selectedDate);
   };
 
-  const handleReplacement = async (mealType: string, dayNumber: string) => {
-    setIsReplacing(`${dayNumber}-${mealType}`);
-    
-    try {
-      const response = await fetch('/api/replace-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          formData,
-          mealType,
-          dayNumber,
-          currentPlan: generatedPlan
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setGeneratedPlan(result.updatedPlan);
-        // Rianalizza il piano per l'anteprima grafica
-        const parsed = parsePlanFromAI(result.updatedPlan);
-        setParsedPlan(parsed);
-      } else {
-        alert('Errore nella sostituzione del pasto');
-      }
-    } catch (error) {
-      alert('Errore di connessione per la sostituzione');
-    } finally {
-      setIsReplacing(null);
-    }
-  };
-
-  const confirmPlan = () => {
-    setShowPreview(false);
-    setTimeout(() => {
-      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  // Funzione per salvare dati utente per analytics admin
-  const saveUserToAdminDB = (userData: any, planData: any) => {
-    const timestamp = Date.now();
-    const userId = `user_${timestamp}`;
-    
-    // Crea record utente per dashboard admin
-    const userRecord = {
-      id: userId,
-      timestamp,
-      createdAt: new Date().toLocaleDateString('it-IT'),
-      createdTime: new Date().toLocaleTimeString('it-IT'),
-      sessionId: sessionStorage.getItem('sessionId') || `session_${timestamp}`,
-      ...userData,
-      planDetails: {
-        durata: planData.durata,
-        pasti: planData.pasti,
-        varieta: planData.varieta === 'ripetuti' ? 'Stessi pasti' : 'Pasti diversi'
-      },
-      planType: 'free', // Default tutti free
-      plansUsed: 1,
-      lastAccess: new Date().toISOString(),
-      status: 'active',
-      leadScore: calculateLeadScore(userData),
-      userAgent: navigator.userAgent,
-      referrer: document.referrer || 'direct'
-    };
-
-    // Salva nel localStorage per dashboard admin
-    localStorage.setItem(userId, JSON.stringify(userRecord));
-    
-    // Aggiorna statistiche globali
-    updateGlobalStats();
-    
-    console.log('✅ Utente registrato nella dashboard admin:', userId);
-  };
-
-  // Calcola punteggio lead
-  const calculateLeadScore = (userData: any) => {
-    let score = 50; // Base score
-    
-    // Obiettivi specifici = più motivazione
-    if (userData.obiettivo === 'perdita-peso') score += 20;
-    if (userData.obiettivo === 'aumento-massa') score += 15;
-    
-    // Età target
-    const eta = parseInt(userData.eta);
-    if (eta >= 25 && eta <= 45) score += 15; // Target demografico
-    
-    // Attività fisica = più commitment
-    if (userData.attivita === 'moderato' || userData.attivita === 'intenso') score += 10;
-    
-    // Allergie/preferenze specifiche = più engagement
-    if (userData.allergie && userData.allergie.trim()) score += 5;
-    if (userData.preferenze && userData.preferenze.trim()) score += 5;
-    
-    return Math.min(score, 100); // Max 100
-  };
-
-  // Aggiorna statistiche globali
-  const updateGlobalStats = () => {
-    const globalStats = JSON.parse(localStorage.getItem('globalStats') || '{}');
-    
-    globalStats.totalUsers = (globalStats.totalUsers || 0) + 1;
-    globalStats.totalPlansGenerated = (globalStats.totalPlansGenerated || 0) + 1;
-    globalStats.lastUpdate = new Date().toISOString();
-    globalStats.todayUsers = (globalStats.todayUsers || 0) + 1;
-    
-    localStorage.setItem('globalStats', JSON.stringify(globalStats));
-  };
-
-  // Crea session ID univoco se non esiste
-  useEffect(() => {
-    if (!sessionStorage.getItem('sessionId')) {
-      sessionStorage.setItem('sessionId', `session_${Date.now()}`);
-    }
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsGenerating(true);
-    
-    try {
-      const response = await fetch('/api/generate-meal-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        const parsed = parsePlanFromAI(result.piano);
-        setParsedPlan(parsed);
-        const completeDocument = generateCompleteDocument(parsed);
-        setGeneratedPlan(completeDocument);
-        
-        // 📊 TRACKING AUTOMATICO - Salva utente nella dashboard admin
-        saveUserToAdminDB(formData, formData);
-        
-        setShowPreview(true);
-        
-        // Scroll to preview
-        setTimeout(() => {
-          document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        alert(`❌ Errore: ${result.error}\n\nDettagli: ${result.details || 'Nessun dettaglio disponibile'}`);
-      }
-    } catch (error) {
-      alert('❌ Errore di connessione. Riprova più tardi.');
-      console.error('Errore submit:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  // Navigation tabs
+  const tabs = [
+    { id: 'planner', label: 'Meal Planner', icon: Calendar },
+    { id: 'recipes', label: 'Recipes', icon: ChefHat },
+    { id: 'shopping', label: 'Shopping List', icon: ShoppingCart },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       {/* Header */}
       <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
-            <h1 className="text-2xl font-bold">Meal Prep Planner</h1>
+          <div className="flex items-center space-x-3">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-2 rounded-lg">
+              <Utensils className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+              Meal Prep Planner
+            </h1>
           </div>
-          
-          <nav className="hidden md:flex gap-6">
-            <Link href="/" className="hover:text-green-400 transition-colors">Home</Link>
-            <Link href="/dashboard" className="hover:text-green-400 transition-colors">Dashboard</Link>
-            <Link href="/ricette" className="hover:text-green-400 transition-colors">Ricette</Link>
-          </nav>
-</div>
-
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-300">
+              <Users className="h-4 w-4" />
+              <span>Plan • Cook • Enjoy</span>
+            </div>
+          </div>
+        </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="text-center py-12 px-4" style={{background: 'linear-gradient(to right, #8FBC8F, #9ACD32)'}}>
-        <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
-          Rivoluziona la Tua Alimentazione con<br />Meal Prep Planner
-        </h1>
-        <p className="text-lg text-gray-800 mb-6 max-w-2xl mx-auto">
-          Generazione meal prep, Lista della Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.
-        </p>
-        <button 
-          onClick={() => document.getElementById('meal-form')?.scrollIntoView({ behavior: 'smooth' })}
-          className="bg-black text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-105"
-        >
-          Inizia Ora!
-        </button>
-      </section>
-
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
-          Perché Scegliere Meal Prep Planner?
-        </h2>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-orange-400 to-red-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image1.png" alt="Risparmio di Tempo" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Risparmio di Tempo</h3>
-              <p className="text-gray-300 text-sm">Prepara i tuoi pasti per più giorni in una sola sessione.</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-green-400 to-emerald-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image2.png" alt="Riduzione degli Sprechi" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Riduzione degli Sprechi</h3>
-              <p className="text-gray-300 text-sm">Lista spesa precisa per comprare solo ciò che serve.</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-blue-400 to-purple-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image3.png" alt="Obiettivi Raggiungibili" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Obiettivi Raggiungibili</h3>
-              <p className="text-gray-300 text-sm">Piani personalizzati con calcolo calorico dettagliato.</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image4.png" alt="Ricette Varie e Gustose" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Ricette Varie e Gustose</h3>
-              <p className="text-gray-300 text-sm">Scopri nuove ricette adatte alle tue preferenze.</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-pink-400 to-purple-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image5.png" alt="Mobile-Friendly" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Mobile-Friendly</h3>
-              <p className="text-gray-300 text-sm">Accedi ovunque dal tuo smartphone o tablet.</p>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 rounded-xl overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-teal-400 to-green-500 h-48 rounded-t-xl flex items-center justify-center p-3">
-              <img src="/images/image6.png" alt="Semplice e Intuitivo" className="w-full h-full object-cover rounded-lg" />
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-3">Semplice e Intuitivo</h3>
-              <p className="text-gray-300 text-sm">Interfaccia chiara e facile da usare per tutti.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it Works */}
-      <section className="bg-gray-800 py-20">
+      {/* Navigation */}
+      <nav className="bg-gray-800/50 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
-            Come Funziona
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>1</div>
-              <h3 className="text-xl font-bold mb-3">Compila il Modulo</h3>
-              <p className="text-gray-300">Inserisci le tue informazioni personali, obiettivi e preferenze alimentari.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>2</div>
-              <h3 className="text-xl font-bold mb-3">Ricevi Pasti e Ricette</h3>
-              <p className="text-gray-300">Ottieni una programmazione personalizzata con ricette dettagliate e lista spesa.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>3</div>
-              <h3 className="text-xl font-bold mb-3">Prepara i Pasti</h3>
-              <p className="text-gray-300">Segui le ricette passo-passo e prepara i tuoi meal prep.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>4</div>
-              <h3 className="text-xl font-bold mb-3">Goditi i Risultati</h3>
-              <p className="text-gray-300">Risparmia tempo, denaro e raggiungi i tuoi obiettivi di salute.</p>
-            </div>
+          <div className="flex space-x-8">
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-all duration-200 ${
+                    activeTab === tab.id
+                      ? 'border-emerald-500 text-emerald-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </section>
+      </nav>
 
-      {/* Form Section */}
-      <section id="meal-form" className="max-w-4xl mx-auto px-4 py-20">
-        <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
-          🍽️ Crea la Tua Programmazione Pasti e Ricette
-        </h2>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Meal Planner Tab */}
+        {activeTab === 'planner' && (
+          <div className="space-y-8">
+            {/* Date Selection */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center space-x-2">
+                  <Calendar className="h-6 w-6 text-emerald-400" />
+                  <span>Meal Planning</span>
+                </h2>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
 
-        {/* Status e Clear Data Button */}
-        <div className="flex flex-wrap gap-4 justify-center mb-8">
-          {hasSavedData && (
-            <div className="bg-green-600/20 border border-green-500 rounded-lg px-4 py-2 flex items-center gap-2">
-              <span className="text-green-400">✅ Dati preferiti caricati</span>
-            </div>
-          )}
-          
-          {hasSavedData && (
-            <button
-              onClick={clearSavedData}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              🗑️ Cancella Dati e Inserisci Nuovi
-            </button>
-          )}
-        </div>
-        
-        <form onSubmit={handleSubmit} className="bg-gray-800 rounded-xl p-8 shadow-2xl">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Nome</label>
-              <input
-                type="text"
-                value={formData.nome}
-                onChange={(e) => handleInputChange('nome', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Età</label>
-              <input
-                type="number"
-                value={formData.eta}
-                onChange={(e) => handleInputChange('eta', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              />
-            </div>
+              {/* Current Day Plan */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {['breakfast', 'lunch', 'dinner', 'snack'].map(mealType => {
+                  const currentPlan = getCurrentMealPlan();
+                  const meal = currentPlan?.meals[mealType as keyof MealPlan['meals']];
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Sesso</label>
-              <select
-                value={formData.sesso}
-                onChange={(e) => handleInputChange('sesso', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="maschio">Maschio</option>
-                <option value="femmina">Femmina</option>
-              </select>
-            </div>
+                  return (
+                    <div key={mealType} className="bg-gray-700/50 rounded-xl p-4 border border-gray-600">
+                      <h3 className="font-semibold text-lg mb-3 capitalize text-emerald-400">
+                        {mealType}
+                      </h3>
+                      
+                      {meal ? (
+                        <div className="space-y-3">
+                          <div className="bg-gray-600/50 rounded-lg p-3">
+                            <h4 className="font-medium text-white mb-2">{meal.name}</h4>
+                            <div className="flex items-center space-x-4 text-sm text-gray-300">
+                              <span className="flex items-center space-x-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{meal.prepTime + meal.cookTime}m</span>
+                              </span>
+                              <span className="flex items-center space-x-1">
+                                <Users className="h-4 w-4" />
+                                <span>{meal.servings}</span>
+                              </span>
+                            </div>
+                            {meal.nutrition && (
+                              <div className="mt-2 text-xs text-gray-400">
+                                {meal.nutrition.calories} cal • {meal.nutrition.protein}g protein
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              const updatedPlans = mealPlans.map(plan => 
+                                plan.date === selectedDate 
+                                  ? { ...plan, meals: { ...plan.meals, [mealType]: undefined } }
+                                  : plan
+                              );
+                              setMealPlans(updatedPlans);
+                            }}
+                            className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg py-2 px-3 transition-colors text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-gray-500 mb-3">No meal planned</div>
+                          <div className="space-y-2">
+                            {recipes.slice(0, 3).map(recipe => (
+                              <button
+                                key={recipe.id}
+                                onClick={() => addMealToPlan(recipe, mealType as keyof MealPlan['meals'])}
+                                className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg py-2 px-3 transition-colors text-sm"
+                              >
+                                + {recipe.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Peso (kg)</label>
-              <input
-                type="number"
-                value={formData.peso}
-                onChange={(e) => handleInputChange('peso', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Altezza (cm)</label>
-              <input
-                type="number"
-                value={formData.altezza}
-                onChange={(e) => handleInputChange('altezza', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Livello di Attività</label>
-              <select
-                value={formData.attivita}
-                onChange={(e) => handleInputChange('attivita', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="sedentario">Sedentario</option>
-                <option value="leggero">Attività Leggera</option>
-                <option value="moderato">Attività Moderata</option>
-                <option value="intenso">Attività Intensa</option>
-              </select>
+              {/* Generate Shopping List */}
+              <div className="mt-6 text-center">
+                <button
+                  onClick={generateShoppingList}
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center space-x-2 mx-auto"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <span>Generate Shopping List</span>
+                </button>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Obiettivo</label>
-              <select
-                value={formData.obiettivo}
-                onChange={(e) => handleInputChange('obiettivo', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="perdita-peso">Perdita di Peso</option>
-                <option value="mantenimento">Mantenimento</option>
-                <option value="aumento-massa">Aumento Massa Muscolare</option>
-              </select>
-            </div>
+            {/* Weekly Overview */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+              <h3 className="text-xl font-bold mb-4 flex items-center space-x-2">
+                <Target className="h-5 w-5 text-emerald-400" />
+                <span>This Week's Meals</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - date.getDay() + i);
+                  const dateStr = date.toISOString().split('T')[0];
+                  const plan = mealPlans.find(p => p.date === dateStr);
+                  const mealCount = plan ? Object.values(plan.meals).filter(Boolean).length : 0;
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Durata Meal Prep (giorni)</label>
-              <select
-                value={formData.durata}
-                onChange={(e) => handleInputChange('durata', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="2">2 Giorni</option>
-                <option value="3">3 Giorni</option>
-                <option value="5">5 Giorni</option>
-                <option value="7">7 Giorni</option>
-              </select>
+                  return (
+                    <div key={i} className="bg-gray-700/30 rounded-lg p-3 text-center">
+                      <div className="text-sm font-medium text-gray-300 mb-1">
+                        {date.toLocaleDateString('en', { weekday: 'short' })}
+                      </div>
+                      <div className="text-xs text-gray-400 mb-2">
+                        {date.toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="text-sm">
+                        {mealCount > 0 ? (
+                          <span className="text-emerald-400">{mealCount} meals</span>
+                        ) : (
+                          <span className="text-gray-500">No meals</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Numero Pasti al Giorno</label>
-              <select
-                value={formData.pasti}
-                onChange={(e) => handleInputChange('pasti', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="3">3 Pasti</option>
-                <option value="4">4 Pasti</option>
-                <option value="5">5 Pasti</option>
-                <option value="6">6 Pasti</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Varietà Pasti</label>
-              <select
-                value={formData.varieta}
-                onChange={(e) => handleInputChange('varieta', e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-                required
-                disabled={isGenerating}
-              >
-                <option value="">Seleziona...</option>
-                <option value="diversi">🔄 Pasti Diversi per Giorno</option>
-                <option value="ripetuti">🎯 Stessi Pasti Tutti i Giorni</option>
-              </select>
-            </div>
-
           </div>
+        )}
 
-          <div className="mt-6">
-            <label className="block text-sm font-medium mb-2">Allergie e Intolleranze</label>
-            <textarea
-              value={formData.allergie}
-              onChange={(e) => handleInputChange('allergie', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-              rows={3}
-              placeholder="Es: lattosio, glutine, noci..."
-              disabled={isGenerating}
-            />
-          </div>
+        {/* Recipes Tab */}
+        {activeTab === 'recipes' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold flex items-center space-x-2">
+                <ChefHat className="h-6 w-6 text-emerald-400" />
+                <span>Recipe Collection</span>
+              </h2>
+              <button
+                onClick={() => setIsAddingRecipe(true)}
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Add Recipe</span>
+              </button>
+            </div>
 
-          <div className="mt-6">
-            <label className="block text-sm font-medium mb-2">Preferenze Alimentari</label>
-            <textarea
-              value={formData.preferenze}
-              onChange={(e) => handleInputChange('preferenze', e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none"
-              rows={3}
-              placeholder="Es: vegetariano, vegano, mediterraneo..."
-              disabled={isGenerating}
-            />
-          </div>
+            {/* Add Recipe Form */}
+            {isAddingRecipe && (
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+                <h3 className="text-xl font-bold mb-4">Add New Recipe</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Recipe Name</label>
+                      <input
+                        type="text"
+                        value={newRecipe.name || ''}
+                        onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        placeholder="Enter recipe name"
+                      />
+                    </div>
 
-          <div className="mt-8 text-center">
-            <button
-              type="submit"
-              disabled={isGenerating}
-              className={`px-12 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105 ${
-                isGenerating 
-                  ? 'bg-gray-600 cursor-not-allowed' 
-                  : 'hover:opacity-90'
-              }`}
-              style={{backgroundColor: isGenerating ? '#6B7280' : '#8FBC8F', color: 'black'}}
-            >
-              {isGenerating ? '🍽️ Creando programmazione pasti...' : '🚀 Crea Programmazione Pasti e Ricette'}
-            </button>
-          </div>
-        </form>
-      </section>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Prep Time (min)</label>
+                        <input
+                          type="number"
+                          value={newRecipe.prepTime || 0}
+                          onChange={(e) => setNewRecipe({ ...newRecipe, prepTime: parseInt(e.target.value) })}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Cook Time (min)</label>
+                        <input
+                          type="number"
+                          value={newRecipe.cookTime || 0}
+                          onChange={(e) => setNewRecipe({ ...newRecipe, cookTime: parseInt(e.target.value) })}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Servings</label>
+                        <input
+                          type="number"
+                          value={newRecipe.servings || 1}
+                          onChange={(e) => setNewRecipe({ ...newRecipe, servings: parseInt(e.target.value) })}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
 
-      {/* NUOVA ANTEPRIMA GRAFICA CON CARD COLORATE */}
-      {showPreview && parsedPlan && (
-        <section id="preview-section" className="max-w-7xl mx-auto px-4 py-20">
-          <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
-            📋 Anteprima del Tuo Piano Alimentare
-          </h2>
-          <p className="text-center text-gray-300 mb-8">
-            Controlla il piano e clicca &quot;🔄 Cambia&quot; per sostituire un singolo pasto
-          </p>
-          
-          <div className="space-y-12">
-            {parsedPlan.days.map((day: any, dayIndex: number) => (
-              <div key={dayIndex} className="bg-gray-800 rounded-2xl p-8 shadow-2xl">
-                <h3 className="text-3xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
-                  {day.day}
-                </h3>
-                
-                <div className="grid md:grid-cols-3 gap-6">
-                  {/* Colazione - Card Arancione */}
-                  <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-bold text-xl">🌅 Colazione</h4>
-                      <button
-                        onClick={() => handleReplacement('colazione', day.day)}
-                        disabled={isReplacing === `${day.day}-colazione`}
-                        className="bg-white/20 hover:bg-white/30 disabled:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Difficulty</label>
+                      <select
+                        value={newRecipe.difficulty || 'Easy'}
+                        onChange={(e) => setNewRecipe({ ...newRecipe, difficulty: e.target.value as Recipe['difficulty'] })}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                       >
-                        {isReplacing === `${day.day}-colazione` ? '⏳' : '🔄 Cambia'}
-                      </button>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
                     </div>
-                    <h5 className="font-bold text-lg mb-3">{day.meals.colazione.nome}</h5>
-                    
-                    {/* Macronutrienti */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🔥 {day.meals.colazione.calorie} kcal
-                      </span>
-                      <span className="bg-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥩 {day.meals.colazione.proteine}g
-                      </span>
-                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
-                        🍞 {day.meals.colazione.carboidrati}g
-                      </span>
-                      <span className="bg-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥑 {day.meals.colazione.grassi}g
-                      </span>
-                    </div>
-
-                    {/* Ingredienti */}
-                    <details className="group">
-                      <summary className="cursor-pointer font-semibold mb-2 hover:text-orange-100">
-                        📝 Ingredienti ({day.meals.colazione.ingredienti.length})
-                      </summary>
-                      <ul className="space-y-1 text-sm">
-                        {day.meals.colazione.ingredienti.map((ing: string, i: number) => (
-                          <li key={i} className="text-orange-100">• {ing}</li>
-                        ))}
-                      </ul>
-                    </details>
                   </div>
 
-                  {/* Pranzo - Card Blu */}
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-bold text-xl">☀️ Pranzo</h4>
-                      <button
-                        onClick={() => handleReplacement('pranzo', day.day)}
-                        disabled={isReplacing === `${day.day}-pranzo`}
-                        className="bg-white/20 hover:bg-white/30 disabled:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-                      >
-                        {isReplacing === `${day.day}-pranzo` ? '⏳' : '🔄 Cambia'}
-                      </button>
-                    </div>
-                    <h5 className="font-bold text-lg mb-3">{day.meals.pranzo.nome}</h5>
-                    
-                    {/* Macronutrienti */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🔥 {day.meals.pranzo.calorie} kcal
-                      </span>
-                      <span className="bg-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥩 {day.meals.pranzo.proteine}g
-                      </span>
-                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
-                        🍞 {day.meals.pranzo.carboidrati}g
-                      </span>
-                      <span className="bg-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥑 {day.meals.pranzo.grassi}g
-                      </span>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Ingredients</label>
+                      {(newRecipe.ingredients || ['']).map((ingredient, index) => (
+                        <div key={index} className="flex space-x-2 mb-2">
+                          <input
+                            type="text"
+                            value={ingredient}
+                            onChange={(e) => updateIngredient(index, e.target.value)}
+                            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            placeholder="Enter ingredient"
+                          />
+                          {index === (newRecipe.ingredients || []).length - 1 && (
+                            <button
+                              onClick={addIngredientInput}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
 
-                    {/* Ingredienti */}
-                    <details className="group">
-                      <summary className="cursor-pointer font-semibold mb-2 hover:text-blue-100">
-                        📝 Ingredienti ({day.meals.pranzo.ingredienti.length})
-                      </summary>
-                      <ul className="space-y-1 text-sm">
-                        {day.meals.pranzo.ingredienti.map((ing: string, i: number) => (
-                          <li key={i} className="text-blue-100">• {ing}</li>
-                        ))}
-                      </ul>
-                    </details>
-                  </div>
-
-                  {/* Cena - Card Viola */}
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-bold text-xl">🌙 Cena</h4>
-                      <button
-                        onClick={() => handleReplacement('cena', day.day)}
-                        disabled={isReplacing === `${day.day}-cena`}
-                        className="bg-white/20 hover:bg-white/30 disabled:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-                      >
-                        {isReplacing === `${day.day}-cena` ? '⏳' : '🔄 Cambia'}
-                      </button>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Instructions</label>
+                      {(newRecipe.instructions || ['']).map((instruction, index) => (
+                        <div key={index} className="flex space-x-2 mb-2">
+                          <textarea
+                            value={instruction}
+                            onChange={(e) => updateInstruction(index, e.target.value)}
+                            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            placeholder="Enter instruction step"
+                            rows={2}
+                          />
+                          {index === (newRecipe.instructions || []).length - 1 && (
+                            <button
+                              onClick={addInstructionInput}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    <h5 className="font-bold text-lg mb-3">{day.meals.cena.nome}</h5>
-                    
-                    {/* Macronutrienti */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🔥 {day.meals.cena.calorie} kcal
-                      </span>
-                      <span className="bg-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥩 {day.meals.cena.proteine}g
-                      </span>
-                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
-                        🍞 {day.meals.cena.carboidrati}g
-                      </span>
-                      <span className="bg-purple-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥑 {day.meals.cena.grassi}g
-                      </span>
-                    </div>
-
-                    {/* Ingredienti */}
-                    <details className="group">
-                      <summary className="cursor-pointer font-semibold mb-2 hover:text-purple-100">
-                        📝 Ingredienti ({day.meals.cena.ingredienti.length})
-                      </summary>
-                      <ul className="space-y-1 text-sm">
-                        {day.meals.cena.ingredienti.map((ing: string, i: number) => (
-                          <li key={i} className="text-purple-100">• {ing}</li>
-                        ))}
-                      </ul>
-                    </details>
                   </div>
                 </div>
-                
-                {/* Totale Giornaliero */}
-                <div className="mt-6 bg-gray-700 rounded-lg p-4">
-                  <p className="text-center font-bold text-lg">
-                    📊 Totale Giorno: {day.meals.colazione.calorie + day.meals.pranzo.calorie + day.meals.cena.calorie} kcal
-                  </p>
+
+                <div className="flex justify-end space-x-4 mt-6">
+                  <button
+                    onClick={() => setIsAddingRecipe(false)}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+                  >
+                    <X className="h-4 w-4" />
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={addRecipe}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 flex items-center space-x-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>Save Recipe</span>
+                  </button>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Recipe Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recipes.map(recipe => (
+                <div key={recipe.id} className="bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700 hover:border-emerald-500/50 transition-all duration-200">
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-bold text-white">{recipe.name}</h3>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingRecipe(recipe)}
+                          className="text-gray-400 hover:text-emerald-400 transition-colors"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteRecipe(recipe.id)}
+                          className="text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4 text-sm text-gray-300 mb-4">
+                      <span className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{recipe.prepTime + recipe.cookTime}m</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <Users className="h-4 w-4" />
+                        <span>{recipe.servings}</span>
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        recipe.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                        recipe.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {recipe.difficulty}
+                      </span>
+                    </div>
+
+                    {recipe.nutrition && (
+                      <div className="bg-gray-700/50 rounded-lg p-3 mb-4">
+                        <div className="text-sm text-gray-300">
+                          <div className="grid grid-cols-2 gap-2">
+                            <span>{recipe.nutrition.calories} cal</span>
+                            <span>{recipe.nutrition.protein}g protein</span>
+                            <span>{recipe.nutrition.carbs}g carbs</span>
+                            <span>{recipe.nutrition.fat}g fat</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-emerald-400">Ingredients:</h4>
+                      <ul className="text-sm text-gray-300 space-y-1">
+                        {recipe.ingredients.slice(0, 3).map((ingredient, index) => (
+                          <li key={index} className="flex items-center space-x-2">
+                            <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
+                            <span>{ingredient}</span>
+                          </li>
+                        ))}
+                        {recipe.ingredients.length > 3 && (
+                          <li className="text-gray-400">+{recipe.ingredients.length - 3} more</li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {recipe.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {recipe.tags.map((tag, index) => (
+                          <span key={index} className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
 
-          {/* Preview Action Buttons */}
-          <div className="flex flex-wrap gap-4 justify-center mt-12">
-            <button
-              onClick={confirmPlan}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-colors shadow-lg"
-            >
-              ✅ Conferma Piano
-            </button>
+        {/* Shopping List Tab */}
+        {activeTab === 'shopping' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold flex items-center space-x-2">
+                <ShoppingCart className="h-6 w-6 text-emerald-400" />
+                <span>Shopping List</span>
+              </h2>
+              <button
+                onClick={generateShoppingList}
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+              >
+                Regenerate List
+              </button>
+            </div>
 
-            <button
-              onClick={() => {
-                setShowPreview(false);
-                setGeneratedPlan(null);
-                setParsedPlan(null);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-xl text-lg font-semibold transition-colors shadow-lg"
-            >
-              🔄 Genera Nuovo Piano
-            </button>
+            {shoppingList.length > 0 ? (
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
+                <div className="space-y-3">
+                  {shoppingList.map(item => (
+                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg">
+                      <button
+                        onClick={() => toggleShoppingItem(item.id)}
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          item.checked 
+                            ? 'bg-emerald-500 border-emerald-500' 
+                            : 'border-gray-400 hover:border-emerald-400'
+                        }`}
+                      >
+                        {item.checked && <CheckCircle className="h-3 w-3 text-white" />}
+                      </button>
+                      <div className="flex-1">
+                        <div className={`font-medium ${item.checked ? 'line-through text-gray-400' : 'text-white'}`}>
+                          {item.name}
+                        </div>
+                        <div className="text-sm text-gray-400">{item.quantity}</div>
+                      </div>
+                      <button
+                        onClick={() => setShoppingList(shoppingList.filter(i => i.id !== item.id))}
+                        className="text-gray-400 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-600">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">
+                      {shoppingList.filter(item => item.checked).length} of {shoppingList.length} items completed
+                    </span>
+                    <span className="text-emerald-400">
+                      {Math.round((shoppingList.filter(item => item.checked).length / shoppingList.length) * 100)}% complete
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-12 border border-gray-700 text-center">
+                <ShoppingCart className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-400 mb-2">No Shopping List Yet</h3>
+                <p className="text-gray-500 mb-6">Plan some meals first, then generate your shopping list</p>
+                <button
+                  onClick={() => setActiveTab('planner')}
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                >
+                  Go to Meal Planner
+                </button>
+              </div>
+            )}
           </div>
-        </section>
-      )}
+        )}
+      </main>
 
-      {/* Results Section - Only show after confirmation */}
-      {!showPreview && generatedPlan && (
-        <section id="results-section" className="max-w-4xl mx-auto px-4 py-20">
-          <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
-            🎉 La Tua Programmazione Pasti è Pronta!
-          </h2>
-          
-          <div className="bg-gray-800 rounded-xl p-8 shadow-2xl mb-8">
-            <div className="mb-6">
-              
+      {/* Footer */}
+      <footer className="bg-gray-900/50 border-t border-gray-700 mt-16">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <Heart className="h-5 w-5 text-red-400" />
+              <span className="text-gray-400">Made with love for healthy eating</span>
+            </div>
+            <p className="text-gray-500 text-sm">
+              Plan your meals, organize your recipes, and make healthy eating simple.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
