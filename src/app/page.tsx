@@ -113,7 +113,6 @@ export default function HomePage() {
       meals.forEach((meal: any) => {
         if (meal.ingredienti && Array.isArray(meal.ingredienti)) {
           meal.ingredienti.forEach((ingredient: string) => {
-            // Estrai quantità e nome ingrediente
             const match = ingredient.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)\s+(.+)$/);
             if (match) {
               const [, qty, unit, name] = match;
@@ -121,7 +120,6 @@ export default function HomePage() {
               ingredients[key] = ingredients[key] || { quantity: 0, unit };
               ingredients[key].quantity += parseFloat(qty);
             } else {
-              // Ingrediente senza quantità specifica
               const key = ingredient;
               ingredients[key] = ingredients[key] || { quantity: 1, unit: 'pz' };
               ingredients[key].quantity += 1;
@@ -141,6 +139,101 @@ export default function HomePage() {
       const dayTotal = Object.values(day.meals).reduce((daySum: number, meal: any) => daySum + meal.calorie, 0);
       return sum + dayTotal;
     }, 0);
+    
+    const verdureList = Object.entries(shoppingList)
+      .filter(([name]) => {
+        const nameLower = name.toLowerCase();
+        return nameLower.includes('pomodor') || nameLower.includes('sedano') || 
+          nameLower.includes('carota') || nameLower.includes('cipolla') || 
+          nameLower.includes('aglio') || nameLower.includes('fungh') || 
+          nameLower.includes('rucola') || nameLower.includes('verdur');
+      })
+      .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
+      .join('\n');
+
+    const carneList = Object.entries(shoppingList)
+      .filter(([name]) => {
+        const nameLower = name.toLowerCase();
+        return nameLower.includes('manzo') || nameLower.includes('salmone') || 
+          nameLower.includes('pollo') || nameLower.includes('merluzzo') || 
+          nameLower.includes('carne');
+      })
+      .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
+      .join('\n');
+
+    const latticiniList = Object.entries(shoppingList)
+      .filter(([name]) => {
+        const nameLower = name.toLowerCase();
+        return nameLower.includes('uovo') || nameLower.includes('yogurt') || 
+          nameLower.includes('latte') || nameLower.includes('parmigiano') || 
+          nameLower.includes('formaggio');
+      })
+      .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
+      .join('\n');
+
+    const cerealiList = Object.entries(shoppingList)
+      .filter(([name]) => {
+        const nameLower = name.toLowerCase();
+        return nameLower.includes('pasta') || nameLower.includes('pane') || 
+          nameLower.includes('avena') || nameLower.includes('quinoa') || 
+          nameLower.includes('fagioli') || nameLower.includes('riso');
+      })
+      .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
+      .join('\n');
+
+    const fruttaList = Object.entries(shoppingList)
+      .filter(([name]) => {
+        const nameLower = name.toLowerCase();
+        return nameLower.includes('avocado') || nameLower.includes('limone') || 
+          nameLower.includes('banana') || nameLower.includes('frutti') || 
+          nameLower.includes('granola') || nameLower.includes('miele') || 
+          nameLower.includes('olio') || nameLower.includes('aceto');
+      })
+      .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
+      .join('\n');
+
+    const giornitxt = parsedPlan.days.map((day: any) => {
+      const dayTotal = day.meals.colazione.calorie + day.meals.pranzo.calorie + day.meals.cena.calorie;
+      return `
+${day.day.toUpperCase()}
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+🌅 COLAZIONE: ${day.meals.colazione.nome}
+   🔥 ${day.meals.colazione.calorie} kcal | 🥩 ${day.meals.colazione.proteine}g | 🍞 ${day.meals.colazione.carboidrati}g | 🥑 ${day.meals.colazione.grassi}g
+   
+☀️ PRANZO: ${day.meals.pranzo.nome}
+   🔥 ${day.meals.pranzo.calorie} kcal | 🥩 ${day.meals.pranzo.proteine}g | 🍞 ${day.meals.pranzo.carboidrati}g | 🥑 ${day.meals.pranzo.grassi}g
+   
+🌙 CENA: ${day.meals.cena.nome}
+   🔥 ${day.meals.cena.calorie} kcal | 🥩 ${day.meals.cena.proteine}g | 🍞 ${day.meals.cena.carboidrati}g | 🥑 ${day.meals.cena.grassi}g
+
+📊 TOTALE GIORNO: ${dayTotal} kcal
+`;
+    }).join('');
+
+    const ricetteTxt = Object.entries(parsedPlan.days[0].meals).map(([mealType, meal]: [string, any]) => {
+      const ingredientsList = meal.ingredienti.map((ing: string, idx: number) => `${idx + 1}. ${ing}`).join('\n');
+      return `
+🍽️ ${meal.nome.toUpperCase()}
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+📊 VALORI NUTRIZIONALI:
+• Calorie: ${meal.calorie} kcal
+• Proteine: ${meal.proteine}g
+• Carboidrati: ${meal.carboidrati}g  
+• Grassi: ${meal.grassi}g
+
+🛒 INGREDIENTI:
+${ingredientsList}
+
+👩‍🍳 PREPARAZIONE:
+${meal.preparazione}
+
+⏱️ TEMPO PREPARAZIONE: 15-20 minuti
+🍽️ PORZIONI: 1 persona
+
+`;
+    }).join('');
     
     return `Piano preparazione pasti personalizzato
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -169,110 +262,29 @@ export default function HomePage() {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🥬 VERDURE E ORTAGGI
-${Object.entries(shoppingList)
-  .filter(([name]) => {
-    const nameLower = name.toLowerCase();
-    return nameLower.includes('pomodor') || nameLower.includes('sedano') || 
-      nameLower.includes('carota') || nameLower.includes('cipolla') || 
-      nameLower.includes('aglio') || nameLower.includes('fungh') || 
-      nameLower.includes('rucola') || nameLower.includes('verdur');
-  })
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
+${verdureList}
 
 🍖 CARNE E PESCE
-${Object.entries(shoppingList)
-  .filter(([name]) => {
-    const nameLower = name.toLowerCase();
-    return nameLower.includes('manzo') || nameLower.includes('salmone') || 
-      nameLower.includes('pollo') || nameLower.includes('merluzzo') || 
-      nameLower.includes('carne');
-  })
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
+${carneList}
 
 🥛 LATTICINI E UOVA
-${Object.entries(shoppingList)
-  .filter(([name]) => {
-    const nameLower = name.toLowerCase();
-    return nameLower.includes('uovo') || nameLower.includes('yogurt') || 
-      nameLower.includes('latte') || nameLower.includes('parmigiano') || 
-      nameLower.includes('formaggio');
-  })
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
+${latticiniList}
 
 🌾 CEREALI E LEGUMI
-${Object.entries(shoppingList)
-  .filter(([name]) => {
-    const nameLower = name.toLowerCase();
-    return nameLower.includes('pasta') || nameLower.includes('pane') || 
-      nameLower.includes('avena') || nameLower.includes('quinoa') || 
-      nameLower.includes('fagioli') || nameLower.includes('riso');
-  })
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
+${cerealiList}
 
 🥑 FRUTTA E ALTRO
-${Object.entries(shoppingList)
-  .filter(([name]) => {
-    const nameLower = name.toLowerCase();
-    return nameLower.includes('avocado') || nameLower.includes('limone') || 
-      nameLower.includes('banana') || nameLower.includes('frutti') || 
-      nameLower.includes('granola') || nameLower.includes('miele') || 
-      nameLower.includes('olio') || nameLower.includes('aceto');
-  })
-  .map(([name, data]) => `□ ${name}: ${data.quantity}${data.unit === 'pz' ? ' pz' : data.unit}`)
-  .join('\n')}
+${fruttaList}
 
 📅 PROGRAMMA GIORNALIERO DETTAGLIATO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${parsedPlan.days.map((day: any, index: number) => {
-  const dayTotal = day.meals.colazione.calorie + day.meals.pranzo.calorie + day.meals.cena.calorie;
-  return `
-${day.day.toUpperCase()}
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-
-🌅 COLAZIONE: ${day.meals.colazione.nome}
-   🔥 ${day.meals.colazione.calorie} kcal | 🥩 ${day.meals.colazione.proteine}g | 🍞 ${day.meals.colazione.carboidrati}g | 🥑 ${day.meals.colazione.grassi}g
-   
-☀️ PRANZO: ${day.meals.pranzo.nome}
-   🔥 ${day.meals.pranzo.calorie} kcal | 🥩 ${day.meals.pranzo.proteine}g | 🍞 ${day.meals.pranzo.carboidrati}g | 🥑 ${day.meals.pranzo.grassi}g
-   
-🌙 CENA: ${day.meals.cena.nome}
-   🔥 ${day.meals.cena.calorie} kcal | 🥩 ${day.meals.cena.proteine}g | 🍞 ${day.meals.cena.carboidrati}g | 🥑 ${day.meals.cena.grassi}g
-
-📊 TOTALE GIORNO: ${dayTotal} kcal
-`;
-}).join('')}
+${giornitxt}
 
 👨‍🍳 RICETTE PASSO-PASSO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${Object.entries(parsedPlan.days[0].meals).map(([mealType, meal]: [string, any]) => {
-  const ingredientsList = meal.ingredienti.map((ing: string, idx: number) => `${idx + 1}. ${ing}`).join('\n');
-  return `
-🍽️ ${meal.nome.toUpperCase()}
-▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
-
-📊 VALORI NUTRIZIONALI:
-• Calorie: ${meal.calorie} kcal
-• Proteine: ${meal.proteine}g
-• Carboidrati: ${meal.carboidrati}g  
-• Grassi: ${meal.grassi}g
-
-🛒 INGREDIENTI:
-${ingredientsList}
-
-👩‍🍳 PREPARAZIONE:
-${meal.preparazione}
-
-⏱️ TEMPO PREPARAZIONE: 15-20 minuti
-🍽️ PORZIONI: 1 persona
-
-`;
-}).join('')}
+${ricetteTxt}
 
 💡 CONSIGLI UTILI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -300,7 +312,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
 
   // Funzione per parsare il piano AI in struttura dati GRAFICA
   const parsePlanFromAI = (aiResponse: string) => {
-    // Dati mock strutturati per l'anteprima grafica
     const mockPlan = {
       days: [
         {
@@ -424,20 +435,17 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
       ]
     };
 
-    // Duplica i giorni in base alla durata e varietà scelta
     const numDays = parseInt(formData.durata) || 1;
     const allDays = [];
     
     if (formData.varieta === 'ripetuti') {
-      // STESSI PASTI TUTTI I GIORNI - ripete sempre il Giorno 1
       for (let i = 0; i < numDays; i++) {
         allDays.push({
-          ...mockPlan.days[0], // Sempre il primo giorno
+          ...mockPlan.days[0],
           day: `Giorno ${i + 1}`
         });
       }
     } else {
-      // PASTI DIVERSI - alterna tra i giorni disponibili
       for (let i = 0; i < numDays; i++) {
         allDays.push({
           ...mockPlan.days[i % 2],
@@ -464,15 +472,8 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
       }
     };
     testAPI();
-
-    // Carica automaticamente i dati salvati come "preferiti"
     loadSavedData();
   }, []);
-
-  const checkSavedData = () => {
-    const savedData = localStorage.getItem('mealPrepFormData');
-    setHasSavedData(!!savedData);
-  };
 
   // Carica automaticamente i dati salvati
   const loadSavedData = () => {
@@ -506,12 +507,10 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
     
-    // Clear existing timeout
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout);
     }
     
-    // Set new timeout for auto-save
     const timeout = setTimeout(() => {
       localStorage.setItem('mealPrepFormData', JSON.stringify(newFormData));
       setHasSavedData(true);
@@ -540,7 +539,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
       
       if (result.success) {
         setGeneratedPlan(result.updatedPlan);
-        // Rianalizza il piano per l'anteprima grafica
         const parsed = parsePlanFromAI(result.updatedPlan);
         setParsedPlan(parsed);
       } else {
@@ -580,7 +578,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         setGeneratedPlan(completeDocument);
         setShowPreview(true);
         
-        // Scroll to preview
         setTimeout(() => {
           document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -683,7 +680,7 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         </div>
       )}
 
-      {/* Header - RIMOSSO API STATUS */}
+      {/* Header */}
       <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -715,7 +712,7 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         </button>
       </section>
 
-      {/* Features Section - FOTO PIÙ GRANDI E CORRETTE */}
+      {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 py-20">
         <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
           Perché Scegliere Meal Prep Planner?
@@ -825,7 +822,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
           🍽️ Crea la Tua Programmazione Pasti e Ricette
         </h2>
 
-        {/* Status e Clear Data Button */}
         <div className="flex flex-wrap gap-4 justify-center mb-8">
           {hasSavedData && (
             <div className="bg-green-600/20 border border-green-500 rounded-lg px-4 py-2 flex items-center gap-2">
@@ -989,7 +985,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                 <option value="ripetuti">🎯 Stessi Pasti Tutti i Giorni</option>
               </select>
             </div>
-
           </div>
 
           <div className="mt-6">
@@ -1033,7 +1028,7 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         </form>
       </section>
 
-      {/* NUOVA ANTEPRIMA GRAFICA CON CARD COLORATE E SOSTITUZIONE INGREDIENTI AI */}
+      {/* ANTEPRIMA GRAFICA CON CARD COLORATE E AI */}
       {showPreview && parsedPlan && (
         <section id="preview-section" className="max-w-7xl mx-auto px-4 py-20">
           <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
@@ -1065,7 +1060,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                     </div>
                     <h5 className="font-bold text-lg mb-3">{day.meals.colazione.nome}</h5>
                     
-                    {/* Macronutrienti */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
                         🔥 {day.meals.colazione.calorie} kcal
@@ -1077,11 +1071,60 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                         🍞 {day.meals.colazione.carboidrati}g
                       </span>
                       <span className="bg-purple-700 px-3 py-1 rounded-full text-sm font-bold">
+                        🥑 {day.meals.colazione.grassi}g
+                      </span>
+                    </div>
+
+                    <details className="group">
+                      <summary className="cursor-pointer font-semibold mb-2 hover:text-orange-100">
+                        📝 Ingredienti ({day.meals.colazione.ingredienti.length})
+                      </summary>
+                      <ul className="space-y-1 text-sm">
+                        {day.meals.colazione.ingredienti.map((ing: string, i: number) => (
+                          <li key={i} className="text-orange-100 flex items-center justify-between group/ingredient hover:bg-white/10 rounded px-2 py-1 transition-colors">
+                            <span>• {ing}</span>
+                            <button
+                              onClick={() => handleIngredientSubstitution(ing, dayIndex, 'colazione', i)}
+                              className="opacity-0 group-hover/ingredient:opacity-100 bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-xs font-bold transition-all"
+                              title="Sostituisci con AI"
+                            >
+                              🔀
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
+
+                  {/* Pranzo - Card Blu */}
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-6 text-white shadow-lg">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-bold text-xl">☀️ Pranzo</h4>
+                      <button
+                        onClick={() => handleReplacement('pranzo', day.day)}
+                        disabled={isReplacing === `${day.day}-pranzo`}
+                        className="bg-white/20 hover:bg-white/30 disabled:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                      >
+                        {isReplacing === `${day.day}-pranzo` ? '⏳' : '🔄 Cambia'}
+                      </button>
+                    </div>
+                    <h5 className="font-bold text-lg mb-3">{day.meals.pranzo.nome}</h5>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
+                        🔥 {day.meals.pranzo.calorie} kcal
+                      </span>
+                      <span className="bg-green-700 px-3 py-1 rounded-full text-sm font-bold">
+                        🥩 {day.meals.pranzo.proteine}g
+                      </span>
+                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
+                        🍞 {day.meals.pranzo.carboidrati}g
+                      </span>
+                      <span className="bg-purple-700 px-3 py-1 rounded-full text-sm font-bold">
                         🥑 {day.meals.pranzo.grassi}g
                       </span>
                     </div>
 
-                    {/* Ingredienti con Sostituzione AI */}
                     <details className="group">
                       <summary className="cursor-pointer font-semibold mb-2 hover:text-blue-100">
                         📝 Ingredienti ({day.meals.pranzo.ingredienti.length})
@@ -1117,7 +1160,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                     </div>
                     <h5 className="font-bold text-lg mb-3">{day.meals.cena.nome}</h5>
                     
-                    {/* Macronutrienti */}
                     <div className="flex flex-wrap gap-2 mb-4">
                       <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
                         🔥 {day.meals.cena.calorie} kcal
@@ -1133,7 +1175,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                       </span>
                     </div>
 
-                    {/* Ingredienti con Sostituzione AI */}
                     <details className="group">
                       <summary className="cursor-pointer font-semibold mb-2 hover:text-purple-100">
                         📝 Ingredienti ({day.meals.cena.ingredienti.length})
@@ -1156,7 +1197,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                   </div>
                 </div>
                 
-                {/* Totale Giornaliero */}
                 <div className="mt-6 bg-gray-700 rounded-lg p-4">
                   <p className="text-center font-bold text-lg">
                     📊 Totale Giorno: {day.meals.colazione.calorie + day.meals.pranzo.calorie + day.meals.cena.calorie} kcal
@@ -1166,7 +1206,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
             ))}
           </div>
 
-          {/* Preview Action Buttons */}
           <div className="flex flex-wrap gap-4 justify-center mt-12">
             <button
               onClick={confirmPlan}
@@ -1190,7 +1229,7 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         </section>
       )}
 
-      {/* Results Section - Only show after confirmation */}
+      {/* Results Section */}
       {!showPreview && generatedPlan && (
         <section id="results-section" className="max-w-4xl mx-auto px-4 py-20">
           <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
@@ -1205,7 +1244,6 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-wrap gap-4 justify-center">
               <button
                 onClick={() => {
@@ -1227,101 +1265,24 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                         <meta charset="utf-8">
                         <title>Piano Alimentare - ${formData.nome || 'Utente'}</title>
                         <style>
-                          @page {
-                            margin: 15mm;
-                            size: A4;
-                          }
+                          @page { margin: 15mm; size: A4; }
                           body { 
                             font-family: 'Georgia', 'Times New Roman', serif; 
-                            line-height: 1.4; 
-                            color: #333; 
-                            font-size: 12px;
-                            margin: 0;
-                            padding: 0;
+                            line-height: 1.4; color: #333; font-size: 12px;
+                            margin: 0; padding: 0;
                           }
                           .header {
-                            text-align: center;
-                            margin-bottom: 20px;
-                            border-bottom: 2px solid #8FBC8F;
-                            padding-bottom: 10px;
+                            text-align: center; margin-bottom: 20px;
+                            border-bottom: 2px solid #8FBC8F; padding-bottom: 10px;
                           }
-                          .title {
-                            font-size: 20px;
-                            font-weight: bold;
-                            color: #2F4F4F;
-                            margin-bottom: 5px;
-                          }
-                          .subtitle {
-                            font-size: 14px;
-                            color: #666;
-                          }
+                          .title { font-size: 20px; font-weight: bold; color: #2F4F4F; margin-bottom: 5px; }
+                          .subtitle { font-size: 14px; color: #666; }
                           h2 {
-                            color: #8FBC8F;
-                            font-size: 16px;
-                            margin: 20px 0 10px 0;
-                            border-bottom: 1px solid #8FBC8F;
-                            padding-bottom: 5px;
+                            color: #8FBC8F; font-size: 16px; margin: 20px 0 10px 0;
+                            border-bottom: 1px solid #8FBC8F; padding-bottom: 5px;
                           }
-                          .section {
-                            margin-bottom: 15px;
-                            page-break-inside: avoid;
-                          }
-                          .recipe {
-                            background: #f9f9f9;
-                            padding: 10px;
-                            margin: 10px 0;
-                            border-left: 4px solid #8FBC8F;
-                            page-break-inside: avoid;
-                          }
-                          .day-section {
-                            background: #f5f5f5;
-                            padding: 10px;
-                            margin: 10px 0;
-                            border-radius: 5px;
-                            page-break-inside: avoid;
-                          }
-                          .meal {
-                            margin: 8px 0;
-                            padding: 8px;
-                            background: white;
-                            border-radius: 3px;
-                          }
-                          .calories {
-                            font-weight: bold;
-                            color: #e74c3c;
-                          }
-                          .macros {
-                            font-size: 11px;
-                            color: #666;
-                          }
-                          .shopping-list {
-                            column-count: 2;
-                            column-gap: 20px;
-                          }
-                          .shopping-category {
-                            break-inside: avoid;
-                            margin-bottom: 15px;
-                          }
-                          .category-title {
-                            font-weight: bold;
-                            color: #8FBC8F;
-                            margin-bottom: 5px;
-                          }
-                          .ingredient {
-                            margin: 3px 0;
-                            padding-left: 15px;
-                            font-size: 11px;
-                          }
-                          pre {
-                            font-family: 'Georgia', serif;
-                            white-space: pre-wrap;
-                            font-size: 11px;
-                            line-height: 1.3;
-                          }
-                          @media print {
-                            body { font-size: 11px; }
-                            .no-print { display: none; }
-                          }
+                          pre { font-family: 'Georgia', serif; white-space: pre-wrap; font-size: 11px; line-height: 1.3; }
+                          @media print { body { font-size: 11px; } .no-print { display: none; } }
                         </style>
                       </head>
                       <body>
@@ -1336,17 +1297,13 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
                     </html>
                   `;
                   
-                  // Apri finestra stampa
                   const printWindow = window.open('', '_blank', 'width=800,height=600');
                   if (printWindow) {
                     printWindow.document.write(printContent);
                     printWindow.document.close();
-                    
-                    // Aspetta caricamento poi stampa
                     printWindow.onload = () => {
                       setTimeout(() => {
                         printWindow.print();
-                        // Non chiudere automaticamente, lascia che l'utente scelga
                       }, 500);
                     };
                   } else {
@@ -1387,7 +1344,7 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
         </section>
       )}
       
-      {/* FAQ Section - Only show if no plan generated */}
+      {/* FAQ Section */}
       {!generatedPlan && (
       <section className="bg-gray-800 py-20">
         <div className="max-w-4xl mx-auto px-4">
@@ -1439,56 +1396,4 @@ Generated by Meal Prep Planner Pro - ${new Date().toLocaleDateString('it-IT')}
       </footer>
     </div>
   );
-}-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥑 {day.meals.colazione.grassi}g
-                      </span>
-                    </div>
-
-                    {/* Ingredienti con Sostituzione AI */}
-                    <details className="group">
-                      <summary className="cursor-pointer font-semibold mb-2 hover:text-orange-100">
-                        📝 Ingredienti ({day.meals.colazione.ingredienti.length})
-                      </summary>
-                      <ul className="space-y-1 text-sm">
-                        {day.meals.colazione.ingredienti.map((ing: string, i: number) => (
-                          <li key={i} className="text-orange-100 flex items-center justify-between group/ingredient hover:bg-white/10 rounded px-2 py-1 transition-colors">
-                            <span>• {ing}</span>
-                            <button
-                              onClick={() => handleIngredientSubstitution(ing, dayIndex, 'colazione', i)}
-                              className="opacity-0 group-hover/ingredient:opacity-100 bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-xs font-bold transition-all"
-                              title="Sostituisci con AI"
-                            >
-                              🔀
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </div>
-
-                  {/* Pranzo - Card Blu */}
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-bold text-xl">☀️ Pranzo</h4>
-                      <button
-                        onClick={() => handleReplacement('pranzo', day.day)}
-                        disabled={isReplacing === `${day.day}-pranzo`}
-                        className="bg-white/20 hover:bg-white/30 disabled:bg-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-colors"
-                      >
-                        {isReplacing === `${day.day}-pranzo` ? '⏳' : '🔄 Cambia'}
-                      </button>
-                    </div>
-                    <h5 className="font-bold text-lg mb-3">{day.meals.pranzo.nome}</h5>
-                    
-                    {/* Macronutrienti */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <span className="bg-red-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🔥 {day.meals.pranzo.calorie} kcal
-                      </span>
-                      <span className="bg-green-700 px-3 py-1 rounded-full text-sm font-bold">
-                        🥩 {day.meals.pranzo.proteine}g
-                      </span>
-                      <span className="bg-yellow-600 px-3 py-1 rounded-full text-sm font-bold">
-                        🍞 {day.meals.pranzo.carboidrati}g
-                      </span>
-                      <span className="bg-purple
+}
