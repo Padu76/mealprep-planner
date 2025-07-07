@@ -1,42 +1,41 @@
-/** @type {import('next').NextConfig} */
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  runtimeCaching: [
+{
+  "name": "Meal Prep Planner",
+  "short_name": "MealPrep",
+  "description": "Pianifica i tuoi pasti settimanali con AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1F2937",
+  "theme_color": "#8FBC8F",
+  "orientation": "portrait-primary",
+  "icons": [
     {
-      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'google-fonts',
-        expiration: {
-          maxEntries: 4,
-          maxAgeSeconds: 365 * 24 * 60 * 60 // 365 days
-        }
-      }
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
     },
     {
-      urlPattern: /\.(?:png|jpg|jpeg|svg)$/,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'images',
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-        }
-      }
+      "src": "/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["food", "health", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Nuovo Piano",
+      "short_name": "Nuovo",
+      "description": "Crea un nuovo piano alimentare",
+      "url": "/#meal-form",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard", 
+      "description": "Visualizza i tuoi piani",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
-});
-
-const nextConfig = withPWA({
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-});
-
-module.exports = nextConfig;
+}
