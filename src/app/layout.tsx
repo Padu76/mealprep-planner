@@ -1,27 +1,69 @@
-import './globals.css'
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Meal Prep Planner',
-  description: 'Pianifica i tuoi pasti settimanali con intelligenza artificiale',
-  manifest: '/manifest.json',
-  themeColor: '#8FBC8F',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Meal Prep Planner',
-  },
+  description: 'Rivoluziona la Tua Alimentazione con Meal Prep Planner. Generazione meal prep, Lista della Spesa Intelligente e Ricette Passo-Passo per una Vita più Sana e Semplice.',
+  keywords: ['meal prep', 'ricette', 'pianificazione pasti', 'alimentazione sana', 'lista spesa'],
+  authors: [{ name: 'Meal Prep Planner Team' }],
+  creator: 'Meal Prep Planner',
+  publisher: 'Meal Prep Planner',
   formatDetection: {
+    email: false,
+    address: false,
     telephone: false,
   },
   icons: {
-    shortcut: '/icon-192x192.png',
-    apple: [
-      { url: '/icon-192x192.png' },
-      { url: '/icon-512x512.png', sizes: '512x512' },
+    icon: [
+      { url: '/images/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/images/icon-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
+    apple: [
+      { url: '/images/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/images/icon-192x192.png',
+  },
+  manifest: '/manifest.json',
+  openGraph: {
+    title: 'Meal Prep Planner',
+    description: 'Rivoluziona la Tua Alimentazione con Meal Prep Planner',
+    url: 'https://mealprep-planner.vercel.app',
+    siteName: 'Meal Prep Planner',
+    images: [
+      {
+        url: '/images/icon-512x512.png',
+        width: 512,
+        height: 512,
+        alt: 'Meal Prep Planner Logo',
+      },
+    ],
+    locale: 'it_IT',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Meal Prep Planner',
+    description: 'Rivoluziona la Tua Alimentazione con Meal Prep Planner',
+    images: ['/images/icon-512x512.png'],
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 
@@ -33,27 +75,17 @@ export default function RootLayout({
   return (
     <html lang="it">
       <head>
-        <meta name="application-name" content="Meal Prep Planner" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Meal Prep Planner" />
-        <meta name="description" content="Pianifica i tuoi pasti settimanali con intelligenza artificiale" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#8FBC8F" />
-        <meta name="msapplication-tap-highlight" content="no" />
+        <link rel="icon" href="/images/icon-192x192.png" sizes="192x192" />
+        <link rel="icon" href="/images/icon-512x512.png" sizes="512x512" />
+        <link rel="apple-touch-icon" href="/images/icon-192x192.png" />
+        <link rel="shortcut icon" href="/images/icon-192x192.png" />
         <meta name="theme-color" content="#8FBC8F" />
-
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
-
-        <link rel="icon" type="image/png" sizes="32x32" href="/icon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icon-192x192.png" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="shortcut icon" href="/icon-192x192.png" />
+        <meta name="msapplication-TileColor" content="#8FBC8F" />
+        <meta name="msapplication-TileImage" content="/images/icon-192x192.png" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+      </body>
     </html>
   )
 }
