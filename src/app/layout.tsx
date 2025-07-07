@@ -18,13 +18,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/images/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/images/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/icon.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: [
-      { url: '/images/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/apple-icon.png', sizes: '192x192', type: 'image/png' },
     ],
-    shortcut: '/images/icon-192x192.png',
+    shortcut: '/favicon.ico',
   },
   manifest: '/manifest.json',
   openGraph: {
@@ -75,13 +75,13 @@ export default function RootLayout({
   return (
     <html lang="it">
       <head>
-        <link rel="icon" href="/images/icon-192x192.png" sizes="192x192" />
-        <link rel="icon" href="/images/icon-512x512.png" sizes="512x512" />
-        <link rel="apple-touch-icon" href="/images/icon-192x192.png" />
-        <link rel="shortcut icon" href="/images/icon-192x192.png" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/icon.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         <meta name="theme-color" content="#8FBC8F" />
         <meta name="msapplication-TileColor" content="#8FBC8F" />
-        <meta name="msapplication-TileImage" content="/images/icon-192x192.png" />
+        <meta name="msapplication-TileImage" content="/icon.png" />
       </head>
       <body className={inter.className}>
         {children}
