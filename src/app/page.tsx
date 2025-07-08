@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 
 // Componenti modulari
-import Header from '../components/Header';
-import Hero from '../components/Hero';
+import Header from '../../components/Header';
+import Hero from '../../components/Hero';
 
 // Hooks custom
-import { useAISubstitute } from '../hooks/useAISubstitute';
+import { useAISubstitute } from '../../hooks/useAISubstitute';
 
 // Utils
-import { generateShoppingList, calculateTotalCalories, filterIngredientsByCategory } from '../utils/calculations';
+import { generateShoppingList, calculateTotalCalories, filterIngredientsByCategory } from '../../utils/calculations';
 
 // Types
-import { FormData, ParsedPlan, ApiStatus } from '../types';
+import { FormData, ParsedPlan, ApiStatus } from '../../types';
 
 export default function HomePage() {
   // Stati principali
