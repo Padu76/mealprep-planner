@@ -101,8 +101,10 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // 🎯 FUNZIONE AGGIORNATA CON LOGICA SPUNTINI
+  // 🎯 FUNZIONE AGGIORNATA CON LOGICA SPUNTINI - FIX CALORIE
   const parsePlanFromAI = (aiResponse: string) => {
+    console.log('🔧 Parsing AI response...');
+    
     // Dati base sempre presenti
     const baseMeals = {
       colazione: {
@@ -111,6 +113,8 @@ export default function HomePage() {
         proteine: 32,
         carboidrati: 87,
         grassi: 18,
+        tempo: "15 min",
+        porzioni: 1,
         ingredienti: [
           "2 fette pane integrale (60g)",
           "1/2 avocado maturo (80g)",
@@ -128,6 +132,8 @@ export default function HomePage() {
         proteine: 66,
         carboidrati: 100,
         grassi: 25,
+        tempo: "30 min",
+        porzioni: 1,
         ingredienti: [
           "75g pasta corta",
           "100g fagioli borlotti lessati",
@@ -148,6 +154,8 @@ export default function HomePage() {
         proteine: 66,
         carboidrati: 66,
         grassi: 25,
+        tempo: "25 min",
+        porzioni: 1,
         ingredienti: [
           "120g controfiletto di manzo",
           "60g funghi porcini freschi",
@@ -170,6 +178,8 @@ export default function HomePage() {
         proteine: 15,
         carboidrati: 20,
         grassi: 3,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "150g yogurt greco 0%",
           "80g frutti di bosco misti",
@@ -184,6 +194,8 @@ export default function HomePage() {
         proteine: 12,
         carboidrati: 18,
         grassi: 4,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "1/2 banana (60g)",
           "50g spinaci freschi",
@@ -199,6 +211,8 @@ export default function HomePage() {
         proteine: 8,
         carboidrati: 15,
         grassi: 6,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "60g hummus di ceci",
           "80g carote baby",
@@ -212,6 +226,7 @@ export default function HomePage() {
 
     // Determina quali pasti includere basandoti sul numero di pasti
     const numPasti = parseInt(formData.pasti) || 3;
+    console.log('🍽️ Numero pasti:', numPasti);
     
     const createDayMeals = () => {
       const meals: any = {
@@ -266,7 +281,9 @@ export default function HomePage() {
       }
     }
 
-    return { ...mockPlan, days: allDays };
+    const finalPlan = { ...mockPlan, days: allDays };
+    console.log('✅ Plan parsed successfully:', finalPlan);
+    return finalPlan;
   };
 
   // Test connessione API all'avvio
