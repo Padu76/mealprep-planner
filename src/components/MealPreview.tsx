@@ -22,63 +22,59 @@ interface DayMeals {
   spuntino3?: Meal;
 }
 
-interface MealPlan {
-  [key: string]: DayMeals;
+interface ParsedPlan {
+  days: Array<{
+    day: string;
+    meals: DayMeals;
+  }>;
 }
 
 interface MealPreviewProps {
-  mealPlan: MealPlan | null;
-  isLoading: boolean;
+  parsedPlan: ParsedPlan;
+  handleReplacement: (mealType: string, dayNumber: string) => void;
+  handleIngredientSubstitution: (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => void;
+  isReplacing: string | null;
+  confirmPlan: () => void;
+  onGenerateNewPlan: () => void;
 }
 
-const MealPreview: React.FC<MealPreviewProps> = ({ mealPlan, isLoading }) => {
-  if (isLoading) {
+const MealPreview: React.FC<MealPreviewProps> = ({ 
+  parsedPlan, 
+  handleReplacement, 
+  handleIngredientSubstitution, 
+  isReplacing, 
+  confirmPlan, 
+  onGenerateNewPlan 
+}) => {
+  if (!parsedPlan || !parsedPlan.days || parsedPlan.days.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-          <span className="ml-3 text-gray-600">Generazione piano in corso...</span>
-        </div>
+      <div className="bg-gray-800 rounded-xl shadow-lg p-6 mt-8">
+        <h2 className="text-2xl font-bold text-white mb-4">📋 Anteprima Meal Prep</h2>
+        <p className="text-gray-300">Compila il form sopra per generare il tuo piano personalizzato!</p>
       </div>
     );
   }
 
-  if (!mealPlan) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">📋 Anteprima Meal Prep</h2>
-        <p className="text-gray-600">Compila il form sopra per generare il tuo piano personalizzato!</p>
-      </div>
-    );
-  }
-
-  const days = Object.keys(mealPlan);
-  const firstDay = mealPlan[days[0]];
+  const firstDay = parsedPlan.days[0].meals;
 
   // Funzione per determinare l'ordine e i nomi dei pasti
   const getMealOrder = (dayMeals: DayMeals) => {
     const meals = [];
     
-    // Colazione sempre presente
     meals.push({ key: 'colazione', meal: dayMeals.colazione, emoji: '🌅', nome: 'COLAZIONE' });
     
-    // Spuntino1 se presente
     if (dayMeals.spuntino1) {
       meals.push({ key: 'spuntino1', meal: dayMeals.spuntino1, emoji: '🍎', nome: 'SPUNTINO MATTINA' });
     }
     
-    // Pranzo sempre presente
     meals.push({ key: 'pranzo', meal: dayMeals.pranzo, emoji: '☀️', nome: 'PRANZO' });
     
-    // Spuntino2 se presente
     if (dayMeals.spuntino2) {
       meals.push({ key: 'spuntino2', meal: dayMeals.spuntino2, emoji: '🥤', nome: 'SPUNTINO POMERIGGIO' });
     }
     
-    // Cena sempre presente
     meals.push({ key: 'cena', meal: dayMeals.cena, emoji: '🌙', nome: 'CENA' });
     
-    // Spuntino3 se presente
     if (dayMeals.spuntino3) {
       meals.push({ key: 'spuntino3', meal: dayMeals.spuntino3, emoji: '🌆', nome: 'SPUNTINO SERA' });
     }
@@ -90,64 +86,109 @@ const MealPreview: React.FC<MealPreviewProps> = ({ mealPlan, isLoading }) => {
   const totalCalories = orderedMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">📋 Anteprima Meal Prep</h2>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>🔥 {totalCalories} kcal/giorno</span>
-          <span>🍽️ {orderedMeals.length} pasti</span>
-          <span>📅 {days.length} {days.length === 1 ? 'giorno' : 'giorni'}</span>
+    <section id="preview-section" className="max-w-4xl mx-auto px-4 py-20">
+      <div className="bg-gray-800 rounded-xl shadow-2xl p-8">
+        <div className="mb-8">
+          <h2 className="text-4xl font-bold mb-4 text-center" style={{color: '#8FBC8F'}}>
+            📋 Anteprima Piano Alimentare
+          </h2>
+          <div className="flex items-center justify-center gap-6 text-sm text-gray-300">
+            <span>🔥 {totalCalories} kcal/giorno</span>
+            <span>🍽️ {orderedMeals.length} pasti</span>
+            <span>📅 {parsedPlan.days.length} {parsedPlan.days.length === 1 ? 'giorno' : 'giorni'}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {orderedMeals.map(({ key, meal, emoji, nome }) => (
+            <div key={key} className="bg-gray-700 rounded-xl p-6 hover:bg-gray-600 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{emoji}</span>
+                  <h3 className="font-bold text-white text-lg">{nome}</h3>
+                </div>
+                <button
+                  onClick={() => handleReplacement(key, "Giorno 1")}
+                  disabled={isReplacing === `Giorno 1-${key}`}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-1 rounded-lg text-sm transition-colors"
+                >
+                  {isReplacing === `Giorno 1-${key}` ? '⏳' : '🔄'}
+                </button>
+              </div>
+              
+              <h4 className="font-bold text-green-400 mb-3 text-lg leading-tight">{meal.nome}</h4>
+              
+              <div className="grid grid-cols-2 gap-3 text-sm text-gray-300 mb-4">
+                <div className="flex items-center gap-2">
+                  <Flame size={16} className="text-orange-500" />
+                  <span>{meal.calorie} kcal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-blue-400" />
+                  <span>{meal.tempo}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-green-400" />
+                  <span>{meal.porzioni} porz.</span>
+                </div>
+                <div className="text-gray-300">
+                  <span>P: {meal.proteine}g | C: {meal.carboidrati}g | G: {meal.grassi}g</span>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-300">
+                <div className="mb-2">
+                  <strong className="text-white">🛒 Ingredienti:</strong>
+                </div>
+                <div className="space-y-1">
+                  {meal.ingredienti.slice(0, 4).map((ingrediente, index) => (
+                    <div 
+                      key={index}
+                      className="hover:bg-gray-600 px-2 py-1 rounded cursor-pointer flex items-center justify-between group"
+                      onClick={() => handleIngredientSubstitution(ingrediente, 0, key, index)}
+                    >
+                      <span>• {ingrediente}</span>
+                      <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
+                        🔀 Sostituisci
+                      </span>
+                    </div>
+                  ))}
+                  {meal.ingredienti.length > 4 && (
+                    <div className="text-gray-400 text-xs">
+                      ...e altri {meal.ingredienti.length - 4} ingredienti
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={confirmPlan}
+            className="px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105"
+            style={{backgroundColor: '#8FBC8F', color: 'black'}}
+          >
+            ✅ Conferma Piano
+          </button>
+          
+          <button
+            onClick={onGenerateNewPlan}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105"
+          >
+            🔄 Genera Nuovo Piano
+          </button>
+        </div>
+
+        <div className="mt-8 p-6 bg-gray-700 rounded-lg">
+          <p className="text-sm text-gray-300 text-center">
+            ✨ <strong>Anteprima del primo giorno.</strong> Clicca <span className="text-blue-400">"🔄 Sostituisci"</span> per cambiare pasti interi 
+            o <span className="text-blue-400">"🔀 Sostituisci"</span> per ingredienti singoli con AI!
+          </p>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {orderedMeals.map(({ key, meal, emoji, nome }) => (
-          <div key={key} className="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-4 border border-green-100">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">{emoji}</span>
-              <h3 className="font-semibold text-gray-800 text-sm">{nome}</h3>
-            </div>
-            
-            <h4 className="font-bold text-gray-900 mb-2 text-sm leading-tight">{meal.nome}</h4>
-            
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
-              <div className="flex items-center gap-1">
-                <Flame size={12} className="text-orange-500" />
-                <span>{meal.calorie} kcal</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock size={12} className="text-blue-500" />
-                <span>{meal.tempo}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users size={12} className="text-green-500" />
-                <span>{meal.porzioni} {meal.porzioni === 1 ? 'porzione' : 'porzioni'}</span>
-              </div>
-              <div className="text-gray-500">
-                <span>P: {meal.proteine}g</span>
-              </div>
-            </div>
-            
-            <div className="text-xs text-gray-500">
-              <div className="mb-1">
-                <strong>Ingredienti principali:</strong>
-              </div>
-              <div className="line-clamp-2">
-                {meal.ingredienti.slice(0, 3).join(', ')}
-                {meal.ingredienti.length > 3 && '...'}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <p className="text-sm text-gray-600 text-center">
-          ✨ Questa è un'anteprima del primo giorno. Il piano completo include ricette dettagliate, 
-          lista spesa e istruzioni per la preparazione!
-        </p>
-      </div>
-    </div>
+    </section>
   );
 };
 
