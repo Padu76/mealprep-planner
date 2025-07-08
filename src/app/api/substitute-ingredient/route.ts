@@ -1,91 +1,120 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 export async function POST(request: NextRequest) {
   try {
-    const { ingredient, recipe, allergies, preferences } = await request.json();
-
-    if (!ingredient || !recipe) {
-      return NextResponse.json({
-        success: false,
-        error: 'Ingrediente e ricetta sono richiesti'
-      }, { status: 400 });
-    }
-
-    const prompt = `Sono un assistente esperto di cucina. L'utente vuole sostituire un ingrediente nella sua ricetta.
-
-RICETTA: "${recipe.nome}"
-INGREDIENTE DA SOSTITUIRE: "${ingredient}"
-ALLERGIE/INTOLLERANZE: ${allergies || 'Nessuna'}
-PREFERENZE: ${preferences || 'Nessuna'}
-
-LISTA INGREDIENTI COMPLETA:
-${recipe.ingredienti.join('\n')}
-
-ISTRUZIONI:
-Fornisci 3-5 alternative intelligenti per sostituire l'ingrediente, considerando:
-1. Funzione culinaria (addensante, proteina, grasso, etc.)
-2. Sapore compatibile
-3. Consistenza simile
-4. Disponibilità comune
-5. Allergie e preferenze dell'utente
-
-FORMATO RISPOSTA (JSON):
-{
-  "substitutions": [
-    {
-      "name": "Nome sostituto",
-      "quantity": "Quantità suggerita",
-      "reason": "Perché funziona bene",
-      "difficulty": "Facile|Medio|Difficile",
-      "taste_change": "Nessuno|Leggero|Moderato",
-      "cooking_adjustment": "Eventuali modifiche alla cottura"
-    }
-  ],
-  "tips": "Consigli generali per la sostituzione"
-}
-
-IMPORTANTE: Rispondi SOLO con il JSON valido, senza altri testi.`;
-
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1000,
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
-
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    const { ingredient, userPreferences, allergies, mealContext } = await request.json();
     
-    try {
-      const substitutionData = JSON.parse(responseText);
+    console.log('🔀 Substitute ingredient request:', ingredient);
+    
+    // Mock substitutes based on ingredient type
+    const getSubstitutes = (ingredientName: string) => {
+      const lower = ingredientName.toLowerCase();
       
-      return NextResponse.json({
-        success: true,
-        data: substitutionData,
-        original_ingredient: ingredient
-      });
-    } catch (parseError) {
-      console.error('Errore parsing risposta AI:', parseError);
-      return NextResponse.json({
-        success: false,
-        error: 'Errore nell\'elaborazione della risposta AI'
-      }, { status: 500 });
-    }
-
+      if (lower.includes('pane') || lower.includes('bread')) {
+        return [
+          {
+            ingredient: "Pane di segale integrale",
+            reason: "Più fibre e nutrienti, sapore più intenso ma simile utilizzo",
+            difficulty: "Facile" as const,
+            tasteChange: "Minimo" as const,
+            cookingNotes: "Stesso tempo di tostatura, texture leggermente più densa"
+          },
+          {
+            ingredient: "Tortillas di mais",
+            reason: "Senza glutine, più leggere e versatili per wrap",
+            difficulty: "Facile" as const,
+            tasteChange: "Moderato" as const,
+            cookingNotes: "Scalda 30 secondi in padella per renderle morbide"
+          }
+        ];
+      }
+      
+      if (lower.includes('pasta')) {
+        return [
+          {
+            ingredient: "Pasta di lenticchie rosse",
+            reason: "Più proteine, senza glutine, stesso tempo di cottura",
+            difficulty: "Facile" as const,
+            tasteChange: "Minimo" as const,
+            cookingNotes: "Cuoci 1-2 minuti in meno rispetto alla pasta normale"
+          },
+          {
+            ingredient: "Zucchine a julienne",
+            reason: "Meno carboidrati, più verdure, texture diversa ma interessante",
+            difficulty: "Medio" as const,
+            tasteChange: "Significativo" as const,
+            cookingNotes: "Saltare 2-3 minuti in padella, non far diventare mollicci"
+          }
+        ];
+      }
+      
+      if (lower.includes('manzo') || lower.includes('carne')) {
+        return [
+          {
+            ingredient: "Tofu marinato",
+            reason: "Alternativa vegetale, stesso contenuto proteico",
+            difficulty: "Medio" as const,
+            tasteChange: "Significativo" as const,
+            cookingNotes: "Marinare 30 min prima, cuocere 4-5 minuti per lato"
+          },
+          {
+            ingredient: "Petto di pollo",
+            reason: "Meno grassi, più magro, sapore più delicato",
+            difficulty: "Facile" as const,
+            tasteChange: "Moderato" as const,
+            cookingNotes: "Tempo di cottura simile, battere per uniformare lo spessore"
+          }
+        ];
+      }
+      
+      if (lower.includes('uovo')) {
+        return [
+          {
+            ingredient: "Aquafaba montata",
+            reason: "Alternativa vegana, simile consistenza quando montata",
+            difficulty: "Difficile" as const,
+            tasteChange: "Moderato" as const,
+            cookingNotes: "Montare 10 minuti con frusta elettrica fino a picchi"
+          },
+          {
+            ingredient: "Tofu scramble",
+            reason: "Ricco di proteine, texture simile all'uovo strapazzato",
+            difficulty: "Medio" as const,
+            tasteChange: "Moderato" as const,
+            cookingNotes: "Sbriciolate e cuocere con curcuma per il colore"
+          }
+        ];
+      }
+      
+      // Default substitutes
+      return [
+        {
+          ingredient: "Ingrediente sostitutivo generico",
+          reason: "Alternativa con caratteristiche simili all'ingrediente originale",
+          difficulty: "Medio" as const,
+          tasteChange: "Moderato" as const,
+          cookingNotes: "Seguire le istruzioni standard di preparazione"
+        }
+      ];
+    };
+    
+    const substitutes = getSubstitutes(ingredient);
+    
+    // Simulate some AI processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    return NextResponse.json({
+      success: true,
+      substitutes: substitutes,
+      message: `Trovate ${substitutes.length} alternative per ${ingredient}`
+    });
+    
   } catch (error) {
-    console.error('Errore API sostituzione ingredienti:', error);
+    console.error('❌ Substitute ingredient error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Errore interno del server'
+      error: 'Errore nella ricerca di sostituti',
+      details: error instanceof Error ? error.message : 'Errore sconosciuto'
     }, { status: 500 });
   }
 }
