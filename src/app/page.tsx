@@ -388,7 +388,7 @@ export default function HomePage() {
           <nav className="hidden md:flex gap-6">
             <Link href="/" className="hover:text-green-400 transition-colors">Home</Link>
             <Link href="/dashboard" className="hover:text-green-400 transition-colors">Dashboard</Link>
-            <Link href="/ricette" className="hover:text-green-400 transition-colors">Ricette</Link>
+            <Link href="/api/ricette" className="hover:text-green-400 transition-colors">Ricette</Link>
           </nav>
         </div>
       </header>
