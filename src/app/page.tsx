@@ -332,19 +332,25 @@ export default function HomePage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 FORM SUBMIT STARTED');
+    console.log('📝 Form Data:', formData);
     e.preventDefault();
     setIsGenerating(true);
     
     try {
+      console.log('📡 Making API call...');
       const response = await fetch('/api/generate-meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
       
+      console.log('📨 Response received:', response.status);
       const result = await response.json();
+      console.log('📋 Result:', result);
       
       if (result.success) {
+        console.log('✅ Success! Parsing plan...');
         const parsed = parsePlanFromAI(result.piano);
         setParsedPlan(parsed);
         
@@ -356,9 +362,11 @@ export default function HomePage() {
           document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       } else {
+        console.log('❌ API returned error:', result.error);
         alert(`❌ Errore: ${result.error}\n\nDettagli: ${result.details || 'Nessun dettaglio disponibile'}`);
       }
     } catch (error) {
+      console.log('💥 Catch error:', error);
       alert('❌ Errore di connessione. Riprova più tardi.');
     } finally {
       setIsGenerating(false);
