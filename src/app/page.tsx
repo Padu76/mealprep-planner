@@ -623,10 +623,8 @@ export default function HomePage() {
           <p className="text-gray-400 mb-6">
             Semplificare la tua alimentazione con programmazione intelligente.
           </p>
-          <div className="flex justify-center gap-6">
-            <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
-            <Link href="/terms" className="text-gray-400 hover:text-green-400">Termini</Link>
-            <Link href="/contact" className="text-gray-400 hover:text-green-400">Contatti</Link>
+          <div className="text-gray-400 text-sm">
+            © 2025 Meal Prep Planner. Tutti i diritti riservati.
           </div>
         </div>
       </footer>
