@@ -1,0 +1,41 @@
+{
+  "name": "Meal Prep Planner",
+  "short_name": "MealPrep",
+  "description": "Pianifica i tuoi pasti settimanali con AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1F2937",
+  "theme_color": "#8FBC8F",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["food", "health", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Nuovo Piano",
+      "short_name": "Nuovo",
+      "description": "Crea un nuovo piano alimentare",
+      "url": "/#meal-form",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard", 
+      "description": "Visualizza i tuoi piani",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
