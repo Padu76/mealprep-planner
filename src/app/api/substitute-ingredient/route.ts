@@ -1,180 +1,178 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 export async function POST(request: NextRequest) {
   try {
     const { ingredient, userPreferences, allergies, mealContext } = await request.json();
     
-    console.log('🔀 Substitute ingredient request:', ingredient);
-    console.log('🔍 Analyzing ingredient:', ingredient.toLowerCase());
+    console.log('🤖 Claude AI substitute request:', ingredient);
     
-    // Mock substitutes based on ingredient type
-    const getSubstitutes = (ingredientName: string) => {
-      const lower = ingredientName.toLowerCase();
-      
-      console.log('🕵️ Checking patterns for:', lower);
-      
-      // More comprehensive pattern matching
-      if (lower.includes('mandorl') || lower.includes('almond')) {
-        console.log('✅ Found mandorle pattern');
-        return [
-          {
-            ingredient: "5g noci tritate",
-            reason: "Stesse proprietà nutrizionali, ricche di omega-3 e grassi buoni",
-            difficulty: "Facile" as const,
-            tasteChange: "Minimo" as const,
-            cookingNotes: "Utilizzare nella stessa quantità, leggermente più oleose"
-          },
-          {
-            ingredient: "5g semi di girasole",
-            reason: "Croccantezza simile, più economici, ricchi di vitamina E",
-            difficulty: "Facile" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Stesso utilizzo, sapore più neutro"
-          }
-        ];
-      }
-      
-      if (lower.includes('avocado')) {
-        console.log('✅ Found avocado pattern');
-        return [
-          {
-            ingredient: "Hummus di ceci (2 cucchiai)",
-            reason: "Stessa cremosità e grassi sani, ricco di proteine vegetali",
-            difficulty: "Facile" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Spalmare direttamente sul pane, aggiungere un filo d'olio se necessario"
-          },
-          {
-            ingredient: "Ricotta fresca (60g)",
-            reason: "Texture cremosa simile, più proteine e meno grassi",
-            difficulty: "Facile" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Aggiungere un pizzico di sale e pepe, mescolare bene"
-          }
-        ];
-      }
-      
-      if (lower.includes('pane') || lower.includes('toast') || lower.includes('fett')) {
-        console.log('✅ Found pane pattern');
-        return [
-          {
-            ingredient: "Pane di segale integrale",
-            reason: "Più fibre e nutrienti, sapore più intenso ma simile utilizzo",
-            difficulty: "Facile" as const,
-            tasteChange: "Minimo" as const,
-            cookingNotes: "Stesso tempo di tostatura, texture leggermente più densa"
-          },
-          {
-            ingredient: "Tortillas di mais",
-            reason: "Senza glutine, più leggere e versatili per wrap",
-            difficulty: "Facile" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Scalda 30 secondi in padella per renderle morbide"
-          }
-        ];
-      }
-      
-      if (lower.includes('uovo') || lower.includes('egg')) {
-        console.log('✅ Found uovo pattern');
-        return [
-          {
-            ingredient: "Tofu scramble (60g)",
-            reason: "Ricco di proteine, texture simile all'uovo strapazzato",
-            difficulty: "Medio" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Sbriciolate e cuocere con curcuma per il colore"
-          },
-          {
-            ingredient: "2 albumi d'uovo",
-            reason: "Solo proteine, senza colesterolo, più leggero",
-            difficulty: "Facile" as const,
-            tasteChange: "Minimo" as const,
-            cookingNotes: "Montare leggermente prima di cuocere"
-          }
-        ];
-      }
-      
-      if (lower.includes('pasta') || lower.includes('spaghetti') || lower.includes('penne')) {
-        console.log('✅ Found pasta pattern');
-        return [
-          {
-            ingredient: "Pasta di lenticchie rosse",
-            reason: "Più proteine, senza glutine, stesso tempo di cottura",
-            difficulty: "Facile" as const,
-            tasteChange: "Minimo" as const,
-            cookingNotes: "Cuoci 1-2 minuti in meno rispetto alla pasta normale"
-          },
-          {
-            ingredient: "Zucchine a julienne",
-            reason: "Meno carboidrati, più verdure, texture diversa ma interessante",
-            difficulty: "Medio" as const,
-            tasteChange: "Significativo" as const,
-            cookingNotes: "Saltare 2-3 minuti in padella, non far diventare mollicci"
-          }
-        ];
-      }
-      
-      // Pattern più ampi per catturare più ingredienti
-      if (lower.includes('gram') || lower.includes('g ') || lower.includes('cucchiai') || lower.includes('cucchiaino')) {
-        // Ingrediente con quantità ma non matchato sopra
-        console.log('✅ Found generic ingredient with quantity');
-        return [
-          {
-            ingredient: "Ingrediente alternativo di stagione",
-            reason: "Scegli un ingrediente simile disponibile localmente",
-            difficulty: "Medio" as const,
-            tasteChange: "Moderato" as const,
-            cookingNotes: "Adatta le quantità in base al gusto personale"
-          },
-          {
-            ingredient: "Versione biologica dello stesso ingrediente",
-            reason: "Stessa funzione ma qualità superiore e più sostenibile",
-            difficulty: "Facile" as const,
-            tasteChange: "Minimo" as const,
-            cookingNotes: "Utilizzare nelle stesse quantità dell'originale"
-          }
-        ];
-      }
-      
-      // Default fallback migliorato
-      console.log('❌ No specific pattern found, using enhanced default');
-      return [
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('❌ ANTHROPIC_API_KEY not found');
+      return NextResponse.json({
+        success: false,
+        error: 'Configurazione AI non trovata'
+      }, { status: 500 });
+    }
+
+    // Prompt per Claude AI
+    const prompt = `Sei un esperto nutrizionista e chef. Devi suggerire 3 alternative intelligenti per sostituire questo ingrediente in una ricetta.
+
+INGREDIENTE DA SOSTITUIRE: "${ingredient}"
+
+CONTESTO:
+- Pasto: ${mealContext || 'Non specificato'}
+- Preferenze alimentari: ${userPreferences || 'Nessuna'}
+- Allergie/Intolleranze: ${allergies || 'Nessuna'}
+
+ISTRUZIONI:
+1. Suggerisci esattamente 3 alternative specifiche e pratiche
+2. Considera le allergie e preferenze dell'utente
+3. Mantieni funzione culinaria simile (texture, sapore, nutrienti)
+4. Includi quantità specifiche quando possibile
+
+FORMATO RISPOSTA (JSON):
+{
+  "substitutes": [
+    {
+      "ingredient": "Nome specifico con quantità",
+      "reason": "Spiegazione nutrizionale e culinaria",
+      "difficulty": "Facile|Medio|Difficile",
+      "tasteChange": "Minimo|Moderato|Significativo", 
+      "cookingNotes": "Note pratiche per l'utilizzo"
+    }
+  ]
+}
+
+Rispondi SOLO con JSON valido, senza testo aggiuntivo.`;
+
+    console.log('🤖 Calling Claude AI...');
+    
+    const message = await anthropic.messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 1000,
+      temperature: 0.7,
+      messages: [
         {
-          ingredient: "Ingrediente stagionale equivalente",
-          reason: "Sostituisci con un ingrediente di stagione dalle proprietà nutrizionali simili",
-          difficulty: "Medio" as const,
-          tasteChange: "Moderato" as const,
-          cookingNotes: "Consulta un nutrizionista per sostituzioni specifiche"
-        },
-        {
-          ingredient: "Versione integrale/biologica",
-          reason: "Stessa base ma versione più nutriente e sostenibile",
-          difficulty: "Facile" as const,
-          tasteChange: "Minimo" as const,
-          cookingNotes: "Utilizzare nelle stesse modalità dell'ingrediente originale"
+          role: "user",
+          content: prompt
         }
-      ];
-    };
-    
-    const substitutes = getSubstitutes(ingredient);
-    
-    console.log('🎯 Generated substitutes:', substitutes.length);
-    
-    // Simulate some AI processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+      ]
+    });
+
+    const aiResponse = message.content[0];
+    if (aiResponse.type !== 'text') {
+      throw new Error('Risposta AI non valida');
+    }
+
+    console.log('🤖 Claude AI response:', aiResponse.text);
+
+    // Parse della risposta AI
+    let parsedResponse;
+    try {
+      // Pulisci la risposta da eventuali caratteri extra
+      const cleanResponse = aiResponse.text.trim();
+      parsedResponse = JSON.parse(cleanResponse);
+    } catch (parseError) {
+      console.error('❌ Parse error:', parseError);
+      console.log('Raw AI response:', aiResponse.text);
+      
+      // Fallback con alternative generiche ma intelligenti
+      parsedResponse = {
+        substitutes: [
+          {
+            ingredient: "Ingrediente equivalente biologico",
+            reason: "Claude AI ha generato una risposta ma il formato non è stato riconosciuto. Usa un ingrediente simile disponibile localmente.",
+            difficulty: "Medio",
+            tasteChange: "Minimo",
+            cookingNotes: "Adatta le quantità secondo il tuo gusto"
+          }
+        ]
+      };
+    }
+
+    // Valida la struttura
+    if (!parsedResponse.substitutes || !Array.isArray(parsedResponse.substitutes)) {
+      throw new Error('Formato risposta AI non valido');
+    }
+
+    console.log('✅ Parsed substitutes:', parsedResponse.substitutes.length);
+
     return NextResponse.json({
       success: true,
-      substitutes: substitutes,
-      message: `Trovate ${substitutes.length} alternative per ${ingredient}`
+      substitutes: parsedResponse.substitutes,
+      message: `Claude AI ha trovato ${parsedResponse.substitutes.length} alternative per ${ingredient}`
     });
     
   } catch (error) {
-    console.error('❌ Substitute ingredient error:', error);
+    console.error('❌ Claude AI substitute error:', error);
+    
+    // Fallback con alternative intelligenti in caso di errore
+    const fallbackSubstitutes = generateFallbackSubstitutes(ingredient);
+    
     return NextResponse.json({
-      success: false,
-      error: 'Errore nella ricerca di sostituti',
-      details: error instanceof Error ? error.message : 'Errore sconosciuto'
-    }, { status: 500 });
+      success: true,
+      substitutes: fallbackSubstitutes,
+      message: `Alternative di fallback per ${ingredient}`,
+      isAI: false
+    });
   }
+}
+
+// Fallback intelligente quando Claude AI non è disponibile
+function generateFallbackSubstitutes(ingredient: string) {
+  const lower = ingredient.toLowerCase();
+  
+  if (lower.includes('mandorl') || lower.includes('noci') || lower.includes('nocciole')) {
+    return [
+      {
+        ingredient: "Semi di girasole tostati",
+        reason: "Croccantezza simile, ricchi di vitamina E, più economici",
+        difficulty: "Facile",
+        tasteChange: "Moderato",
+        cookingNotes: "Tostare leggermente in padella per esaltare il sapore"
+      },
+      {
+        ingredient: "Semi di zucca",
+        reason: "Texture simile, ricchi di magnesio e zinco",
+        difficulty: "Facile", 
+        tasteChange: "Moderato",
+        cookingNotes: "Utilizzare nelle stesse quantità"
+      }
+    ];
+  }
+  
+  if (lower.includes('avocado')) {
+    return [
+      {
+        ingredient: "Hummus di ceci",
+        reason: "Cremosità simile, ricco di proteine e fibre",
+        difficulty: "Facile",
+        tasteChange: "Moderato", 
+        cookingNotes: "Spalmare direttamente, aggiungere un filo d'olio"
+      }
+    ];
+  }
+  
+  // Default fallback generico ma utile
+  return [
+    {
+      ingredient: "Ingrediente stagionale equivalente",
+      reason: "Scegli un ingrediente di stagione con proprietà nutrizionali simili",
+      difficulty: "Medio",
+      tasteChange: "Moderato",
+      cookingNotes: "Adatta le quantità in base al gusto personale"
+    },
+    {
+      ingredient: "Versione biologica/integrale",
+      reason: "Stessa base ma versione più nutriente e sostenibile", 
+      difficulty: "Facile",
+      tasteChange: "Minimo",
+      cookingNotes: "Utilizzare nelle stesse modalità dell'originale"
+    }
+  ];
 }
