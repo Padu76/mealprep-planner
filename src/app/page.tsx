@@ -306,9 +306,11 @@ export default function HomePage() {
   }, []);
 
   const handleReplacement = async (mealType: string, dayNumber: string) => {
+    console.log('🔄 REPLACEMENT STARTED:', { mealType, dayNumber }); // DEBUG
     setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
+      console.log('📡 Calling replace-meal API...'); // DEBUG
       const response = await fetch('/api/replace-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -320,19 +322,25 @@ export default function HomePage() {
         })
       });
       
+      console.log('📨 API Response status:', response.status); // DEBUG
       const result = await response.json();
-      console.log('🔄 Replace meal result:', result);
+      console.log('🔄 Replace meal result:', result); // DEBUG
       
       if (result.success && result.newMeal) {
+        console.log('✅ Processing successful result...'); // DEBUG
+        
         // Aggiorna il parsedPlan direttamente invece di rigenerarlo
         const updatedPlan = { ...parsedPlan };
         const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+        
+        console.log('📅 Day index:', dayIndex); // DEBUG
         
         if (updatedPlan.days[dayIndex]) {
           // Fix sintassi TypeScript
           const dayMeals = updatedPlan.days[dayIndex].meals;
           (dayMeals as any)[mealType] = result.newMeal;
           
+          console.log('🔄 Updating parsed plan...'); // DEBUG
           setParsedPlan(updatedPlan);
           
           // Rigenera il documento completo
@@ -340,14 +348,18 @@ export default function HomePage() {
           setGeneratedPlan(completeDocument);
           
           console.log('✅ Meal replaced successfully:', result.newMeal.nome);
+        } else {
+          console.log('❌ Day not found:', dayIndex); // DEBUG
         }
       } else {
+        console.log('❌ API returned error:', result); // DEBUG
         alert('Errore nella sostituzione del pasto: ' + (result.error || 'Errore sconosciuto'));
       }
     } catch (error) {
       console.error('❌ Replace meal error:', error);
       alert('Errore di connessione per la sostituzione');
     } finally {
+      console.log('🏁 Replacement finished'); // DEBUG
       setIsReplacing(null);
     }
   };
