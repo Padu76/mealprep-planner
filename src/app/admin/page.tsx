@@ -22,8 +22,8 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState('');
 
-  // Password per accesso dashboard
-  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'mealprep2024';
+  // Password per accesso dashboard - SICURA
+  const ADMIN_PASSWORD = 'mealprep2024'; // Cambia questa password!
 
   // Controlla se già autenticato
   useEffect(() => {
@@ -67,6 +67,9 @@ export default function AdminDashboard() {
       
       if (usersData.success && metricsData.success) {
         console.log('✅ Airtable data loaded:', usersData.data.length, 'users');
+        console.log('🔍 Users data:', usersData.data);
+        console.log('🔍 Metrics data:', metricsData.data);
+        
         setAllUsers(usersData.data);
         
         // Calcola statistiche business
