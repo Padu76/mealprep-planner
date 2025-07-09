@@ -127,8 +127,8 @@ export default function HomePage() {
     setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
-      // Importa meal planner integration
-      const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
+      // Importa meal planner integration con path corretto
+      const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
       const mealPlanner = MealPlannerIntegration.getInstance();
       
       // Converti il piano attuale in formato MealPlan
@@ -435,6 +435,36 @@ export default function HomePage() {
         };
       }
       
+      if (numPasti >= 6) {
+        day.meals.spuntino3 = {
+          nome: `Spuntino Serale ${i + 1}`,
+          calorie: 100,
+          proteine: 5,
+          carboidrati: 12,
+          grassi: 3,
+          tempo: '2 min',
+          porzioni: 1,
+          ingredienti: ['Tisana', 'Biscotti integrali'],
+          preparazione: 'Prepara tisana e accompagna con biscotti',
+          source: 'ai'
+        };
+      }
+      
+      if (numPasti >= 6) {
+        day.meals.spuntino3 = {
+          nome: `Spuntino Serale ${i + 1}`,
+          calorie: 100,
+          proteine: 5,
+          carboidrati: 12,
+          grassi: 3,
+          tempo: '2 min',
+          porzioni: 1,
+          ingredienti: ['Tisana', 'Biscotti integrali'],
+          preparazione: 'Prepara tisana e accompagna con biscotti',
+          source: 'ai'
+        };
+      }
+      
       days.push(day);
     }
     
@@ -516,6 +546,20 @@ export default function HomePage() {
         };
       }
       
+      if (numPasti >= 6) {
+        day.meals.spuntino3 = {
+          nome: 'Tisana e Crackers',
+          calorie: 80,
+          proteine: 3,
+          carboidrati: 12,
+          grassi: 2,
+          tempo: '5 min',
+          porzioni: 1,
+          ingredienti: ['Tisana rilassante', 'Crackers integrali'],
+          preparazione: 'Prepara tisana calda e accompagna con crackers'
+        };
+      }
+      
       days.push(day);
     }
     
@@ -530,10 +574,26 @@ export default function HomePage() {
     const allergieMap: { [key: string]: string } = {
       'glutine': 'glutine',
       'lattosio': 'latte',
+      'latte': 'latte',
+      'latticini': 'latte',
       'uova': 'uova',
       'pesce': 'pesce',
+      'frutti di mare': 'pesce',
+      'crostacei': 'pesce',
       'noci': 'frutta_secca',
-      'mandorle': 'frutta_secca'
+      'mandorle': 'frutta_secca',
+      'nocciole': 'frutta_secca',
+      'pistacchi': 'frutta_secca',
+      'frutta secca': 'frutta_secca',
+      'soia': 'soia',
+      'sesamo': 'sesamo',
+      'arachidi': 'frutta_secca',
+      'sedano': 'sedano',
+      'senape': 'senape',
+      'lupini': 'lupini',
+      'molluschi': 'pesce',
+      'anidride solforosa': 'solfiti',
+      'solfiti': 'solfiti'
     };
     
     const result: string[] = [];
@@ -631,7 +691,7 @@ Genera ricette creative e personalizzate per ogni pasto.`;
         // 🔄 STEP 2: Arricchisci con database se disponibile
         let enrichedPlan;
         try {
-          const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
+          const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
           const mealPlanner = MealPlannerIntegration.getInstance();
           
           // Arricchisci il piano AI con dettagli dal database
