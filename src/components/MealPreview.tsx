@@ -17,13 +17,13 @@ export default function MealPreview({
         {/* 🖼️ IMMAGINE RICETTA */}
         <div className="relative mb-4">
           <img
-            src={meal.imageUrl || 'https://via.placeholder.com/400x300/8FBC8F/ffffff?text=' + encodeURIComponent(meal.nome)}
+            src={meal.imageUrl || `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodeURIComponent(meal.nome || 'Recipe')}`}
             alt={meal.nome}
             className="w-full h-48 object-cover rounded-lg"
             onError={(e) => {
-              // Fallback se immagine non carica
+              // Fallback sicuro se immagine non carica
               const target = e.target as HTMLImageElement;
-              target.src = `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodeURIComponent(meal.nome)}`;
+              target.src = `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodeURIComponent(meal.nome || 'Recipe')}`;
             }}
           />
           
