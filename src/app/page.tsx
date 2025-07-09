@@ -47,8 +47,8 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ingredient,
-          userPreferences: formData.preferenze,
-          allergies: formData.allergie,
+          userPreferences: formData.preferenze || [],
+          allergies: formData.allergie || [],
           mealContext: `${mealType} del ${parsedPlan.days[dayIndex].day}`
         })
       });
@@ -58,11 +58,11 @@ export default function HomePage() {
       if (result.success) {
         setSubstitutes(result.substitutes);
       } else {
-        alert('❌ Errore nella ricerca di sostituti: ' + result.error);
+        console.log('Substitute ingredient error:', result.error);
         setShowSubstituteModal(false);
       }
     } catch (error) {
-      alert('❌ Errore di connessione per la sostituzione ingrediente');
+      console.log('Substitute ingredient connection error:', error);
       setShowSubstituteModal(false);
     } finally {
       setIsLoadingSubstitutes(false);
@@ -104,21 +104,125 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // 🎯 FUNZIONE PRINCIPALE - USA DATABASE RICETTE
-  const parsePlanFromAI = async (aiResponse: string) => {
-    console.log('🔧 Parsing AI response with Recipe Database...');
+  // Test connessione API all'avvio
+  useEffect(() => {
+    const testAPI = async () => {
+      try {
+        const response = await fetch('/api/test-connection');
+        if (response.ok) {
+          setApiStatus('connected');
+        } else {
+          setApiStatus('error');
+        }
+      } catch (error) {
+        setApiStatus('error');
+      }
+    };
+    testAPI();
+  }, []);
+
+  // 🔄 SOSTITUZIONE RICETTA CON DATABASE
+  const handleReplacement = async (mealType: string, dayNumber: string) => {
+    console.log('🔄 REPLACEMENT STARTED:', { mealType, dayNumber });
+    setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
-      // Import dinamico del meal planner integrato
+      // Importa meal planner integration
       const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
       const mealPlanner = MealPlannerIntegration.getInstance();
       
-      // Genera meal plan usando database ricette
+      // Converti il piano attuale in formato MealPlan
+      const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+      
+      // Genera nuova ricetta usando il database
+      const currentMealPlan = {
+        days: parsedPlan.days.map((day: any) => ({
+          day: day.day,
+          meals: day.meals
+        })),
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+        userPreferences: formData
+      };
+      
+      // Sostituisci la ricetta nel piano
+      const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
+      
+      // Riconverti in formato compatibile
+      const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
+      
+      if (newMeal) {
+        const updatedParsedPlan = { ...parsedPlan };
+        updatedParsedPlan.days[dayIndex].meals[mealType] = {
+          nome: newMeal.nome,
+          calorie: newMeal.calorie,
+          proteine: newMeal.proteine,
+          carboidrati: newMeal.carboidrati,
+          grassi: newMeal.grassi,
+          tempo: `${newMeal.tempoPreparazione} min`,
+          porzioni: newMeal.porzioni,
+          ingredienti: newMeal.ingredienti,
+          preparazione: newMeal.preparazione,
+          recipeId: newMeal.id,
+          rating: newMeal.rating,
+          categoria: newMeal.categoria,
+          tipoCucina: newMeal.tipoCucina,
+          difficolta: newMeal.difficolta
+        };
+        
+        setParsedPlan(updatedParsedPlan);
+        
+        // Rigenera il documento completo
+        const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
+        setGeneratedPlan(completeDocument);
+        
+        console.log('✅ Meal replaced successfully:', newMeal.nome);
+      }
+      
+    } catch (error) {
+      console.error('❌ Replace meal error:', error);
+    } finally {
+      setIsReplacing(null);
+    }
+  };
+
+  const confirmPlan = () => {
+    setShowPreview(false);
+    setShowComplete(true);
+    setTimeout(() => {
+      document.getElementById('complete-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleGenerateNewPlan = () => {
+    setShowPreview(false);
+    setShowComplete(false);
+    setGeneratedPlan(null);
+    setParsedPlan(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 🚀 FUNZIONE PRINCIPALE - SOLO DATABASE (NO API)
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 FORM SUBMIT STARTED (Direct Database Mode)');
+    console.log('📝 Form Data:', formData);
+    e.preventDefault();
+    setIsGenerating(true);
+    
+    try {
+      console.log('🔄 Generating meal plan using recipe database...');
+      
+      // Import dinamico del meal planner
+      const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
+      const mealPlanner = MealPlannerIntegration.getInstance();
+      
+      // Genera piano usando database
       const mealPlan = mealPlanner.generateMealPlan(formData);
+      console.log('✅ Generated meal plan:', mealPlan);
       
-      console.log('✅ Meal plan generated with real recipes:', mealPlan);
-      
-      // Converti formato per compatibilità con componenti esistenti
+      // Converti in formato compatibile
       const compatiblePlan = {
         days: mealPlan.days.map(day => ({
           day: day.day,
@@ -133,7 +237,7 @@ export default function HomePage() {
               porzioni: day.meals.colazione.porzioni,
               ingredienti: day.meals.colazione.ingredienti,
               preparazione: day.meals.colazione.preparazione,
-              recipeId: day.meals.colazione.id, // ✅ ID per link dettaglio
+              recipeId: day.meals.colazione.id,
               rating: day.meals.colazione.rating,
               categoria: day.meals.colazione.categoria,
               tipoCucina: day.meals.colazione.tipoCucina,
@@ -228,251 +332,42 @@ export default function HomePage() {
           totalCarbs: mealPlan.totalCarbs,
           totalFat: mealPlan.totalFat,
           avgCaloriesPerDay: Math.round(mealPlan.totalCalories / mealPlan.days.length),
-          uniqueRecipes: mealPlanner.getPlanStats(mealPlan).uniqueRecipes,
-          dietCompliance: mealPlanner.getPlanStats(mealPlan).dietCompliance
+          uniqueRecipes: mealPlanner.getPlanStats ? mealPlanner.getPlanStats(mealPlan).uniqueRecipes : 0,
+          dietCompliance: mealPlanner.getPlanStats ? mealPlanner.getPlanStats(mealPlan).dietCompliance : 100
         },
         // Aggiungi lista spesa
-        shoppingList: mealPlanner.generateShoppingList(mealPlan)
+        shoppingList: mealPlanner.generateShoppingList ? mealPlanner.generateShoppingList(mealPlan) : {}
       };
       
-      console.log('✅ Compatible plan created:', compatiblePlan);
-      return compatiblePlan;
+      setParsedPlan(compatiblePlan);
       
-    } catch (error) {
-      console.error('❌ Error generating meal plan:', error);
-      // Fallback al sistema precedente in caso di errore
-      return parsePlanFromAI_Fallback(aiResponse);
-    }
-  };
-
-  // 🔄 FALLBACK - Sistema precedente per emergenza
-  const parsePlanFromAI_Fallback = (aiResponse: string) => {
-    console.log('🔄 Using fallback meal plan generation...');
-    
-    // Logica precedente come backup
-    const baseMeals = {
-      colazione: {
-        nome: "Toast Avocado e Uovo in Camicia",
-        calorie: 633,
-        proteine: 32,
-        carboidrati: 87,
-        grassi: 18,
-        tempo: "15 min",
-        porzioni: 1,
-        ingredienti: [
-          "2 fette pane integrale (60g)",
-          "1/2 avocado maturo (80g)",
-          "1 uovo fresco biologico",
-          "1 cucchiaino aceto bianco",
-          "Succo di 1/4 limone",
-          "Sale e pepe q.b.",
-          "Scaglie di peperoncino (opzionale)"
-        ],
-        preparazione: "Porta a bollore una casseruola d'acqua con l'aceto. Tosta il pane fino a doratura. In una ciotola, schiaccia l'avocado con una forchetta, aggiungi succo di limone, sale e pepe. Crea un vortice nell'acqua caliente e immergi delicatamente l'uovo per 3-4 minuti. Spalma l'avocado sul pane tostato, adagia sopra l'uovo scodellato e condisci con pepe e peperoncino."
-      },
-      pranzo: {
-        nome: "Pasta e Fagioli",
-        calorie: 886,
-        proteine: 66,
-        carboidrati: 100,
-        grassi: 25,
-        tempo: "30 min",
-        porzioni: 1,
-        ingredienti: [
-          "75g pasta corta",
-          "100g fagioli borlotti lessati",
-          "1/2 costa di sedano (15g)",
-          "1/4 carota (20g)",
-          "1/4 cipolla (25g)",
-          "1/2 spicchio aglio",
-          "100g passata di pomodoro",
-          "200ml brodo vegetale",
-          "Rosmarino fresco",
-          "1 cucchiaio olio extravergine"
-        ],
-        preparazione: "Prepara un soffritto con sedano, carota e cipolla tritati. Soffriggi in olio con aglio e rosmarino per 5 minuti. Aggiungi metà fagioli schiacciati e quelli interi. Incorpora la passata e cuoci 10 minuti. Aggiungi brodo e pasta, cuoci mescolando spesso fino a consistenza cremosa."
-      },
-      cena: {
-        nome: "Tagliata di Manzo ai Funghi",
-        calorie: 759,
-        proteine: 66,
-        carboidrati: 66,
-        grassi: 25,
-        tempo: "25 min",
-        porzioni: 1,
-        ingredienti: [
-          "120g controfiletto di manzo",
-          "60g funghi porcini freschi",
-          "1/2 spicchio aglio",
-          "Prezzemolo fresco (3g)",
-          "40g rucola",
-          "20g scaglie di Parmigiano",
-          "1 cucchiaio olio extravergine",
-          "Sale, pepe, rosmarino q.b."
-        ],
-        preparazione: "Porta la carne a temperatura ambiente. Pulisci e affetta i porcini. Cuoci la carne 3-4 minuti per lato. Lascia riposare 5 minuti. Saltare i porcini con aglio e prezzemolo. Taglia la carne, servi su rucola con porcini e Parmigiano."
-      }
-    };
-
-    // Resto della logica fallback...
-    const numDays = parseInt(formData.durata) || 1;
-    const numPasti = parseInt(formData.pasti) || 3;
-    const days = [];
-    
-    for (let i = 0; i < numDays; i++) {
-      const dayMeals: any = {
-        colazione: baseMeals.colazione,
-        pranzo: baseMeals.pranzo,
-        cena: baseMeals.cena
-      };
-      
-      days.push({
-        day: `Giorno ${i + 1}`,
-        meals: dayMeals
-      });
-    }
-
-    return { days };
-  };
-
-  // Test connessione API all'avvio
-  useEffect(() => {
-    const testAPI = async () => {
-      try {
-        const response = await fetch('/api/test-connection');
-        if (response.ok) {
-          setApiStatus('connected');
-        } else {
-          setApiStatus('error');
-        }
-      } catch (error) {
-        setApiStatus('error');
-      }
-    };
-    testAPI();
-  }, []);
-
-  // 🔄 SOSTITUZIONE RICETTA MIGLIORATA
-  const handleReplacement = async (mealType: string, dayNumber: string) => {
-    console.log('🔄 REPLACEMENT STARTED (with recipe database):', { mealType, dayNumber });
-    setIsReplacing(`${dayNumber}-${mealType}`);
-    
-    try {
-      // Importa meal planner integration
-      const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
-      const mealPlanner = MealPlannerIntegration.getInstance();
-      
-      // Converti il piano attuale in formato MealPlan
-      const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
-      
-      // Genera nuova ricetta usando il database
-      const currentMealPlan = {
-        days: parsedPlan.days.map((day: any) => ({
-          day: day.day,
-          meals: day.meals
-        })),
-        totalCalories: 0,
-        totalProtein: 0,
-        totalCarbs: 0,
-        totalFat: 0,
-        userPreferences: formData
-      };
-      
-      // Sostituisci la ricetta nel piano
-      const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
-      
-      // Riconverti in formato compatibile
-      const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
-      
-      if (newMeal) {
-        const updatedParsedPlan = { ...parsedPlan };
-        updatedParsedPlan.days[dayIndex].meals[mealType] = {
-          nome: newMeal.nome,
-          calorie: newMeal.calorie,
-          proteine: newMeal.proteine,
-          carboidrati: newMeal.carboidrati,
-          grassi: newMeal.grassi,
-          tempo: `${newMeal.tempoPreparazione} min`,
-          porzioni: newMeal.porzioni,
-          ingredienti: newMeal.ingredienti,
-          preparazione: newMeal.preparazione,
-          recipeId: newMeal.id,
-          rating: newMeal.rating,
-          categoria: newMeal.categoria,
-          tipoCucina: newMeal.tipoCucina,
-          difficolta: newMeal.difficolta
-        };
-        
-        setParsedPlan(updatedParsedPlan);
-        
-        // Rigenera il documento completo
-        const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
-        setGeneratedPlan(completeDocument);
-        
-        console.log('✅ Meal replaced successfully with:', newMeal.nome);
-      }
-      
-    } catch (error) {
-      console.error('❌ Replace meal error:', error);
-      alert('Errore nella sostituzione del pasto');
-    } finally {
-      setIsReplacing(null);
-    }
-  };
-
-  const confirmPlan = () => {
-    setShowPreview(false);
-    setShowComplete(true);
-    setTimeout(() => {
-      document.getElementById('complete-section')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleGenerateNewPlan = () => {
-    setShowPreview(false);
-    setShowComplete(false);
-    setGeneratedPlan(null);
-    setParsedPlan(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // 🚀 FUNZIONE PRINCIPALE - SENZA CHIAMATE API ESTERNE
-  const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 FORM SUBMIT STARTED (Direct Database Mode)');
-    console.log('📝 Form Data:', formData);
-    e.preventDefault();
-    setIsGenerating(true);
-    
-    try {
-      // 🚀 NUOVO: Genera direttamente usando il database ricette (SENZA API)
-      console.log('🔄 Generating meal plan using recipe database (Direct Mode)...');
-      const parsed = await parsePlanFromAI('direct_database_generation');
-      setParsedPlan(parsed);
-      
-      const completeDocument = generateCompleteDocument(parsed, formData);
+      // Genera documento completo
+      const completeDocument = generateCompleteDocument(compatiblePlan, formData);
       setGeneratedPlan(completeDocument);
       setShowPreview(true);
       
-      // 🤖 AI Learning: Salva piano nello storico
+      console.log('✅ Success! Plan generated with database recipes');
+      
+      // 🤖 AI Learning: Salva piano nello storico (opzionale)
       try {
         const aiLearning = (await import('../utils/aiLearningSystem')).AILearningSystem.getInstance();
         await aiLearning.savePlanToHistory({
           id: Date.now().toString(),
-          nome: formData.nome,
+          nome: formData.nome || 'User',
           preferences: {
-            preferenceColazione: formData.preferenceColazione,
-            preferencePranzo: formData.preferencePranzo,
-            preferenceCena: formData.preferenceCena,
-            stileAlimentare: formData.stileAlimentare,
-            livelloElaborazione: formData.livelloElaborazione,
-            preferenzeCottura: formData.preferenzeCottura,
-            evitaRipetizioni: formData.evitaRipetizioni
+            preferenceColazione: formData.preferenceColazione || '',
+            preferencePranzo: formData.preferencePranzo || '',
+            preferenceCena: formData.preferenceCena || '',
+            stileAlimentare: formData.stileAlimentare || '',
+            livelloElaborazione: formData.livelloElaborazione || '',
+            preferenzeCottura: formData.preferenzeCottura || '',
+            evitaRipetizioni: formData.evitaRipetizioni || ''
           },
           generatedMeals: {
-            colazione: parsed.days.flatMap((day: any) => day.meals.colazione ? [day.meals.colazione.nome] : []),
-            pranzo: parsed.days.flatMap((day: any) => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
-            cena: parsed.days.flatMap((day: any) => day.meals.cena ? [day.meals.cena.nome] : []),
-            spuntini: parsed.days.flatMap((day: any) => [
+            colazione: compatiblePlan.days.flatMap((day: any) => day.meals.colazione ? [day.meals.colazione.nome] : []),
+            pranzo: compatiblePlan.days.flatMap((day: any) => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
+            cena: compatiblePlan.days.flatMap((day: any) => day.meals.cena ? [day.meals.cena.nome] : []),
+            spuntini: compatiblePlan.days.flatMap((day: any) => [
               ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
               ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
             ])
@@ -492,29 +387,29 @@ export default function HomePage() {
           body: JSON.stringify({
             action: 'saveMealRequest',
             data: {
-              nome: formData.nome,
+              nome: formData.nome || 'User',
               email: sessionStorage.getItem('userAuth') || '',
-              age: formData.eta,
-              weight: formData.peso,
-              height: formData.altezza,
-              gender: formData.sesso,
-              activity_level: formData.attivita,
+              age: formData.eta || 30,
+              weight: formData.peso || 70,
+              height: formData.altezza || 170,
+              gender: formData.sesso || 'maschio',
+              activity_level: formData.attivita || 'moderata',
               goal: formData.obiettivo === 'perdita-peso' ? 'dimagrimento' : 
                     formData.obiettivo === 'aumento-massa' ? 'aumento_massa' : 
-                    formData.obiettivo,
-              duration: formData.durata,
-              meals_per_day: formData.pasti,
+                    formData.obiettivo || 'mantenimento',
+              duration: formData.durata || '3',
+              meals_per_day: formData.pasti || '3',
               exclusions: formData.allergie || [],
               foods_at_home: formData.preferenze || [],
               phone: '',
               ai_preferences: JSON.stringify({
-                preferenceColazione: formData.preferenceColazione,
-                preferencePranzo: formData.preferencePranzo,
-                preferenceCena: formData.preferenceCena,
-                stileAlimentare: formData.stileAlimentare,
-                livelloElaborazione: formData.livelloElaborazione,
-                preferenzeCottura: formData.preferenzeCottura,
-                evitaRipetizioni: formData.evitaRipetizioni
+                preferenceColazione: formData.preferenceColazione || '',
+                preferencePranzo: formData.preferencePranzo || '',
+                preferenceCena: formData.preferenceCena || '',
+                stileAlimentare: formData.stileAlimentare || '',
+                livelloElaborazione: formData.livelloElaborazione || '',
+                preferenzeCottura: formData.preferenzeCottura || '',
+                evitaRipetizioni: formData.evitaRipetizioni || ''
               })
             }
           })
@@ -522,28 +417,7 @@ export default function HomePage() {
         
         if (airtableResponse.ok) {
           const airtableResult = await airtableResponse.json();
-          console.log('✅ Airtable response:', airtableResult);
-          
-          if (airtableResult.recordId) {
-            await fetch('/api/airtable', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'updateRequestStatus',
-                data: {
-                  recordId: airtableResult.recordId,
-                  status: 'Piano generato con database ricette',
-                  mealPlan: {
-                    generatedPlan: completeDocument,
-                    parsedPlan: parsed,
-                    formData: formData,
-                    planStats: parsed.planStats,
-                    shoppingList: parsed.shoppingList
-                  }
-                }
-              })
-            });
-          }
+          console.log('✅ Airtable save successful:', airtableResult);
         }
       } catch (airtableError) {
         console.log('⚠️ Airtable save error (non-blocking):', airtableError);
@@ -554,29 +428,146 @@ export default function HomePage() {
         document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
       
-      console.log('✅ Meal plan generated successfully with database recipes!');
-      
     } catch (error) {
-      console.error('💥 Error generating meal plan:', error);
+      console.error('❌ Error generating meal plan:', error);
       
-      // 🔄 FALLBACK: Usa sistema precedente in caso di errore
-      try {
-        console.log('🔄 Using fallback system...');
-        const fallbackPlan = parsePlanFromAI_Fallback('fallback_generation');
-        setParsedPlan(fallbackPlan);
-        
-        const completeDocument = generateCompleteDocument(fallbackPlan, formData);
-        setGeneratedPlan(completeDocument);
-        setShowPreview(true);
-        
-        setTimeout(() => {
-          document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-        
-      } catch (fallbackError) {
-        console.error('💥 Fallback error:', fallbackError);
-        alert('❌ Errore nella generazione del piano. Riprova più tardi.');
-      }
+      // FALLBACK SEMPLICE IN CASO DI ERRORE
+      const fallbackPlan = {
+        days: [
+          {
+            day: 'Giorno 1',
+            meals: {
+              colazione: {
+                nome: 'Toast Avocado e Uovo',
+                calorie: 420,
+                proteine: 18,
+                carboidrati: 35,
+                grassi: 22,
+                tempo: '15 min',
+                porzioni: 1,
+                ingredienti: ['2 fette pane integrale', '1 avocado maturo', '1 uovo fresco'],
+                preparazione: 'Tosta il pane, schiaccia avocado con limone, cuoci uovo in camicia, assembla'
+              },
+              pranzo: {
+                nome: 'Insalata Quinoa e Pollo',
+                calorie: 480,
+                proteine: 32,
+                carboidrati: 45,
+                grassi: 18,
+                tempo: '20 min',
+                porzioni: 1,
+                ingredienti: ['150g quinoa', '200g petto di pollo', '1 avocado', 'verdure miste'],
+                preparazione: 'Cuoci quinoa e pollo, taglia avocado, assembla insalata'
+              },
+              cena: {
+                nome: 'Salmone con Verdure',
+                calorie: 420,
+                proteine: 35,
+                carboidrati: 15,
+                grassi: 25,
+                tempo: '25 min',
+                porzioni: 1,
+                ingredienti: ['200g filetto salmone', 'verdure grigliate', 'olio oliva'],
+                preparazione: 'Griglia salmone 4 min per lato, griglia verdure, condisci con olio'
+              }
+            }
+          },
+          {
+            day: 'Giorno 2',
+            meals: {
+              colazione: {
+                nome: 'Yogurt Greco con Frutti di Bosco',
+                calorie: 320,
+                proteine: 20,
+                carboidrati: 45,
+                grassi: 8,
+                tempo: '5 min',
+                porzioni: 1,
+                ingredienti: ['200g yogurt greco', '100g frutti di bosco', '30g granola'],
+                preparazione: 'Mescola yogurt con frutti di bosco, aggiungi granola'
+              },
+              pranzo: {
+                nome: 'Pasta Integrale con Verdure',
+                calorie: 450,
+                proteine: 16,
+                carboidrati: 70,
+                grassi: 12,
+                tempo: '25 min',
+                porzioni: 1,
+                ingredienti: ['100g pasta integrale', 'verdure di stagione', 'olio extravergine'],
+                preparazione: 'Cuoci pasta, salta verdure, manteca insieme'
+              },
+              cena: {
+                nome: 'Pollo alla Griglia con Rucola',
+                calorie: 380,
+                proteine: 40,
+                carboidrati: 8,
+                grassi: 20,
+                tempo: '20 min',
+                porzioni: 1,
+                ingredienti: ['200g petto di pollo', 'rucola fresca', 'pomodorini'],
+                preparazione: 'Griglia pollo, servi su letto di rucola con pomodorini'
+              }
+            }
+          },
+          {
+            day: 'Giorno 3',
+            meals: {
+              colazione: {
+                nome: 'Porridge di Avena con Banana',
+                calorie: 350,
+                proteine: 14,
+                carboidrati: 55,
+                grassi: 9,
+                tempo: '10 min',
+                porzioni: 1,
+                ingredienti: ['60g avena', '1 banana', '300ml latte', 'cannella'],
+                preparazione: 'Cuoci avena nel latte, aggiungi banana tagliata e cannella'
+              },
+              pranzo: {
+                nome: 'Zuppa di Lenticchie',
+                calorie: 280,
+                proteine: 18,
+                carboidrati: 45,
+                grassi: 4,
+                tempo: '30 min',
+                porzioni: 1,
+                ingredienti: ['150g lenticchie', 'verdure miste', 'brodo vegetale'],
+                preparazione: 'Cuoci lenticchie con verdure nel brodo per 25 minuti'
+              },
+              cena: {
+                nome: 'Frittata di Verdure',
+                calorie: 280,
+                proteine: 18,
+                carboidrati: 12,
+                grassi: 18,
+                tempo: '15 min',
+                porzioni: 1,
+                ingredienti: ['3 uova', 'verdure miste', 'formaggio', 'erbe aromatiche'],
+                preparazione: 'Sbatti uova, aggiungi verdure, cuoci in padella'
+              }
+            }
+          }
+        ]
+      };
+      
+      // Adatta il fallback al numero di giorni richiesto
+      const numDays = parseInt(formData.durata) || 3;
+      const adaptedPlan = {
+        days: fallbackPlan.days.slice(0, numDays).map((day, index) => ({
+          ...day,
+          day: `Giorno ${index + 1}`
+        }))
+      };
+      
+      setParsedPlan(adaptedPlan);
+      const completeDocument = generateCompleteDocument(adaptedPlan, formData);
+      setGeneratedPlan(completeDocument);
+      setShowPreview(true);
+      
+      setTimeout(() => {
+        document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } finally {
       setIsGenerating(false);
     }
