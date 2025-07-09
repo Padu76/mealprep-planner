@@ -84,22 +84,26 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
   const totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
 
-  // Genera lista spesa consolidata con calcolo totali
+  // Genera lista spesa consolidata con normalizzazione ingredienti
   const generateShoppingList = () => {
-    const ingredients: { [key: string]: { count: number; category: string; baseQuantity: string } } = {};
+    const ingredients: { [key: string]: { count: number; category: string; baseQuantity: string; originalNames: string[] } } = {};
     
     parsedPlan.days.forEach(dayData => {
       const dayMeals = getAllMealsInOrder(dayData.meals);
       dayMeals.forEach(({ meal }) => {
         meal.ingredienti.forEach(ingrediente => {
           const cleanIngredient = ingrediente.trim();
-          if (ingredients[cleanIngredient]) {
-            ingredients[cleanIngredient].count += 1;
+          const normalizedName = normalizeIngredientName(cleanIngredient);
+          
+          if (ingredients[normalizedName]) {
+            ingredients[normalizedName].count += 1;
+            ingredients[normalizedName].originalNames.push(cleanIngredient);
           } else {
-            ingredients[cleanIngredient] = { 
+            ingredients[normalizedName] = { 
               count: 1, 
               category: categorizeIngredient(cleanIngredient),
-              baseQuantity: extractQuantity(cleanIngredient)
+              baseQuantity: extractQuantity(cleanIngredient),
+              originalNames: [cleanIngredient]
             };
           }
         });
@@ -107,6 +111,49 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     });
 
     return ingredients;
+  };
+
+  // Normalizza nome ingrediente per raggruppamento
+  const normalizeIngredientName = (ingredient: string): string => {
+    const lower = ingredient.toLowerCase();
+    
+    // Normalizza uova
+    if (lower.includes('uovo') || lower.includes('uova')) {
+      return '1 uovo fresco biologico';
+    }
+    
+    // Normalizza aglio
+    if (lower.includes('aglio') || lower.includes('spicchio')) {
+      return '1/2 spicchio aglio';
+    }
+    
+    // Normalizza olio
+    if (lower.includes('olio') && lower.includes('extravergine')) {
+      return '1 cucchiaio olio extravergine';
+    }
+    
+    // Normalizza prezzemolo
+    if (lower.includes('prezzemolo')) {
+      return 'Prezzemolo fresco (3g)';
+    }
+    
+    // Normalizza sale e pepe
+    if (lower.includes('sale') && lower.includes('pepe')) {
+      return 'Sale e pepe q.b.';
+    }
+    
+    // Normalizza brodo
+    if (lower.includes('brodo')) {
+      return '200ml brodo vegetale';
+    }
+    
+    // Normalizza rosmarino
+    if (lower.includes('rosmarino')) {
+      return 'Rosmarino fresco';
+    }
+    
+    // Restituisce ingrediente originale se non normalizzato
+    return ingredient;
   };
 
   // Estrae quantità dall'ingrediente per calcolare totale
@@ -156,11 +203,11 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   };
 
   const shoppingList = generateShoppingList();
-  const categorizedShopping = Object.entries(shoppingList).reduce((acc, [ingredient, { count, category, baseQuantity }]) => {
+  const categorizedShopping = Object.entries(shoppingList).reduce((acc, [ingredient, { count, category, baseQuantity, originalNames }]) => {
     if (!acc[category]) acc[category] = [];
-    acc[category].push({ ingredient, count, baseQuantity });
+    acc[category].push({ ingredient, count, baseQuantity, originalNames });
     return acc;
-  }, {} as { [key: string]: Array<{ ingredient: string; count: number; baseQuantity: string }> });
+  }, {} as { [key: string]: Array<{ ingredient: string; count: number; baseQuantity: string; originalNames: string[] }> });
 
   // Get unique recipes
   const allRecipes = Array.from(new Set(
@@ -373,7 +420,7 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                 <div key={category} className="bg-gray-700 rounded-xl p-6">
                   <h4 className="text-lg font-bold text-white mb-4">{category}</h4>
                   <div className="space-y-3">
-                    {items.map(({ ingredient, count, baseQuantity }) => {
+                    {items.map(({ ingredient, count, baseQuantity, originalNames }) => {
                       const totalQuantity = calculateTotalQuantity(baseQuantity, count);
                       return (
                         <div key={ingredient} className="flex justify-between items-center text-gray-300 hover:text-white transition-colors">
@@ -382,6 +429,11 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                             {totalQuantity && (
                               <div className="text-green-400 text-sm font-semibold">
                                 Totale: {totalQuantity}
+                              </div>
+                            )}
+                            {originalNames && originalNames.length > 1 && (
+                              <div className="text-gray-500 text-xs">
+                                (Varianti: {originalNames.slice(0, 2).join(', ')}{originalNames.length > 2 ? '...' : ''})
                               </div>
                             )}
                           </div>
