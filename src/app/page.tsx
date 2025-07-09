@@ -329,7 +329,10 @@ export default function HomePage() {
         const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
         
         if (updatedPlan.days[dayIndex]) {
-          updatedPlan.days[dayIndex].meals[mealType as keyof typeof updatedPlan.days[dayIndex].meals] = result.newMeal;
+          // Fix sintassi TypeScript
+          const dayMeals = updatedPlan.days[dayIndex].meals;
+          (dayMeals as any)[mealType] = result.newMeal;
+          
           setParsedPlan(updatedPlan);
           
           // Rigenera il documento completo
