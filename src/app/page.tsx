@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Features from '../components/Features';
 import MealForm from '../components/MealForm';
 import MealPreview from '../components/MealPreview';
+import MealPlanComplete from '../components/MealPlanComplete';
 import AISubstituteModal from '../components/AiSubstituteModal';
 import { generateCompleteDocument } from '../utils/documentGenerator';
 import { useFormData } from '../hooks/useFormData';
@@ -15,6 +16,7 @@ export default function HomePage() {
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [parsedPlan, setParsedPlan] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [isReplacing, setIsReplacing] = useState<string | null>(null);
   
   // Stati per sostituzione ingredienti AI
@@ -336,13 +338,15 @@ export default function HomePage() {
 
   const confirmPlan = () => {
     setShowPreview(false);
+    setShowComplete(true);
     setTimeout(() => {
-      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('complete-section')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
 
   const handleGenerateNewPlan = () => {
     setShowPreview(false);
+    setShowComplete(false);
     setGeneratedPlan(null);
     setParsedPlan(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -493,8 +497,21 @@ export default function HomePage() {
         />
       )}
 
+      {/* MealPlanComplete Component */}
+      {showComplete && parsedPlan && (
+        <MealPlanComplete 
+          parsedPlan={parsedPlan}
+          formData={formData}
+          generatedPlan={generatedPlan}
+          handleReplacement={handleReplacement}
+          handleIngredientSubstitution={handleIngredientSubstitution}
+          isReplacing={isReplacing}
+          onGenerateNewPlan={handleGenerateNewPlan}
+        />
+      )}
+
       {/* Results Section - RIMANE INLINE */}
-      {!showPreview && generatedPlan && (
+      {!showPreview && !showComplete && generatedPlan && (
         <section id="results-section" className="max-w-4xl mx-auto px-4 py-20">
           <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
             🎉 La Tua Programmazione Pasti è Pronta!
@@ -606,7 +623,7 @@ export default function HomePage() {
       )}
       
       {/* FAQ Section - RIMANE INLINE */}
-      {!generatedPlan && (
+      {!generatedPlan && !showPreview && !showComplete && (
       <section className="bg-gray-800 py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
