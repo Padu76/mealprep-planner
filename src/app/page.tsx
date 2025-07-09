@@ -387,11 +387,33 @@ export default function HomePage() {
     setIsGenerating(true);
     
     try {
+      // 🤖 AI Learning: Genera prompt personalizzato
+      const aiLearning = (await import('../utils/aiLearningSystem')).AILearningSystem.getInstance();
+      const basePrompt = `Genera un piano meal prep personalizzato per ${formData.nome}`;
+      const enhancedPrompt = aiLearning.generatePersonalizedPrompt(
+        basePrompt, 
+        {
+          preferenceColazione: formData.preferenceColazione,
+          preferencePranzo: formData.preferencePranzo,
+          preferenceCena: formData.preferenceCena,
+          stileAlimentare: formData.stileAlimentare,
+          livelloElaborazione: formData.livelloElaborazione,
+          preferenzeCottura: formData.preferenzeCottura,
+          evitaRipetizioni: formData.evitaRipetizioni
+        },
+        formData.nome
+      );
+
+      console.log('🧠 AI Enhanced Prompt:', enhancedPrompt);
+      
       console.log('📡 Making API call...');
       const response = await fetch('/api/generate-meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          aiEnhancedPrompt: enhancedPrompt
+        })
       });
       
       console.log('📨 Response received:', response.status);
@@ -407,6 +429,31 @@ export default function HomePage() {
         setGeneratedPlan(completeDocument);
         setShowPreview(true);
         
+        // 🤖 AI Learning: Salva piano nello storico
+        await aiLearning.savePlanToHistory({
+          id: Date.now().toString(),
+          nome: formData.nome,
+          preferences: {
+            preferenceColazione: formData.preferenceColazione,
+            preferencePranzo: formData.preferencePranzo,
+            preferenceCena: formData.preferenceCena,
+            stileAlimentare: formData.stileAlimentare,
+            livelloElaborazione: formData.livelloElaborazione,
+            preferenzeCottura: formData.preferenzeCottura,
+            evitaRipetizioni: formData.evitaRipetizioni
+          },
+          generatedMeals: {
+            colazione: parsed.days.flatMap(day => day.meals.colazione ? [day.meals.colazione.nome] : []),
+            pranzo: parsed.days.flatMap(day => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
+            cena: parsed.days.flatMap(day => day.meals.cena ? [day.meals.cena.nome] : []),
+            spuntini: parsed.days.flatMap(day => [
+              ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
+              ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
+            ])
+          },
+          createdAt: new Date().toISOString()
+        });
+        
         // 💾 SALVA IN AIRTABLE
         try {
           console.log('💾 Saving to Airtable...');
@@ -417,7 +464,7 @@ export default function HomePage() {
               action: 'saveMealRequest',
               data: {
                 nome: formData.nome,
-                email: sessionStorage.getItem('userAuth') || '', // Aggiunge email se loggato
+                email: sessionStorage.getItem('userAuth') || '',
                 age: formData.eta,
                 weight: formData.peso,
                 height: formData.altezza,
@@ -431,6 +478,16 @@ export default function HomePage() {
                 exclusions: formData.allergie,
                 foods_at_home: formData.preferenze,
                 phone: '',
+                // Nuovi campi AI
+                ai_preferences: JSON.stringify({
+                  preferenceColazione: formData.preferenceColazione,
+                  preferencePranzo: formData.preferencePranzo,
+                  preferenceCena: formData.preferenceCena,
+                  stileAlimentare: formData.stileAlimentare,
+                  livelloElaborazione: formData.livelloElaborazione,
+                  preferenzeCottura: formData.preferenzeCottura,
+                  evitaRipetizioni: formData.evitaRipetizioni
+                })
               }
             })
           });
