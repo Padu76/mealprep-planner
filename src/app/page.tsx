@@ -321,15 +321,28 @@ export default function HomePage() {
       });
       
       const result = await response.json();
+      console.log('🔄 Replace meal result:', result);
       
-      if (result.success) {
-        setGeneratedPlan(result.updatedPlan);
-        const parsed = parsePlanFromAI(result.updatedPlan);
-        setParsedPlan(parsed);
+      if (result.success && result.newMeal) {
+        // Aggiorna il parsedPlan direttamente invece di rigenerarlo
+        const updatedPlan = { ...parsedPlan };
+        const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+        
+        if (updatedPlan.days[dayIndex]) {
+          updatedPlan.days[dayIndex].meals[mealType as keyof typeof updatedPlan.days[dayIndex].meals] = result.newMeal;
+          setParsedPlan(updatedPlan);
+          
+          // Rigenera il documento completo
+          const completeDocument = generateCompleteDocument(updatedPlan, formData);
+          setGeneratedPlan(completeDocument);
+          
+          console.log('✅ Meal replaced successfully:', result.newMeal.nome);
+        }
       } else {
-        alert('Errore nella sostituzione del pasto');
+        alert('Errore nella sostituzione del pasto: ' + (result.error || 'Errore sconosciuto'));
       }
     } catch (error) {
+      console.error('❌ Replace meal error:', error);
       alert('Errore di connessione per la sostituzione');
     } finally {
       setIsReplacing(null);
