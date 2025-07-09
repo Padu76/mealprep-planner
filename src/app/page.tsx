@@ -440,6 +440,32 @@ export default function HomePage() {
           if (airtableResponse.ok) {
             const airtableResult = await airtableResponse.json();
             console.log('✅ Airtable response:', airtableResult);
+            
+            // Salva il piano completo per le future visualizzazioni
+            if (airtableResult.recordId) {
+              try {
+                await fetch('/api/airtable', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'updateRequestStatus',
+                    data: {
+                      recordId: airtableResult.recordId,
+                      status: 'Piano generato',
+                      mealPlan: {
+                        generatedPlan: completeDocument,
+                        parsedPlan: parsed,
+                        formData: formData
+                      }
+                    }
+                  })
+                });
+                console.log('✅ Piano completo salvato in Airtable');
+              } catch (updateError) {
+                console.error('❌ Error updating plan:', updateError);
+              }
+            }
+            
             console.log('✅ Saved to Airtable successfully');
           } else {
             const errorText = await airtableResponse.text();
