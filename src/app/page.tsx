@@ -422,13 +422,15 @@ export default function HomePage() {
                 height: formData.altezza,
                 gender: formData.sesso,
                 activity_level: formData.attivita,
-                goal: formData.obiettivo,
+                goal: formData.obiettivo === 'perdita-peso' ? 'dimagrimento' : 
+                      formData.obiettivo === 'aumento-massa' ? 'aumento_massa' : 
+                      formData.obiettivo,
                 duration: formData.durata,
                 meals_per_day: formData.pasti,
                 exclusions: formData.allergie,
                 foods_at_home: formData.preferenze,
-                email: '', // Da implementare se necessario
-                phone: '', // Da implementare se necessario
+                email: '',
+                phone: '',
               }
             })
           });
