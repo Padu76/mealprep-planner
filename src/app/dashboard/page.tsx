@@ -18,7 +18,110 @@ export default function UserDashboard() {
   const [recentPlans, setRecentPlans] = useState<any[]>([]);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+
+  const viewPlan = (plan: any) => {
+    setSelectedPlan(plan);
+    setShowPlanModal(true);
+  };
+
+  const downloadPDF = (plan: any) => {
+    const planData = plan.mealPlan || {};
+    const completeDocument = planData.generatedPlan || `Piano per ${plan.nome}`;
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Preparazione Pasti - ${plan.nome}</title>
+          <style>
+            body { 
+              font-family: 'Georgia', serif; 
+              line-height: 1.6; 
+              color: #333; 
+              max-width: 800px; 
+              margin: 0 auto; 
+              padding: 20px; 
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              border-bottom: 3px solid #8FBC8F; 
+              padding-bottom: 20px; 
+            }
+            h1 { 
+              color: #2F4F4F; 
+              font-size: 28px; 
+              margin-bottom: 10px; 
+            }
+            h2 { 
+              color: #8FBC8F; 
+              font-size: 20px; 
+              margin-top: 25px; 
+              margin-bottom: 15px; 
+            }
+            .info-box { 
+              background: #f8f9fa; 
+              border-left: 4px solid #8FBC8F; 
+              padding: 15px; 
+              margin: 20px 0; 
+            }
+            .recipe-section { 
+              background: #fff; 
+              border: 1px solid #ddd; 
+              border-radius: 8px; 
+              padding: 20px; 
+              margin: 15px 0; 
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            }
+            .ingredient-list { 
+              background: #f8f9fa; 
+              padding: 15px; 
+              border-radius: 5px; 
+              margin: 10px 0; 
+            }
+            .footer { 
+              text-align: center; 
+              margin-top: 40px; 
+              padding-top: 20px; 
+              border-top: 2px solid #8FBC8F; 
+              color: #666; 
+            }
+            @media print {
+              body { margin: 0; padding: 10px; }
+              .header { page-break-after: avoid; }
+              .recipe-section { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>📋 Preparazione Pasti - Meal Prep Guide</h1>
+            <p><strong>Generato per:</strong> ${plan.nome} | <strong>Data:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
+            <div class="info-box">
+              <strong>Obiettivo:</strong> ${plan.goal || 'N/A'} | 
+              <strong>Durata:</strong> ${plan.duration || 'N/A'} giorni | 
+              <strong>Pasti:</strong> ${plan.meals_per_day || 'N/A'} al giorno
+            </div>
+          </div>
+          <div style="white-space: pre-wrap; font-size: 14px;">${completeDocument}</div>
+          <div class="footer">
+            <p><strong>Meal Prep Planner Pro</strong> - Il tuo assistente per una alimentazione sana</p>
+            <p>Generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
 
   // Controlla se già loggato
   useEffect(() => {
@@ -444,15 +547,26 @@ export default function UserDashboard() {
                     <p>⚖️ {plan.weight || plan.peso || 'N/A'} kg</p>
                   </div>
                   <div className="flex gap-2">
-                    <Link
-                      href="/"
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex-1 text-center"
+                    <button
+                      onClick={() => viewPlan(plan)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex-1"
                     >
-                      👁️ Ricrea
-                    </Link>
-                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                      👁️ Visualizza
+                    </button>
+                    <button 
+                      onClick={() => downloadPDF(plan)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                      title="Scarica PDF"
+                    >
                       📥
                     </button>
+                    <Link
+                      href="/"
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                      title="Ricrea piano"
+                    >
+                      🔄
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -536,6 +650,81 @@ export default function UserDashboard() {
           </section>
         )}
       </div>
+
+      {/* Plan View Modal */}
+      {showPlanModal && selectedPlan && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold" style={{color: '#8FBC8F'}}>
+                  📋 Piano per {selectedPlan.nome}
+                </h3>
+                <button
+                  onClick={() => setShowPlanModal(false)}
+                  className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="bg-gray-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Obiettivo:</span>
+                  <p className="font-semibold">{selectedPlan.goal || 'N/A'}</p>
+                </div>
+                <div className="bg-gray-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Durata:</span>
+                  <p className="font-semibold">{selectedPlan.duration || 'N/A'} giorni</p>
+                </div>
+                <div className="bg-gray-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Pasti:</span>
+                  <p className="font-semibold">{selectedPlan.meals_per_day || 'N/A'}/giorno</p>
+                </div>
+                <div className="bg-gray-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Creato:</span>
+                  <p className="font-semibold">{selectedPlan.created_at || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {selectedPlan.mealPlan?.generatedPlan ? (
+                <div className="bg-gray-700 rounded-lg p-6">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-300 font-mono">
+                    {selectedPlan.mealPlan.generatedPlan}
+                  </pre>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <p>Piano dettagliato non disponibile.</p>
+                  <p className="text-sm mt-2">Questo piano è stato creato prima dell'aggiornamento.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-700 flex gap-4">
+              <button
+                onClick={() => downloadPDF(selectedPlan)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                📥 Scarica PDF
+              </button>
+              <Link
+                href="/"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                🔄 Ricrea Piano
+              </Link>
+              <button
+                onClick={() => setShowPlanModal(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg transition-colors"
+              >
+                Chiudi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Weight Modal */}
       {showWeightModal && (
