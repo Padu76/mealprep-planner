@@ -84,9 +84,9 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
   const totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
 
-  // Genera lista spesa consolidata
+  // Genera lista spesa consolidata con calcolo totali
   const generateShoppingList = () => {
-    const ingredients: { [key: string]: { count: number; category: string } } = {};
+    const ingredients: { [key: string]: { count: number; category: string; baseQuantity: string } } = {};
     
     parsedPlan.days.forEach(dayData => {
       const dayMeals = getAllMealsInOrder(dayData.meals);
@@ -98,7 +98,8 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
           } else {
             ingredients[cleanIngredient] = { 
               count: 1, 
-              category: categorizeIngredient(cleanIngredient) 
+              category: categorizeIngredient(cleanIngredient),
+              baseQuantity: extractQuantity(cleanIngredient)
             };
           }
         });
@@ -106,6 +107,34 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     });
 
     return ingredients;
+  };
+
+  // Estrae quantità dall'ingrediente per calcolare totale
+  const extractQuantity = (ingredient: string) => {
+    const match = ingredient.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l|cucchiai|cucchiaini|fette|pz|pezzi)/i);
+    return match ? `${match[1]}${match[2]}` : '';
+  };
+
+  // Calcola quantità totale necessaria
+  const calculateTotalQuantity = (baseQuantity: string, multiplier: number) => {
+    if (!baseQuantity) return '';
+    
+    const match = baseQuantity.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l|cucchiai|cucchiaini|fette|pz|pezzi)/i);
+    if (!match) return '';
+    
+    const quantity = parseFloat(match[1]);
+    const unit = match[2];
+    const total = quantity * multiplier;
+    
+    // Converti in unità più grandi se necessario
+    if (unit.toLowerCase() === 'g' && total >= 1000) {
+      return `${(total / 1000).toFixed(1)}kg`;
+    }
+    if (unit.toLowerCase() === 'ml' && total >= 1000) {
+      return `${(total / 1000).toFixed(1)}l`;
+    }
+    
+    return `${total}${unit}`;
   };
 
   const categorizeIngredient = (ingredient: string): string => {
@@ -127,11 +156,11 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   };
 
   const shoppingList = generateShoppingList();
-  const categorizedShopping = Object.entries(shoppingList).reduce((acc, [ingredient, { count, category }]) => {
+  const categorizedShopping = Object.entries(shoppingList).reduce((acc, [ingredient, { count, category, baseQuantity }]) => {
     if (!acc[category]) acc[category] = [];
-    acc[category].push({ ingredient, count });
+    acc[category].push({ ingredient, count, baseQuantity });
     return acc;
-  }, {} as { [key: string]: Array<{ ingredient: string; count: number }> });
+  }, {} as { [key: string]: Array<{ ingredient: string; count: number; baseQuantity: string }> });
 
   // Get unique recipes
   const allRecipes = Array.from(new Set(
@@ -343,17 +372,27 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
               {Object.entries(categorizedShopping).map(([category, items]) => (
                 <div key={category} className="bg-gray-700 rounded-xl p-6">
                   <h4 className="text-lg font-bold text-white mb-4">{category}</h4>
-                  <div className="space-y-2">
-                    {items.map(({ ingredient, count }) => (
-                      <div key={ingredient} className="flex justify-between items-center text-gray-300 hover:text-white transition-colors">
-                        <span>• {ingredient}</span>
-                        {count > 1 && (
-                          <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs">
-                            {count}x
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {items.map(({ ingredient, count, baseQuantity }) => {
+                      const totalQuantity = calculateTotalQuantity(baseQuantity, count);
+                      return (
+                        <div key={ingredient} className="flex justify-between items-center text-gray-300 hover:text-white transition-colors">
+                          <div className="flex-1">
+                            <span>• {ingredient}</span>
+                            {totalQuantity && (
+                              <div className="text-green-400 text-sm font-semibold">
+                                Totale: {totalQuantity}
+                              </div>
+                            )}
+                          </div>
+                          {count > 1 && (
+                            <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold ml-2">
+                              {count}x
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -364,9 +403,10 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                 onClick={() => {
                   const shoppingText = Object.entries(categorizedShopping)
                     .map(([category, items]) => 
-                      `${category}\n${items.map(({ingredient, count}) => 
-                        `• ${ingredient}${count > 1 ? ` (${count}x)` : ''}`
-                      ).join('\n')}`
+                      `${category}\n${items.map(({ingredient, count, baseQuantity}) => {
+                        const totalQuantity = calculateTotalQuantity(baseQuantity, count);
+                        return `• ${ingredient}${count > 1 ? ` (${count}x)` : ''}${totalQuantity ? ` - Totale: ${totalQuantity}` : ''}`;
+                      }).join('\n')}`
                     ).join('\n\n');
                   
                   navigator.clipboard.writeText(`🛒 LISTA SPESA\n\n${shoppingText}`);
