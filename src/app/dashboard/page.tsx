@@ -71,11 +71,22 @@ export default function UserDashboard() {
         if (data.success && data.data) {
           console.log('✅ Loaded', data.data.length, 'records from Airtable');
           
-          // Filtra i piani per email utente
+          // Filtra i piani per email o nome utente
           const userPlans = data.data.filter((record: any) => {
-            console.log('🔍 Checking record:', record.nome, 'vs user:', userEmail);
-            return record.email === userEmail || 
-                   (record.nome && record.nome.toLowerCase().includes(userEmail.split('@')[0].toLowerCase()));
+            console.log('🔍 Checking record:', record.nome, 'email:', record.email, 'vs user:', userEmail);
+            
+            // 1. Match esatto per email
+            if (record.email === userEmail) return true;
+            
+            // 2. Match per nome utente nel profilo localStorage
+            if (userData?.nome && record.nome && 
+                record.nome.toLowerCase() === userData.nome.toLowerCase()) return true;
+            
+            // 3. Match parziale email vs nome (es: "andrea" da "andrea.padoan@gmail.com")
+            const emailName = userEmail.split('@')[0].toLowerCase();
+            if (record.nome && record.nome.toLowerCase().includes(emailName)) return true;
+            
+            return false;
           });
           
           console.log('👤 Found', userPlans.length, 'plans for user');
