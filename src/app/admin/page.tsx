@@ -14,18 +14,23 @@ export default function AdminDashboard() {
     paidUsers: 0,
     totalPlansGenerated: 0,
     conversionRate: 0,
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    todayRequests: 0,
+    completedRequests: 0,
+    processingRequests: 0
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState('');
 
   // Password per accesso dashboard
-  const ADMIN_PASSWORD = 'mealprep2024';
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'mealprep2024';
 
   // Controlla se già autenticato
   useEffect(() => {
     const authStatus = sessionStorage.getItem('dashboardAuth');
     if (authStatus === 'authenticated') {
       setIsAuthenticated(true);
-      loadBusinessData();
+      loadAirtableData();
     }
   }, []);
 
@@ -35,7 +40,7 @@ export default function AdminDashboard() {
       setIsAuthenticated(true);
       sessionStorage.setItem('dashboardAuth', 'authenticated');
       setLoginError('');
-      loadBusinessData();
+      loadAirtableData();
     } else {
       setLoginError('Password non corretta');
     }
@@ -47,46 +52,84 @@ export default function AdminDashboard() {
     setPassword('');
   };
 
-  const loadBusinessData = () => {
-    // Carica tutti i dati utenti dal localStorage
-    const allStoredUsers = [];
-    const globalStats = JSON.parse(localStorage.getItem('globalStats') || '{}');
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('user_')) {
-        try {
-          const userData = JSON.parse(localStorage.getItem(key) || '{}');
-          allStoredUsers.push(userData);
-        } catch (error) {
-          console.error('Errore parsing user data:', error);
-        }
+  const loadAirtableData = async () => {
+    setIsLoading(true);
+    try {
+      console.log('📊 Loading Airtable data...');
+      
+      // Carica richieste utenti
+      const usersResponse = await fetch('/api/airtable?action=getRequests');
+      const usersData = await usersResponse.json();
+      
+      // Carica metriche dashboard
+      const metricsResponse = await fetch('/api/airtable?action=getDashboardMetrics');
+      const metricsData = await metricsResponse.json();
+      
+      if (usersData.success && metricsData.success) {
+        console.log('✅ Airtable data loaded:', usersData.data.length, 'users');
+        setAllUsers(usersData.data);
+        
+        // Calcola statistiche business
+        const totalUsers = usersData.data.length;
+        const freeUsers = usersData.data.filter((u: any) => !u.planType || u.planType === 'free').length;
+        const paidUsers = usersData.data.filter((u: any) => u.planType === 'paid').length;
+        const conversionRate = totalUsers > 0 ? Math.round((paidUsers / totalUsers) * 100) : 0;
+        const monthlyRevenue = paidUsers * 9.99;
+        
+        setBusinessStats({
+          totalUsers,
+          freeUsers,
+          paidUsers,
+          totalPlansGenerated: metricsData.data.totalRequests || totalUsers,
+          conversionRate,
+          monthlyRevenue,
+          todayRequests: metricsData.data.todayRequests || 0,
+          completedRequests: metricsData.data.completedRequests || 0,
+          processingRequests: metricsData.data.processingRequests || 0
+        });
+        
+        setLastRefresh(new Date().toLocaleTimeString('it-IT'));
+      } else {
+        console.error('❌ Failed to load Airtable data');
+        alert('❌ Errore nel caricamento dati. Controlla la connessione Airtable.');
       }
+    } catch (error) {
+      console.error('❌ Error loading Airtable data:', error);
+      alert('❌ Errore di connessione con Airtable');
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Ordina per data (più recenti prima)
-    allStoredUsers.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    
-    setAllUsers(allStoredUsers);
-    calculateBusinessStats(allStoredUsers, globalStats);
   };
 
-  const calculateBusinessStats = (users: any[], globalStats: any = {}) => {
-    const totalUsers = users.length;
-    const freeUsers = users.filter(u => u.planType === 'free').length;
-    const paidUsers = users.filter(u => u.planType === 'paid').length;
-    const totalPlansGenerated = globalStats.totalPlansGenerated || users.length;
-    const conversionRate = totalUsers > 0 ? Math.round((paidUsers / totalUsers) * 100) : 0;
-    const monthlyRevenue = paidUsers * 9.99;
+  const testAirtableConnection = async () => {
+    try {
+      const response = await fetch('/api/airtable');
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('✅ Connessione Airtable attiva!\n\nRecords: ' + data.recordsCount);
+      } else {
+        alert('❌ Errore connessione: ' + data.error);
+      }
+    } catch (error) {
+      alert('❌ Errore di rete: ' + error);
+    }
+  };
+
+  const calculateLeadScore = (user: any) => {
+    let score = 0;
     
-    setBusinessStats({
-      totalUsers,
-      freeUsers,
-      paidUsers,
-      totalPlansGenerated,
-      conversionRate,
-      monthlyRevenue
-    });
+    // Punteggio basato su completezza dati
+    if (user.nome) score += 20;
+    if (user.age && user.age > 0) score += 15;
+    if (user.weight && user.weight > 0) score += 15;
+    if (user.height && user.height > 0) score += 10;
+    if (user.goal) score += 20;
+    if (user.activity_level) score += 10;
+    if (user.exclusions) score += 5;
+    if (user.foods_at_home) score += 5;
+    
+    return score;
   };
 
   // Login Form
@@ -155,47 +198,63 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">PRIVATE</span>
+            <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">LIVE</span>
           </div>
           
           <nav className="hidden md:flex gap-6">
-            <Link href="/" className="hover:text-green-400 transition-colors">Home Pubblica</Link>
-            <span className="text-green-400 font-semibold">Dashboard Admin</span>
+            <Link href="/" className="hover:text-green-400 transition-colors">Home</Link>
+            <button 
+              onClick={testAirtableConnection}
+              className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors"
+            >
+              🔗 Test Airtable
+            </button>
           </nav>
 
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
-          >
-            🔒 Logout
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={loadAirtableData}
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
+            >
+              {isLoading ? '⏳ Caricando...' : '🔄 Refresh'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              🔒 Logout
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <section className="text-center py-8 px-4" style={{background: 'linear-gradient(to right, #8FBC8F, #9ACD32)'}}>
         <h1 className="text-3xl md:text-4xl font-bold text-black mb-3">
-          📊 Admin CRM Dashboard
+          📊 CRM Dashboard (Live Data)
         </h1>
         <p className="text-lg text-gray-800 mb-4 max-w-2xl mx-auto">
-          Monitora utenti, conversioni e revenue del Meal Prep Planner
+          Dati in tempo reale da Airtable - Ultimo aggiornamento: {lastRefresh}
         </p>
         <div className="bg-black/20 rounded-lg px-6 py-2 inline-block">
           <span className="text-white font-semibold">
-            💰 Revenue Mensile: €{businessStats.monthlyRevenue.toFixed(2)}
+            💰 MRR: €{businessStats.monthlyRevenue.toFixed(2)} | 
+            📈 Conversioni: {businessStats.conversionRate}% | 
+            👥 Utenti: {businessStats.totalUsers}
           </span>
         </div>
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Business Stats */}
-        <section className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        {/* Real-time Stats */}
+        <section className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Utenti Totali</p>
+                <p className="text-blue-100 text-sm font-medium">Utenti Registrati</p>
                 <p className="text-3xl font-bold">{businessStats.totalUsers}</p>
-                <p className="text-blue-200 text-xs">Registrati oggi: +3</p>
+                <p className="text-blue-200 text-xs">Oggi: +{businessStats.todayRequests}</p>
               </div>
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                 👥
@@ -206,12 +265,12 @@ export default function AdminDashboard() {
           <div className="bg-gradient-to-br from-green-500 to-emerald-700 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Utenti Free</p>
-                <p className="text-3xl font-bold">{businessStats.freeUsers}</p>
-                <p className="text-green-200 text-xs">Conversioni potenziali</p>
+                <p className="text-green-100 text-sm font-medium">Piani Completati</p>
+                <p className="text-3xl font-bold">{businessStats.completedRequests}</p>
+                <p className="text-green-200 text-xs">In elaborazione: {businessStats.processingRequests}</p>
               </div>
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                🆓
+                ✅
               </div>
             </div>
           </div>
@@ -229,131 +288,127 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-sm font-medium">Piani Generati</p>
-                <p className="text-3xl font-bold">{businessStats.totalPlansGenerated}</p>
-                <p className="text-orange-200 text-xs">Utilizzo piattaforma</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                📋
-              </div>
-            </div>
-          </div>
-
           <div className="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-yellow-100 text-sm font-medium">Revenue Mensile</p>
                 <p className="text-3xl font-bold">€{businessStats.monthlyRevenue.toFixed(0)}</p>
-                <p className="text-yellow-200 text-xs">MRR (Monthly Recurring Revenue)</p>
+                <p className="text-yellow-200 text-xs">MRR - Ricorrente</p>
               </div>
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                 💰
               </div>
             </div>
           </div>
-
-          <div className="bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl p-6 text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-pink-100 text-sm font-medium">Tasso Conversione</p>
-                <p className="text-3xl font-bold">{businessStats.conversionRate}%</p>
-                <p className="text-pink-200 text-xs">Free → Premium</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                📈
-              </div>
-            </div>
-          </div>
         </section>
 
-        {/* Users Table */}
+        {/* Users Table from Airtable */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
-            👥 Database Utenti (Leads)
-          </h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold" style={{color: '#8FBC8F'}}>
+              👥 Database Utenti (Airtable Live)
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">
+                {allUsers.length} records caricati
+              </span>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
           <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-700">
                   <tr>
                     <th className="text-left py-4 px-6 text-green-400 font-semibold">Nome</th>
-                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Dati</th>
+                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Dati Fisici</th>
                     <th className="text-left py-4 px-6 text-green-400 font-semibold">Obiettivo</th>
-                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Piano</th>
-                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Utilizzo</th>
-                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Potenziale</th>
+                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Status</th>
+                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Calorie</th>
+                    <th className="text-left py-4 px-6 text-green-400 font-semibold">Lead Score</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {allUsers.length > 0 ? allUsers.map((user, index) => (
-                    <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
-                      <td className="py-4 px-6">
-                        <div>
-                          <p className="font-semibold">{user.nome || 'N/A'}</p>
-                          <p className="text-gray-400 text-sm">
-                            {user.eta ? `${user.eta} anni` : 'N/A'} | 
-                            Score: {user.leadScore || 'N/A'}
+                  {allUsers.length > 0 ? allUsers.map((user, index) => {
+                    const leadScore = calculateLeadScore(user);
+                    return (
+                      <tr key={index} className="border-b border-gray-700 hover:bg-gray-700/50">
+                        <td className="py-4 px-6">
+                          <div>
+                            <p className="font-semibold">{user.nome || 'N/A'}</p>
+                            <p className="text-gray-400 text-sm">
+                              {user.age ? `${user.age} anni` : 'N/A'} | 
+                              {user.gender === 'maschio' ? ' ♂️' : user.gender === 'femmina' ? ' ♀️' : ' N/A'}
+                            </p>
+                            <p className="text-xs text-gray-500">{user.created_at || 'N/A'}</p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-gray-300">
+                          <div className="text-sm">
+                            <p>{user.weight ? `${user.weight}kg` : 'N/A'} / {user.height ? `${user.height}cm` : 'N/A'}</p>
+                            <p className="text-xs text-gray-500">
+                              BMR: {user.bmr || 'N/A'} | {user.activity_level || 'N/A'}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            user.goal?.includes('perdita') || user.goal?.includes('dimagrimento') ? 'bg-red-600 text-white' :
+                            user.goal?.includes('massa') || user.goal?.includes('aumento') ? 'bg-blue-600 text-white' :
+                            'bg-green-600 text-white'
+                          }`}>
+                            {user.goal || 'N/A'}
+                          </span>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {user.duration ? `${user.duration} giorni` : 'N/A'} | 
+                            {user.meals_per_day ? ` ${user.meals_per_day} pasti` : ' N/A'}
                           </p>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 text-gray-300">
-                        <div className="text-sm">
-                          <p>{user.sesso || 'N/A'}</p>
-                          <p>{user.peso ? `${user.peso}kg` : 'N/A'} / {user.altezza ? `${user.altezza}cm` : 'N/A'}</p>
-                          <p className="text-xs text-gray-500">{user.createdAt || 'N/A'}</p>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          user.obiettivo === 'perdita-peso' ? 'bg-red-600 text-white' :
-                          user.obiettivo === 'aumento-massa' ? 'bg-blue-600 text-white' :
-                          'bg-green-600 text-white'
-                        }`}>
-                          {user.obiettivo || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          user.planType === 'paid' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-white'
-                        }`}>
-                          {user.planType === 'paid' ? '💎 Premium' : '🆓 Free'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="text-sm">
-                          <p>{user.plansUsed || 1} piani</p>
-                          <p className="text-gray-500">
-                            {user.planDetails ? `${user.planDetails.durata} gg` : 'N/A'}
+                        </td>
+                        <td className="py-4 px-6">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            user.status === 'Piano generato' ? 'bg-green-600 text-white' :
+                            user.status === 'Elaborazione' ? 'bg-yellow-600 text-white' :
+                            'bg-gray-600 text-white'
+                          }`}>
+                            {user.status || 'In attesa'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-gray-300">
+                          <div className="text-sm">
+                            <p className="font-semibold">{user.calories || 'N/A'} kcal</p>
+                            <p className="text-xs text-gray-500">
+                              Target giornaliero
+                            </p>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-700 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  leadScore >= 80 ? 'bg-red-500' :
+                                  leadScore >= 60 ? 'bg-yellow-500' :
+                                  leadScore >= 40 ? 'bg-blue-500' :
+                                  'bg-gray-500'
+                                }`}
+                                style={{width: `${leadScore}%`}}
+                              ></div>
+                            </div>
+                            <span className="text-xs font-bold">{leadScore}%</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {leadScore >= 80 ? '🔥 HOT' :
+                             leadScore >= 60 ? '🎯 WARM' :
+                             leadScore >= 40 ? '🌱 COLD' : '❄️ ICE'}
                           </p>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        {user.leadScore >= 80 ? (
-                          <span className="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            🔥 SUPER HOT
-                          </span>
-                        ) : user.leadScore >= 60 ? (
-                          <span className="bg-yellow-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            🎯 HOT LEAD
-                          </span>
-                        ) : user.planType === 'paid' ? (
-                          <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            💰 CLIENTE
-                          </span>
-                        ) : (
-                          <span className="bg-gray-600 text-white px-2 py-1 rounded-full text-xs font-bold">
-                            🌱 NUOVO
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  )) : (
+                        </td>
+                      </tr>
+                    );
+                  }) : (
                     <tr>
                       <td colSpan={6} className="py-8 px-6 text-center text-gray-400">
-                        Nessun utente registrato ancora
+                        {isLoading ? '⏳ Caricamento dati da Airtable...' : 'Nessun utente trovato in Airtable'}
                       </td>
                     </tr>
                   )}
@@ -366,77 +421,46 @@ export default function AdminDashboard() {
         {/* Business Actions */}
         <section className="mb-12">
           <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
-            🚀 Azioni Business
+            🚀 Azioni CRM
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  📧
+                  📊
                 </div>
-                <h3 className="text-lg font-bold mb-2">Email Marketing</h3>
-                <p className="text-gray-400 text-sm">Campagne ai leads</p>
+                <h3 className="text-lg font-bold mb-2">Export Dati</h3>
+                <p className="text-gray-400 text-sm">Esporta leads CSV</p>
               </div>
             </div>
 
             <div className="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  💳
+                  📧
                 </div>
-                <h3 className="text-lg font-bold mb-2">Setup Pagamenti</h3>
-                <p className="text-gray-400 text-sm">Stripe/PayPal</p>
+                <h3 className="text-lg font-bold mb-2">Email Campaign</h3>
+                <p className="text-gray-400 text-sm">Nurturing leads</p>
               </div>
             </div>
 
             <div className="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  📊
+                  🎯
                 </div>
-                <h3 className="text-lg font-bold mb-2">Analytics</h3>
-                <p className="text-gray-400 text-sm">Report dettagliati</p>
+                <h3 className="text-lg font-bold mb-2">Segmentazione</h3>
+                <p className="text-gray-400 text-sm">Targeting mirato</p>
               </div>
             </div>
 
             <div className="bg-gray-800 hover:bg-gray-700 rounded-xl p-6 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="w-16 h-16 bg-yellow-600 rounded-lg flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  🎯
+                  💰
                 </div>
-                <h3 className="text-lg font-bold mb-2">Retargeting</h3>
-                <p className="text-gray-400 text-sm">Riattiva utenti</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Revenue Projection */}
-        <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
-            📈 Proiezioni Revenue
-          </h2>
-          <div className="bg-gray-800 rounded-xl p-8 shadow-2xl">
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-4xl mb-2">🎯</div>
-                <h3 className="text-xl font-bold mb-2">Obiettivo 30 giorni</h3>
-                <p className="text-2xl font-bold text-green-400">€500</p>
-                <p className="text-gray-400">50 utenti premium</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-4xl mb-2">🚀</div>
-                <h3 className="text-xl font-bold mb-2">Obiettivo 90 giorni</h3>
-                <p className="text-2xl font-bold text-blue-400">€2,000</p>
-                <p className="text-gray-400">200 utenti premium</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-4xl mb-2">💎</div>
-                <h3 className="text-xl font-bold mb-2">Obiettivo 1 anno</h3>
-                <p className="text-2xl font-bold text-purple-400">€10,000</p>
-                <p className="text-gray-400">1000 utenti premium</p>
+                <h3 className="text-lg font-bold mb-2">Setup Pagamenti</h3>
+                <p className="text-gray-400 text-sm">Stripe integration</p>
               </div>
             </div>
           </div>
@@ -448,10 +472,10 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
-            <h3 className="text-xl font-bold">Admin Dashboard</h3>
+            <h3 className="text-xl font-bold">Admin CRM Dashboard</h3>
           </div>
           <p className="text-gray-400 text-sm">
-            🔒 Area riservata - Dati business confidenziali
+            🔒 Dati live da Airtable - Aggiornamento automatico
           </p>
         </div>
       </footer>
