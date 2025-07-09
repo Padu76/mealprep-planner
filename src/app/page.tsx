@@ -417,6 +417,7 @@ export default function HomePage() {
               action: 'saveMealRequest',
               data: {
                 nome: formData.nome,
+                email: sessionStorage.getItem('userAuth') || '', // Aggiunge email se loggato
                 age: formData.eta,
                 weight: formData.peso,
                 height: formData.altezza,
@@ -429,7 +430,6 @@ export default function HomePage() {
                 meals_per_day: formData.pasti,
                 exclusions: formData.allergie,
                 foods_at_home: formData.preferenze,
-                email: '',
                 phone: '',
               }
             })
