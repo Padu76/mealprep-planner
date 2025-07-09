@@ -410,7 +410,7 @@ export default function HomePage() {
         // 💾 SALVA IN AIRTABLE
         try {
           console.log('💾 Saving to Airtable...');
-          await fetch('/api/airtable', {
+          const airtableResponse = await fetch('/api/airtable', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -432,10 +432,21 @@ export default function HomePage() {
               }
             })
           });
-          console.log('✅ Saved to Airtable successfully');
+          
+          console.log('📊 Airtable response status:', airtableResponse.status);
+          
+          if (airtableResponse.ok) {
+            const airtableResult = await airtableResponse.json();
+            console.log('✅ Airtable response:', airtableResult);
+            console.log('✅ Saved to Airtable successfully');
+          } else {
+            const errorText = await airtableResponse.text();
+            console.error('❌ Airtable API error:', airtableResponse.status, errorText);
+            alert('⚠️ Piano generato ma errore nel salvataggio. Verifica la connessione.');
+          }
         } catch (airtableError) {
           console.error('❌ Airtable save error:', airtableError);
-          // Non bloccare l'utente per errori di salvataggio
+          alert('⚠️ Piano generato ma errore nel salvataggio Airtable.');
         }
         
         setTimeout(() => {
