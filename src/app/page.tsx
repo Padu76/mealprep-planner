@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from './components/header';
-import Features from './components/Features';
-import MealForm from './components/MealForm';
-import MealPreview from './components/MealPreview';
-import AISubstituteModal from './components/AiSubstituteModal';
-import { generateCompleteDocument } from './utils/documentGenerator';
-import { useFormData } from './hooks/useFormData';
+import Features from '../components/Features';
+import MealForm from '../components/MealForm';
+import MealPreview from '../components/MealPreview';
+import MealPlanComplete from '../components/MealPlanComplete';
+import AISubstituteModal from '../components/AiSubstituteModal';
+import { generateCompleteDocument } from '../utils/documentGenerator';
+import { useFormData } from '../hooks/useFormData';
 
 export default function HomePage() {
   const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [generatedPlan, setGeneratedPlan] = useState<any>(null);
   const [parsedPlan, setParsedPlan] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [isReplacing, setIsReplacing] = useState<string | null>(null);
   
   // Stati per sostituzione ingredienti AI
@@ -102,8 +104,10 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // 🎯 FUNZIONE AGGIORNATA CON LOGICA SPUNTINI
+  // 🎯 FUNZIONE AGGIORNATA CON LOGICA SPUNTINI - FIX CALORIE
   const parsePlanFromAI = (aiResponse: string) => {
+    console.log('🔧 Parsing AI response...');
+    
     // Dati base sempre presenti
     const baseMeals = {
       colazione: {
@@ -112,6 +116,8 @@ export default function HomePage() {
         proteine: 32,
         carboidrati: 87,
         grassi: 18,
+        tempo: "15 min",
+        porzioni: 1,
         ingredienti: [
           "2 fette pane integrale (60g)",
           "1/2 avocado maturo (80g)",
@@ -129,6 +135,8 @@ export default function HomePage() {
         proteine: 66,
         carboidrati: 100,
         grassi: 25,
+        tempo: "30 min",
+        porzioni: 1,
         ingredienti: [
           "75g pasta corta",
           "100g fagioli borlotti lessati",
@@ -149,6 +157,8 @@ export default function HomePage() {
         proteine: 66,
         carboidrati: 66,
         grassi: 25,
+        tempo: "25 min",
+        porzioni: 1,
         ingredienti: [
           "120g controfiletto di manzo",
           "60g funghi porcini freschi",
@@ -171,6 +181,8 @@ export default function HomePage() {
         proteine: 15,
         carboidrati: 20,
         grassi: 3,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "150g yogurt greco 0%",
           "80g frutti di bosco misti",
@@ -185,6 +197,8 @@ export default function HomePage() {
         proteine: 12,
         carboidrati: 18,
         grassi: 4,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "1/2 banana (60g)",
           "50g spinaci freschi",
@@ -200,6 +214,8 @@ export default function HomePage() {
         proteine: 8,
         carboidrati: 15,
         grassi: 6,
+        tempo: "5 min",
+        porzioni: 1,
         ingredienti: [
           "60g hummus di ceci",
           "80g carote baby",
@@ -213,6 +229,7 @@ export default function HomePage() {
 
     // Determina quali pasti includere basandoti sul numero di pasti
     const numPasti = parseInt(formData.pasti) || 3;
+    console.log('🍽️ Numero pasti:', numPasti);
     
     const createDayMeals = () => {
       const meals: any = {
@@ -267,7 +284,9 @@ export default function HomePage() {
       }
     }
 
-    return { ...mockPlan, days: allDays };
+    const finalPlan = { ...mockPlan, days: allDays };
+    console.log('✅ Plan parsed successfully:', finalPlan);
+    return finalPlan;
   };
 
   // Test connessione API all'avvio
@@ -288,9 +307,11 @@ export default function HomePage() {
   }, []);
 
   const handleReplacement = async (mealType: string, dayNumber: string) => {
+    console.log('🔄 REPLACEMENT STARTED:', { mealType, dayNumber }); // DEBUG
     setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
+      console.log('📡 Calling replace-meal API...'); // DEBUG
       const response = await fetch('/api/replace-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -302,50 +323,106 @@ export default function HomePage() {
         })
       });
       
+      console.log('📨 API Response status:', response.status); // DEBUG
       const result = await response.json();
+      console.log('🔄 Replace meal result:', result); // DEBUG
       
-      if (result.success) {
-        setGeneratedPlan(result.updatedPlan);
-        const parsed = parsePlanFromAI(result.updatedPlan);
-        setParsedPlan(parsed);
+      if (result.success && result.newMeal) {
+        console.log('✅ Processing successful result...'); // DEBUG
+        
+        // Aggiorna il parsedPlan direttamente invece di rigenerarlo
+        const updatedPlan = { ...parsedPlan };
+        const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+        
+        console.log('📅 Day index:', dayIndex); // DEBUG
+        
+        if (updatedPlan.days[dayIndex]) {
+          // Fix sintassi TypeScript
+          const dayMeals = updatedPlan.days[dayIndex].meals;
+          (dayMeals as any)[mealType] = result.newMeal;
+          
+          console.log('🔄 Updating parsed plan...'); // DEBUG
+          setParsedPlan(updatedPlan);
+          
+          // Rigenera il documento completo
+          const completeDocument = generateCompleteDocument(updatedPlan, formData);
+          setGeneratedPlan(completeDocument);
+          
+          console.log('✅ Meal replaced successfully:', result.newMeal.nome);
+        } else {
+          console.log('❌ Day not found:', dayIndex); // DEBUG
+        }
       } else {
-        alert('Errore nella sostituzione del pasto');
+        console.log('❌ API returned error:', result); // DEBUG
+        alert('Errore nella sostituzione del pasto: ' + (result.error || 'Errore sconosciuto'));
       }
     } catch (error) {
+      console.error('❌ Replace meal error:', error);
       alert('Errore di connessione per la sostituzione');
     } finally {
+      console.log('🏁 Replacement finished'); // DEBUG
       setIsReplacing(null);
     }
   };
 
   const confirmPlan = () => {
     setShowPreview(false);
+    setShowComplete(true);
     setTimeout(() => {
-      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('complete-section')?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
 
   const handleGenerateNewPlan = () => {
     setShowPreview(false);
+    setShowComplete(false);
     setGeneratedPlan(null);
     setParsedPlan(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 FORM SUBMIT STARTED');
+    console.log('📝 Form Data:', formData);
     e.preventDefault();
     setIsGenerating(true);
     
     try {
+      // 🤖 AI Learning: Genera prompt personalizzato
+      const aiLearning = (await import('../utils/aiLearningSystem')).AILearningSystem.getInstance();
+      const basePrompt = `Genera un piano meal prep personalizzato per ${formData.nome}`;
+      const enhancedPrompt = aiLearning.generatePersonalizedPrompt(
+        basePrompt, 
+        {
+          preferenceColazione: formData.preferenceColazione,
+          preferencePranzo: formData.preferencePranzo,
+          preferenceCena: formData.preferenceCena,
+          stileAlimentare: formData.stileAlimentare,
+          livelloElaborazione: formData.livelloElaborazione,
+          preferenzeCottura: formData.preferenzeCottura,
+          evitaRipetizioni: formData.evitaRipetizioni
+        },
+        formData.nome
+      );
+
+      console.log('🧠 AI Enhanced Prompt:', enhancedPrompt);
+      
+      console.log('📡 Making API call...');
       const response = await fetch('/api/generate-meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          aiEnhancedPrompt: enhancedPrompt
+        })
       });
       
+      console.log('📨 Response received:', response.status);
       const result = await response.json();
+      console.log('📋 Result:', result);
       
       if (result.success) {
+        console.log('✅ Success! Parsing plan...');
         const parsed = parsePlanFromAI(result.piano);
         setParsedPlan(parsed);
         
@@ -353,13 +430,120 @@ export default function HomePage() {
         setGeneratedPlan(completeDocument);
         setShowPreview(true);
         
+        // 🤖 AI Learning: Salva piano nello storico
+        await aiLearning.savePlanToHistory({
+          id: Date.now().toString(),
+          nome: formData.nome,
+          preferences: {
+            preferenceColazione: formData.preferenceColazione,
+            preferencePranzo: formData.preferencePranzo,
+            preferenceCena: formData.preferenceCena,
+            stileAlimentare: formData.stileAlimentare,
+            livelloElaborazione: formData.livelloElaborazione,
+            preferenzeCottura: formData.preferenzeCottura,
+            evitaRipetizioni: formData.evitaRipetizioni
+          },
+          generatedMeals: {
+            colazione: parsed.days.flatMap(day => day.meals.colazione ? [day.meals.colazione.nome] : []),
+            pranzo: parsed.days.flatMap(day => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
+            cena: parsed.days.flatMap(day => day.meals.cena ? [day.meals.cena.nome] : []),
+            spuntini: parsed.days.flatMap(day => [
+              ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
+              ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
+            ])
+          },
+          createdAt: new Date().toISOString()
+        });
+        
+        // 💾 SALVA IN AIRTABLE
+        try {
+          console.log('💾 Saving to Airtable...');
+          const airtableResponse = await fetch('/api/airtable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'saveMealRequest',
+              data: {
+                nome: formData.nome,
+                email: sessionStorage.getItem('userAuth') || '',
+                age: formData.eta,
+                weight: formData.peso,
+                height: formData.altezza,
+                gender: formData.sesso,
+                activity_level: formData.attivita,
+                goal: formData.obiettivo === 'perdita-peso' ? 'dimagrimento' : 
+                      formData.obiettivo === 'aumento-massa' ? 'aumento_massa' : 
+                      formData.obiettivo,
+                duration: formData.durata,
+                meals_per_day: formData.pasti,
+                exclusions: formData.allergie,
+                foods_at_home: formData.preferenze,
+                phone: '',
+                // Nuovi campi AI
+                ai_preferences: JSON.stringify({
+                  preferenceColazione: formData.preferenceColazione,
+                  preferencePranzo: formData.preferencePranzo,
+                  preferenceCena: formData.preferenceCena,
+                  stileAlimentare: formData.stileAlimentare,
+                  livelloElaborazione: formData.livelloElaborazione,
+                  preferenzeCottura: formData.preferenzeCottura,
+                  evitaRipetizioni: formData.evitaRipetizioni
+                })
+              }
+            })
+          });
+          
+          console.log('📊 Airtable response status:', airtableResponse.status);
+          
+          if (airtableResponse.ok) {
+            const airtableResult = await airtableResponse.json();
+            console.log('✅ Airtable response:', airtableResult);
+            
+            // Salva il piano completo per le future visualizzazioni
+            if (airtableResult.recordId) {
+              try {
+                await fetch('/api/airtable', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'updateRequestStatus',
+                    data: {
+                      recordId: airtableResult.recordId,
+                      status: 'Piano generato',
+                      mealPlan: {
+                        generatedPlan: completeDocument,
+                        parsedPlan: parsed,
+                        formData: formData
+                      }
+                    }
+                  })
+                });
+                console.log('✅ Piano completo salvato in Airtable');
+              } catch (updateError) {
+                console.error('❌ Error updating plan:', updateError);
+              }
+            }
+            
+            console.log('✅ Saved to Airtable successfully');
+          } else {
+            const errorText = await airtableResponse.text();
+            console.error('❌ Airtable API error:', airtableResponse.status, errorText);
+            alert('⚠️ Piano generato ma errore nel salvataggio. Verifica la connessione.');
+          }
+        } catch (airtableError) {
+          console.error('❌ Airtable save error:', airtableError);
+          alert('⚠️ Piano generato ma errore nel salvataggio Airtable.');
+        }
+        
         setTimeout(() => {
           document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       } else {
+        console.log('❌ API returned error:', result.error);
         alert(`❌ Errore: ${result.error}\n\nDettagli: ${result.details || 'Nessun dettaglio disponibile'}`);
       }
     } catch (error) {
+      console.log('💥 Catch error:', error);
       alert('❌ Errore di connessione. Riprova più tardi.');
     } finally {
       setIsGenerating(false);
@@ -457,8 +641,21 @@ export default function HomePage() {
         />
       )}
 
+      {/* MealPlanComplete Component */}
+      {showComplete && parsedPlan && (
+        <MealPlanComplete 
+          parsedPlan={parsedPlan}
+          formData={formData}
+          generatedPlan={generatedPlan}
+          handleReplacement={handleReplacement}
+          handleIngredientSubstitution={handleIngredientSubstitution}
+          isReplacing={isReplacing}
+          onGenerateNewPlan={handleGenerateNewPlan}
+        />
+      )}
+
       {/* Results Section */}
-      {!showPreview && generatedPlan && (
+      {!showPreview && !showComplete && generatedPlan && (
         <section id="results-section" className="max-w-4xl mx-auto px-4 py-20">
           <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
             🎉 La Tua Programmazione Pasti è Pronta!
@@ -570,7 +767,7 @@ export default function HomePage() {
       )}
       
       {/* FAQ Section */}
-      {!generatedPlan && (
+      {!generatedPlan && !showPreview && !showComplete && (
       <section className="bg-gray-800 py-20">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
