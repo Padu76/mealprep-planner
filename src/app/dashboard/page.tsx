@@ -18,6 +18,7 @@ export default function UserDashboard() {
   const [recentPlans, setRecentPlans] = useState<any[]>([]);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
 
