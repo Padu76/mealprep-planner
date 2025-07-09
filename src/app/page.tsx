@@ -104,7 +104,7 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // 🎯 FUNZIONE AGGIORNATA - USA DATABASE RICETTE
+  // 🎯 FUNZIONE PRINCIPALE - USA DATABASE RICETTE
   const parsePlanFromAI = async (aiResponse: string) => {
     console.log('🔧 Parsing AI response with Recipe Database...');
     
@@ -436,34 +436,16 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 🚀 FUNZIONE PRINCIPALE - SENZA CHIAMATE API ESTERNE
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 FORM SUBMIT STARTED (with recipe database integration)');
+    console.log('🚀 FORM SUBMIT STARTED (Direct Database Mode)');
     console.log('📝 Form Data:', formData);
     e.preventDefault();
     setIsGenerating(true);
     
     try {
-      // 🤖 AI Learning: Genera prompt personalizzato
-      const aiLearning = (await import('../utils/aiLearningSystem')).AILearningSystem.getInstance();
-      const basePrompt = `Genera un piano meal prep personalizzato per ${formData.nome}`;
-      const enhancedPrompt = aiLearning.generatePersonalizedPrompt(
-        basePrompt, 
-        {
-          preferenceColazione: formData.preferenceColazione,
-          preferencePranzo: formData.preferencePranzo,
-          preferenceCena: formData.preferenceCena,
-          stileAlimentare: formData.stileAlimentare,
-          livelloElaborazione: formData.livelloElaborazione,
-          preferenzeCottura: formData.preferenzeCottura,
-          evitaRipetizioni: formData.evitaRipetizioni
-        },
-        formData.nome
-      );
-
-      console.log('🧠 AI Enhanced Prompt:', enhancedPrompt);
-      
-      // ⚡ NUOVO: Genera direttamente usando il database ricette
-      console.log('🔄 Generating meal plan using recipe database...');
+      // 🚀 NUOVO: Genera direttamente usando il database ricette (SENZA API)
+      console.log('🔄 Generating meal plan using recipe database (Direct Mode)...');
       const parsed = await parsePlanFromAI('direct_database_generation');
       setParsedPlan(parsed);
       
@@ -472,31 +454,36 @@ export default function HomePage() {
       setShowPreview(true);
       
       // 🤖 AI Learning: Salva piano nello storico
-      await aiLearning.savePlanToHistory({
-        id: Date.now().toString(),
-        nome: formData.nome,
-        preferences: {
-          preferenceColazione: formData.preferenceColazione,
-          preferencePranzo: formData.preferencePranzo,
-          preferenceCena: formData.preferenceCena,
-          stileAlimentare: formData.stileAlimentare,
-          livelloElaborazione: formData.livelloElaborazione,
-          preferenzeCottura: formData.preferenzeCottura,
-          evitaRipetizioni: formData.evitaRipetizioni
-        },
-        generatedMeals: {
-          colazione: parsed.days.flatMap((day: any) => day.meals.colazione ? [day.meals.colazione.nome] : []),
-          pranzo: parsed.days.flatMap((day: any) => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
-          cena: parsed.days.flatMap((day: any) => day.meals.cena ? [day.meals.cena.nome] : []),
-          spuntini: parsed.days.flatMap((day: any) => [
-            ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
-            ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
-          ])
-        },
-        createdAt: new Date().toISOString()
-      });
+      try {
+        const aiLearning = (await import('../utils/aiLearningSystem')).AILearningSystem.getInstance();
+        await aiLearning.savePlanToHistory({
+          id: Date.now().toString(),
+          nome: formData.nome,
+          preferences: {
+            preferenceColazione: formData.preferenceColazione,
+            preferencePranzo: formData.preferencePranzo,
+            preferenceCena: formData.preferenceCena,
+            stileAlimentare: formData.stileAlimentare,
+            livelloElaborazione: formData.livelloElaborazione,
+            preferenzeCottura: formData.preferenzeCottura,
+            evitaRipetizioni: formData.evitaRipetizioni
+          },
+          generatedMeals: {
+            colazione: parsed.days.flatMap((day: any) => day.meals.colazione ? [day.meals.colazione.nome] : []),
+            pranzo: parsed.days.flatMap((day: any) => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
+            cena: parsed.days.flatMap((day: any) => day.meals.cena ? [day.meals.cena.nome] : []),
+            spuntini: parsed.days.flatMap((day: any) => [
+              ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
+              ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
+            ])
+          },
+          createdAt: new Date().toISOString()
+        });
+      } catch (aiError) {
+        console.log('⚠️ AI Learning error (non-blocking):', aiError);
+      }
       
-      // 💾 SALVA IN AIRTABLE
+      // 💾 SALVA IN AIRTABLE (opzionale)
       try {
         console.log('💾 Saving to Airtable...');
         const airtableResponse = await fetch('/api/airtable', {
@@ -517,8 +504,8 @@ export default function HomePage() {
                     formData.obiettivo,
               duration: formData.durata,
               meals_per_day: formData.pasti,
-              exclusions: formData.allergie,
-              foods_at_home: formData.preferenze,
+              exclusions: formData.allergie || [],
+              foods_at_home: formData.preferenze || [],
               phone: '',
               ai_preferences: JSON.stringify({
                 preferenceColazione: formData.preferenceColazione,
@@ -559,16 +546,37 @@ export default function HomePage() {
           }
         }
       } catch (airtableError) {
-        console.error('❌ Airtable save error:', airtableError);
+        console.log('⚠️ Airtable save error (non-blocking):', airtableError);
       }
       
+      // Scroll to preview
       setTimeout(() => {
         document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
       
+      console.log('✅ Meal plan generated successfully with database recipes!');
+      
     } catch (error) {
-      console.log('💥 Error:', error);
-      alert('❌ Errore di connessione. Riprova più tardi.');
+      console.error('💥 Error generating meal plan:', error);
+      
+      // 🔄 FALLBACK: Usa sistema precedente in caso di errore
+      try {
+        console.log('🔄 Using fallback system...');
+        const fallbackPlan = parsePlanFromAI_Fallback('fallback_generation');
+        setParsedPlan(fallbackPlan);
+        
+        const completeDocument = generateCompleteDocument(fallbackPlan, formData);
+        setGeneratedPlan(completeDocument);
+        setShowPreview(true);
+        
+        setTimeout(() => {
+          document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        
+      } catch (fallbackError) {
+        console.error('💥 Fallback error:', fallbackError);
+        alert('❌ Errore nella generazione del piano. Riprova più tardi.');
+      }
     } finally {
       setIsGenerating(false);
     }
