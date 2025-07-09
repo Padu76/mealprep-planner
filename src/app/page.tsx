@@ -407,6 +407,37 @@ export default function HomePage() {
         setGeneratedPlan(completeDocument);
         setShowPreview(true);
         
+        // 💾 SALVA IN AIRTABLE
+        try {
+          console.log('💾 Saving to Airtable...');
+          await fetch('/api/airtable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'saveMealRequest',
+              data: {
+                nome: formData.nome,
+                age: formData.eta,
+                weight: formData.peso,
+                height: formData.altezza,
+                gender: formData.sesso,
+                activity_level: formData.attivita,
+                goal: formData.obiettivo,
+                duration: formData.durata,
+                meals_per_day: formData.pasti,
+                exclusions: formData.allergie,
+                foods_at_home: formData.preferenze,
+                email: '', // Da implementare se necessario
+                phone: '', // Da implementare se necessario
+              }
+            })
+          });
+          console.log('✅ Saved to Airtable successfully');
+        } catch (airtableError) {
+          console.error('❌ Airtable save error:', airtableError);
+          // Non bloccare l'utente per errori di salvataggio
+        }
+        
         setTimeout(() => {
           document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
