@@ -3,12 +3,38 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { RecipeDatabase, Recipe } from '../utils/recipeDatabase';
+import Header from '../components/header';
+
+// Interfaccia Recipe locale
+interface Recipe {
+  id: string;
+  nome: string;
+  categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino';
+  tipoCucina: 'italiana' | 'mediterranea' | 'asiatica' | 'americana' | 'messicana' | 'internazionale';
+  difficolta: 'facile' | 'medio' | 'difficile';
+  tempoPreparazione: number;
+  porzioni: number;
+  calorie: number;
+  proteine: number;
+  carboidrati: number;
+  grassi: number;
+  ingredienti: string[];
+  preparazione: string;
+  tipoDieta: ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea')[];
+  allergie: string[];
+  stagione: ('primavera' | 'estate' | 'autunno' | 'inverno' | 'tutto_anno')[];
+  tags: string[];
+  imageUrl?: string;
+  createdAt: Date;
+  rating?: number;
+  reviewCount?: number;
+}
 
 const RicettePage = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedFilters, setSelectedFilters] = useState({
     categoria: '',
     tipoCucina: '',
@@ -26,12 +52,45 @@ const RicettePage = () => {
     diets: [] as string[],
     allergies: [] as string[]
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [recipeDB, setRecipeDB] = useState<any>(null);
 
-  // Inizializza database
-  const recipeDB = RecipeDatabase.getInstance();
+  // Inizializza database solo client-side
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        // Import dinamico per evitare errori SSR
+        const { RecipeDatabase } = await import('../utils/recipeDatabase');
+        const db = RecipeDatabase.getInstance();
+        setRecipeDB(db);
+        
+        // Carica ricette dal database
+        const allRecipes = db.searchRecipes({});
+        setRecipes(allRecipes);
+        setFilteredRecipes(allRecipes);
+        
+        // Carica opzioni filtri
+        const options = db.getFilterOptions();
+        setFilterOptions(options);
+        
+        // Carica preferiti
+        const favoriteRecipes = db.getFavoriteRecipes();
+        setFavorites(new Set(favoriteRecipes.map((r: Recipe) => r.id)));
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Errore caricamento database:', error);
+        setIsLoading(false);
+      }
+    };
+
+    initializeDatabase();
+  }, []);
 
   // Suggerimenti AI
   const getAIRecommendations = () => {
+    if (!recipeDB) return [];
+    
     const favoriteRecipes = recipeDB.getFavoriteRecipes();
     const recommendedRecipes = recipeDB.getRecommendedRecipes(4);
     const seasonalRecipes = recipeDB.getSeasonalRecipes('inverno');
@@ -55,19 +114,10 @@ const RicettePage = () => {
     ];
   };
 
-  useEffect(() => {
-    // Carica ricette dal database
-    const allRecipes = recipeDB.searchRecipes({});
-    setRecipes(allRecipes);
-    setFilteredRecipes(allRecipes);
-    
-    // Carica opzioni filtri
-    const options = recipeDB.getFilterOptions();
-    setFilterOptions(options);
-  }, []);
-
   // Filtri intelligenti
   useEffect(() => {
+    if (!recipeDB) return;
+    
     const filters = {
       query: searchTerm,
       categoria: selectedFilters.categoria || undefined,
@@ -82,20 +132,24 @@ const RicettePage = () => {
 
     // Filtro solo preferiti
     if (showFavoritesOnly) {
-      filtered = filtered.filter(recipe => recipeDB.isFavorite(recipe.id));
+      filtered = filtered.filter((recipe: Recipe) => favorites.has(recipe.id));
     }
 
     setFilteredRecipes(filtered);
-  }, [searchTerm, selectedFilters, showFavoritesOnly]);
+  }, [searchTerm, selectedFilters, showFavoritesOnly, recipeDB, favorites]);
 
   const toggleFavorite = (recipeId: string) => {
-    if (recipeDB.isFavorite(recipeId)) {
+    if (!recipeDB) return;
+    
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(recipeId)) {
+      newFavorites.delete(recipeId);
       recipeDB.removeFromFavorites(recipeId);
     } else {
+      newFavorites.add(recipeId);
       recipeDB.addToFavorites(recipeId);
     }
-    // Forza re-render
-    setRecipes(recipeDB.searchRecipes({}));
+    setFavorites(newFavorites);
   };
 
   const handleFilterChange = (filterType: string, value: string) => {
@@ -137,26 +191,26 @@ const RicettePage = () => {
     setFilteredRecipes(sorted);
   };
 
-  const favoriteCount = recipeDB.getFavoriteRecipes().length;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+        <Header />
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <div className="text-center">
+            <ChefHat className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
+            <h2 className="text-2xl font-bold mb-2">Caricamento Database Ricette...</h2>
+            <p className="text-gray-400">Preparando 500+ ricette deliziose per te!</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-      {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <img src="/images/icon-192x192.png" alt="Meal Prep Logo" className="w-10 h-10 rounded-full" />
-            <h1 className="text-2xl font-bold">Meal Prep Planner</h1>
-          </div>
-          
-          <nav className="hidden md:flex gap-6">
-            <Link href="/" className="hover:text-green-400 transition-colors">Home</Link>
-            <Link href="/ricette" className="text-green-400 font-medium border-b-2 border-green-400 pb-2">Ricette</Link>
-            <Link href="/dashboard" className="hover:text-green-400 transition-colors">Dashboard</Link>
-          </nav>
-        </div>
-      </header>
-
+      <Header />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center space-x-2 mb-6">
@@ -191,7 +245,7 @@ const RicettePage = () => {
                   <h3 className="font-medium text-white mb-2">{rec.type}</h3>
                   <p className="text-sm text-gray-400 mb-3">{rec.reason}</p>
                   <div className="flex space-x-2">
-                    {rec.recipes.slice(0, 3).map(recipe => (
+                    {rec.recipes.slice(0, 3).map((recipe: Recipe) => (
                       <div key={recipe.id} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
                         <ChefHat className="w-6 h-6 text-green-400" />
                       </div>
@@ -355,7 +409,7 @@ const RicettePage = () => {
               }`}
             >
               <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
-              <span>Solo preferiti ({favoriteCount})</span>
+              <span>Solo preferiti ({favorites.size})</span>
             </button>
             <select 
               onChange={(e) => sortRecipes(e.target.value)}
@@ -382,12 +436,12 @@ const RicettePage = () => {
                 <button 
                   onClick={() => toggleFavorite(recipe.id)}
                   className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-                    recipeDB.isFavorite(recipe.id) 
+                    favorites.has(recipe.id) 
                       ? 'bg-red-500 text-white' 
                       : 'bg-black/50 text-gray-300 hover:text-red-400'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${recipeDB.isFavorite(recipe.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${favorites.has(recipe.id) ? 'fill-current' : ''}`} />
                 </button>
                 <div className="absolute bottom-3 left-3 flex space-x-2">
                   <span className="bg-black/70 text-green-400 px-2 py-1 rounded text-xs font-medium">
