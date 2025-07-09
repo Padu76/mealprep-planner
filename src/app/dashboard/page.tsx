@@ -18,13 +18,14 @@ export default function UserDashboard() {
   const [recentPlans, setRecentPlans] = useState<any[]>([]);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Controlla se già loggato
   useEffect(() => {
     const userAuth = sessionStorage.getItem('userAuth');
     if (userAuth) {
       setIsLoggedIn(true);
-      loadUserData();
+      loadUserData(userAuth);
     }
   }, []);
 
@@ -36,7 +37,7 @@ export default function UserDashboard() {
       setIsLoggedIn(true);
       sessionStorage.setItem('userAuth', loginData.email);
       setLoginError('');
-      loadUserData();
+      loadUserData(loginData.email);
     } else {
       setLoginError('Email e password (min 4 caratteri) richiesti');
     }
@@ -47,27 +48,75 @@ export default function UserDashboard() {
     sessionStorage.removeItem('userAuth');
     setLoginData({ email: '', password: '' });
     setUserData(null);
+    setRecentPlans([]);
   };
 
-  const loadUserData = () => {
-    // Carica dati dal localStorage
-    const formData = localStorage.getItem('mealPrepFormData');
-    if (formData) {
-      const parsed = JSON.parse(formData);
-      setUserData(parsed);
+  const loadUserData = async (userEmail: string) => {
+    setIsLoading(true);
+    try {
+      console.log('📊 Loading user data for:', userEmail);
       
-      // Calcola statistiche user
-      const plans = JSON.parse(localStorage.getItem('userPlans') || '[]');
-      setRecentPlans(plans);
+      // Carica dati dal localStorage come fallback
+      const formData = localStorage.getItem('mealPrepFormData');
+      if (formData) {
+        const parsed = JSON.parse(formData);
+        setUserData(parsed);
+      }
       
-      setUserStats({
-        plansCreated: plans.length,
-        currentPlan: 'Free', // Default
-        daysTracked: plans.reduce((sum: number, plan: any) => sum + (parseInt(plan.durata) || 0), 0),
-        favoriteRecipes: plans.length * 3, // Stima
-        weightProgress: 0 // Da implementare tracking peso
-      });
+      // Prova a caricare da Airtable
+      try {
+        const response = await fetch('/api/airtable?action=getRequests');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          console.log('✅ Loaded', data.data.length, 'records from Airtable');
+          
+          // Filtra i piani per nome utente (approssimativo)
+          const userPlans = data.data.filter((record: any) => 
+            record.nome && userData?.nome && 
+            record.nome.toLowerCase() === userData.nome.toLowerCase()
+          );
+          
+          console.log('👤 Found', userPlans.length, 'plans for user');
+          setRecentPlans(userPlans);
+          
+          // Calcola statistiche
+          setUserStats({
+            plansCreated: userPlans.length,
+            currentPlan: 'Free',
+            daysTracked: userPlans.reduce((sum: number, plan: any) => 
+              sum + (parseInt(plan.duration) || 0), 0),
+            favoriteRecipes: userPlans.length * 3,
+            weightProgress: 0
+          });
+        } else {
+          console.log('❌ Failed to load from Airtable, using localStorage');
+          loadFromLocalStorage();
+        }
+      } catch (airtableError) {
+        console.error('❌ Airtable error:', airtableError);
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('❌ Error loading user data:', error);
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const loadFromLocalStorage = () => {
+    // Fallback: carica dai localStorage
+    const plans = JSON.parse(localStorage.getItem('userPlans') || '[]');
+    setRecentPlans(plans);
+    
+    setUserStats({
+      plansCreated: plans.length,
+      currentPlan: 'Free',
+      daysTracked: plans.reduce((sum: number, plan: any) => sum + (parseInt(plan.durata) || 0), 0),
+      favoriteRecipes: plans.length * 3,
+      weightProgress: 0
+    });
   };
 
   const savePlan = (planData: any) => {
@@ -94,7 +143,6 @@ export default function UserDashboard() {
       });
       localStorage.setItem('weightHistory', JSON.stringify(weightHistory));
       
-      // Calcola progresso
       if (weightHistory.length > 1) {
         const firstWeight = weightHistory[0].weight;
         const currentWeight = parseFloat(newWeight);
@@ -105,6 +153,21 @@ export default function UserDashboard() {
       setShowWeightModal(false);
       setNewWeight('');
       alert('✅ Peso registrato con successo!');
+    }
+  };
+
+  const testAirtableConnection = async () => {
+    try {
+      const response = await fetch('/api/airtable');
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('✅ Connessione Airtable attiva!\n\nRecords: ' + data.recordsCount);
+      } else {
+        alert('❌ Errore connessione: ' + data.error);
+      }
+    } catch (error) {
+      alert('❌ Errore di rete: ' + error);
     }
   };
 
@@ -187,11 +250,18 @@ export default function UserDashboard() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
             <h1 className="text-2xl font-bold">La Mia Dashboard</h1>
+            {isLoading && <span className="text-green-400 text-sm">⏳ Caricando...</span>}
           </div>
           
           <nav className="hidden md:flex gap-6">
             <Link href="/" className="hover:text-green-400 transition-colors">Crea Piano</Link>
             <span className="text-green-400 font-semibold">Dashboard</span>
+            <button 
+              onClick={testAirtableConnection}
+              className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors"
+            >
+              🔗 Test DB
+            </button>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -340,6 +410,60 @@ export default function UserDashboard() {
           </div>
         </section>
 
+        {/* Recent Plans */}
+        <section className="mb-12">
+          <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
+            📋 I Miei Piani {recentPlans.length > 0 && <span className="text-lg">({recentPlans.length})</span>}
+          </h2>
+          {recentPlans.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recentPlans.map((plan, index) => (
+                <div key={index} className="bg-gray-800 rounded-xl p-6 shadow-lg">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-xl font-bold">{plan.nome || `Piano ${index + 1}`}</h3>
+                    <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">
+                      {plan.duration || plan.durata || 3} giorni
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-gray-300 mb-4">
+                    <p>📅 Creato: {plan.created_at || plan.createdAt || 'N/A'}</p>
+                    <p>🎯 {plan.goal || plan.obiettivo || 'N/A'}</p>
+                    <p>🍽️ {plan.meals_per_day || plan.pasti || 'N/A'} pasti/giorno</p>
+                    <p>⚖️ {plan.weight || plan.peso || 'N/A'} kg</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex-1 text-center"
+                    >
+                      👁️ Ricrea
+                    </Link>
+                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                      📥
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gray-800 rounded-xl p-8 text-center">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-xl font-bold mb-2">
+                {isLoading ? 'Caricamento in corso...' : 'Nessun piano trovato'}
+              </h3>
+              <p className="text-gray-400 mb-6">
+                {isLoading ? 'Stiamo cercando i tuoi piani...' : 'Inizia creando il tuo primo piano alimentare!'}
+              </p>
+              <Link 
+                href="/"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg inline-block transition-colors"
+              >
+                🚀 Crea Primo Piano
+              </Link>
+            </div>
+          )}
+        </section>
+
         {/* Profile Section */}
         {userData && (
           <section className="mb-12">
@@ -399,52 +523,6 @@ export default function UserDashboard() {
             </div>
           </section>
         )}
-
-        {/* Recent Plans */}
-        <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
-            📋 I Miei Piani
-          </h2>
-          {recentPlans.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentPlans.map((plan, index) => (
-                <div key={index} className="bg-gray-800 rounded-xl p-6 shadow-lg">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold">Piano {index + 1}</h3>
-                    <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">
-                      {plan.durata || 3} giorni
-                    </span>
-                  </div>
-                  <div className="space-y-2 text-gray-300 mb-4">
-                    <p>📅 Creato: {plan.createdAt}</p>
-                    <p>🎯 {plan.obiettivo}</p>
-                    <p>🍽️ {plan.pasti} pasti/giorno</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex-1">
-                      👁️ Visualizza
-                    </button>
-                    <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                      📥
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-800 rounded-xl p-8 text-center">
-              <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-xl font-bold mb-2">Nessun piano creato</h3>
-              <p className="text-gray-400 mb-6">Inizia creando il tuo primo piano alimentare!</p>
-              <Link 
-                href="/"
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg inline-block transition-colors"
-              >
-                🚀 Crea Primo Piano
-              </Link>
-            </div>
-          )}
-        </section>
       </div>
 
       {/* Weight Modal */}
