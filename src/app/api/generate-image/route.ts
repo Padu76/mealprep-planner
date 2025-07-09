@@ -84,8 +84,11 @@ function generatePlaceholder(prompt: string): string {
   
   const encodedName = encodeURIComponent(dishName);
   
-  // Placeholder colorato e appetitoso
-  return `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodedName}`;
+  // Placeholder colorato e appetitoso con diverse varianti
+  const colors = ['8FBC8F', 'FF6B6B', 'FFD93D', '6BCF7F', 'A8E6CF', 'FFB347'];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  
+  return `https://via.placeholder.com/400x300/${randomColor}/ffffff?text=${encodedName}`;
 }
 
 // MAIN API HANDLER
@@ -105,6 +108,13 @@ export async function POST(request: NextRequest) {
     let imageUrl: string;
     
     try {
+      // PER ORA: Usa sempre placeholder colorati
+      console.log('🎨 Using smart placeholder...');
+      imageUrl = generatePlaceholder(prompt);
+      console.log('✅ Placeholder generated:', imageUrl);
+      
+      // QUANDO AVRAI API KEY, decommentare:
+      /*
       // PRIORITÀ 1: Prova Unsplash (gratuito)
       if (process.env.UNSPLASH_ACCESS_KEY) {
         console.log('📸 Trying Unsplash...');
@@ -121,6 +131,7 @@ export async function POST(request: NextRequest) {
       else {
         throw new Error('No image generation service configured');
       }
+      */
     } catch (error) {
       console.log('⚠️ Image generation failed, using placeholder:', error);
       imageUrl = generatePlaceholder(prompt);
