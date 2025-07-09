@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 // Definizione costanti per allergie e preferenze
 export const ALLERGIE_OPTIONS = [
   { id: 'glutine', label: 'Glutine', description: 'Cereali contenenti glutine' },
@@ -63,6 +65,10 @@ export default function MealForm({
   hasSavedData,
   clearSavedData
 }: MealFormProps) {
+  // Stati per controllare l'apertura delle sezioni
+  const [showAllergieSection, setShowAllergieSection] = useState(false);
+  const [showPreferenzeSection, setShowPreferenzeSection] = useState(false);
+
   return (
     <section id="meal-form" className="max-w-4xl mx-auto px-4 py-20">
       <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
@@ -234,86 +240,132 @@ export default function MealForm({
           </div>
         </div>
 
-        {/* SEZIONE ALLERGIE E INTOLLERANZE - CHECKBOX */}
+        {/* SEZIONE ALLERGIE E INTOLLERANZE - COLLASSABILE */}
         <div className="mt-8">
-          <label className="block text-lg font-semibold mb-4" style={{color: '#8FBC8F'}}>
-            ⚠️ Allergie e Intolleranze
-          </label>
-          <p className="text-sm text-gray-400 mb-4">
-            Seleziona tutte le allergie e intolleranze che ti riguardano. Il sistema filtrerà automaticamente le ricette compatibili.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {ALLERGIE_OPTIONS.map((allergia) => (
-              <label
-                key={allergia.id}
-                className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                  formData.allergie.includes(allergia.id)
-                    ? 'bg-red-600/20 border-red-500 text-red-300'
-                    : 'bg-gray-700 border-gray-600 hover:border-red-400'
-                } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={allergia.description}
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.allergie.includes(allergia.id)}
-                  onChange={(e) => handleArrayChange('allergie', allergia.id, e.target.checked)}
-                  className="mr-2 text-red-500 bg-gray-700 border-gray-600 rounded focus:ring-red-500"
-                  disabled={isGenerating}
-                />
-                <span className="text-sm">{allergia.label}</span>
-              </label>
-            ))}
+          <div 
+            className="flex items-center justify-between p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
+            onClick={() => setShowAllergieSection(!showAllergieSection)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <h3 className="text-lg font-semibold" style={{color: '#8FBC8F'}}>
+                  Allergie e Intolleranze
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {formData.allergie.length === 0 
+                    ? 'Nessuna allergia selezionata - Clicca per configurare'
+                    : `${formData.allergie.length} allergie selezionate: ${ALLERGIE_OPTIONS.filter(a => formData.allergie.includes(a.id)).map(a => a.label).slice(0, 3).join(', ')}${formData.allergie.length > 3 ? '...' : ''}`
+                  }
+                </p>
+              </div>
+            </div>
+            <div className={`transform transition-transform ${showAllergieSection ? 'rotate-180' : ''}`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
-          {formData.allergie.length > 0 && (
-            <div className="mt-3 p-3 bg-red-600/10 border border-red-500/30 rounded-lg">
-              <p className="text-sm text-red-300">
-                ✅ Allergie selezionate: {formData.allergie.length} 
-                <span className="ml-2 text-xs">
-                  ({ALLERGIE_OPTIONS.filter(a => formData.allergie.includes(a.id)).map(a => a.label).join(', ')})
-                </span>
+
+          {showAllergieSection && (
+            <div className="mt-4 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+              <p className="text-sm text-gray-400 mb-4">
+                Seleziona tutte le allergie e intolleranze che ti riguardano. Il sistema filtrerà automaticamente le ricette compatibili.
               </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {ALLERGIE_OPTIONS.map((allergia) => (
+                  <label
+                    key={allergia.id}
+                    className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
+                      formData.allergie.includes(allergia.id)
+                        ? 'bg-red-600/20 border-red-500 text-red-300'
+                        : 'bg-gray-700 border-gray-600 hover:border-red-400'
+                    } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={allergia.description}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.allergie.includes(allergia.id)}
+                      onChange={(e) => handleArrayChange('allergie', allergia.id, e.target.checked)}
+                      className="mr-2 text-red-500 bg-gray-700 border-gray-600 rounded focus:ring-red-500"
+                      disabled={isGenerating}
+                    />
+                    <span className="text-sm">{allergia.label}</span>
+                  </label>
+                ))}
+              </div>
+              {formData.allergie.length > 0 && (
+                <div className="mt-3 p-3 bg-red-600/10 border border-red-500/30 rounded-lg">
+                  <p className="text-sm text-red-300">
+                    ✅ {formData.allergie.length} allergie selezionate e saranno filtrate automaticamente
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* SEZIONE PREFERENZE ALIMENTARI - CHECKBOX */}
-        <div className="mt-8">
-          <label className="block text-lg font-semibold mb-4" style={{color: '#8FBC8F'}}>
-            🥗 Preferenze Alimentari e Regimi
-          </label>
-          <p className="text-sm text-gray-400 mb-4">
-            Seleziona i tuoi regimi alimentari preferiti. L'AI genererà ricette in linea con le tue scelte.
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {PREFERENZE_OPTIONS.map((preferenza) => (
-              <label
-                key={preferenza.id}
-                className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                  formData.preferenze.includes(preferenza.id)
-                    ? 'bg-green-600/20 border-green-500 text-green-300'
-                    : 'bg-gray-700 border-gray-600 hover:border-green-400'
-                } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title={preferenza.description}
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.preferenze.includes(preferenza.id)}
-                  onChange={(e) => handleArrayChange('preferenze', preferenza.id, e.target.checked)}
-                  className="mr-2 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500"
-                  disabled={isGenerating}
-                />
-                <span className="text-sm">{preferenza.label}</span>
-              </label>
-            ))}
+        {/* SEZIONE PREFERENZE ALIMENTARI - COLLASSABILE */}
+        <div className="mt-6">
+          <div 
+            className="flex items-center justify-between p-4 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
+            onClick={() => setShowPreferenzeSection(!showPreferenzeSection)}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">🥗</span>
+              <div>
+                <h3 className="text-lg font-semibold" style={{color: '#8FBC8F'}}>
+                  Preferenze Alimentari e Regimi
+                </h3>
+                <p className="text-sm text-gray-400">
+                  {formData.preferenze.length === 0 
+                    ? 'Nessun regime selezionato - Clicca per configurare'
+                    : `${formData.preferenze.length} regimi selezionati: ${PREFERENZE_OPTIONS.filter(p => formData.preferenze.includes(p.id)).map(p => p.label).slice(0, 3).join(', ')}${formData.preferenze.length > 3 ? '...' : ''}`
+                  }
+                </p>
+              </div>
+            </div>
+            <div className={`transform transition-transform ${showPreferenzeSection ? 'rotate-180' : ''}`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
-          {formData.preferenze.length > 0 && (
-            <div className="mt-3 p-3 bg-green-600/10 border border-green-500/30 rounded-lg">
-              <p className="text-sm text-green-300">
-                ✅ Preferenze selezionate: {formData.preferenze.length}
-                <span className="ml-2 text-xs">
-                  ({PREFERENZE_OPTIONS.filter(p => formData.preferenze.includes(p.id)).map(p => p.label).join(', ')})
-                </span>
+
+          {showPreferenzeSection && (
+            <div className="mt-4 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+              <p className="text-sm text-gray-400 mb-4">
+                Seleziona i tuoi regimi alimentari preferiti. L'AI genererà ricette in linea con le tue scelte.
               </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {PREFERENZE_OPTIONS.map((preferenza) => (
+                  <label
+                    key={preferenza.id}
+                    className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${
+                      formData.preferenze.includes(preferenza.id)
+                        ? 'bg-green-600/20 border-green-500 text-green-300'
+                        : 'bg-gray-700 border-gray-600 hover:border-green-400'
+                    } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={preferenza.description}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.preferenze.includes(preferenza.id)}
+                      onChange={(e) => handleArrayChange('preferenze', preferenza.id, e.target.checked)}
+                      className="mr-2 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500"
+                      disabled={isGenerating}
+                    />
+                    <span className="text-sm">{preferenza.label}</span>
+                  </label>
+                ))}
+              </div>
+              {formData.preferenze.length > 0 && (
+                <div className="mt-3 p-3 bg-green-600/10 border border-green-500/30 rounded-lg">
+                  <p className="text-sm text-green-300">
+                    ✅ {formData.preferenze.length} regimi selezionati per ricette personalizzate
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
