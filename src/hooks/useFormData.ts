@@ -1,8 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { FormData } from '../types';
 
 const STORAGE_KEY = 'mealPrepFormData';
 const AUTO_SAVE_DELAY = 1000; // 1 secondo
+
+// Aggiornata FormData con array
+export interface FormData {
+  nome: string;
+  eta: string;
+  sesso: string;
+  peso: string;
+  altezza: string;
+  attivita: string;
+  obiettivo: string;
+  allergie: string[]; // Ora è un array
+  preferenze: string[]; // Ora è un array
+  pasti: string;
+  durata: string;
+  varieta: string;
+}
 
 const initialFormData: FormData = {
   nome: '',
@@ -12,8 +27,8 @@ const initialFormData: FormData = {
   altezza: '',
   attivita: '',
   obiettivo: '',
-  allergie: '',
-  preferenze: '',
+  allergie: [], // Array vuoto
+  preferenze: [], // Array vuoto
   pasti: '',
   durata: '',
   varieta: ''
@@ -42,6 +57,19 @@ export const useFormData = () => {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         console.log('✅ Parsed data:', parsedData); // DEBUG
+        
+        // Assicurati che allergie e preferenze siano array
+        if (parsedData.allergie && typeof parsedData.allergie === 'string') {
+          parsedData.allergie = parsedData.allergie.split(',').filter(Boolean);
+        }
+        if (parsedData.preferenze && typeof parsedData.preferenze === 'string') {
+          parsedData.preferenze = parsedData.preferenze.split(',').filter(Boolean);
+        }
+        
+        // Assicurati che tutti i campi array esistano
+        parsedData.allergie = parsedData.allergie || [];
+        parsedData.preferenze = parsedData.preferenze || [];
+        
         setFormData(parsedData);
         setHasSavedData(true);
       } else {
@@ -82,6 +110,38 @@ export const useFormData = () => {
     if (isClient) {
       autoSaveTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Auto-saving triggered for:', field); // DEBUG
+        saveToStorage(newFormData);
+      }, AUTO_SAVE_DELAY);
+    }
+  };
+
+  // Nuova funzione per gestire checkbox array (allergie/preferenze)
+  const handleArrayChange = (field: keyof FormData, value: string, checked: boolean) => {
+    console.log('📝 Array change:', field, value, checked); // DEBUG
+    
+    const currentArray = formData[field] as string[];
+    let newArray: string[];
+    
+    if (checked) {
+      // Aggiungi se non già presente
+      newArray = currentArray.includes(value) ? currentArray : [...currentArray, value];
+    } else {
+      // Rimuovi se presente
+      newArray = currentArray.filter(item => item !== value);
+    }
+    
+    const newFormData = { ...formData, [field]: newArray };
+    setFormData(newFormData);
+    
+    // Cancella il timeout precedente se esiste
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Imposta un nuovo timeout per l'auto-save - SOLO se client-side
+    if (isClient) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Auto-saving triggered for array:', field); // DEBUG
         saveToStorage(newFormData);
       }, AUTO_SAVE_DELAY);
     }
@@ -138,6 +198,7 @@ export const useFormData = () => {
     formData,
     hasSavedData,
     handleInputChange,
+    handleArrayChange, // Nuova funzione esportata
     clearSavedData,
     resetFormData,
     loadSavedData
