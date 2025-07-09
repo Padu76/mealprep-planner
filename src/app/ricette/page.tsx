@@ -3,165 +3,132 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { RecipeDatabase, Recipe } from '../utils/recipeDatabase';
 
 const RicettePage = () => {
-  const [recipes, setRecipes] = useState([]);
-  const [filteredRecipes, setFilteredRecipes] = useState([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [favorites, setFavorites] = useState(new Set());
   const [selectedFilters, setSelectedFilters] = useState({
-    category: '',
-    mealType: '',
-    diet: '',
-    difficulty: '',
-    cookingTime: ''
+    categoria: '',
+    tipoCucina: '',
+    difficolta: '',
+    maxTempo: '',
+    tipoDieta: [] as string[],
+    allergie: [] as string[]
   });
   const [showAIRecommendations, setShowAIRecommendations] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
+    categories: [] as string[],
+    cuisines: [] as string[],
+    difficulties: [] as string[],
+    diets: [] as string[],
+    allergies: [] as string[]
+  });
 
-  // Database 500+ ricette
-  const generateRecipes = () => {
-    const categories = ['Primi', 'Secondi', 'Contorni', 'Dolci', 'Antipasti', 'Zuppe', 'Insalate', 'Smoothies'];
-    const mealTypes = ['Colazione', 'Pranzo', 'Cena', 'Spuntino', 'Merenda'];
-    const diets = ['Vegetariano', 'Vegano', 'Senza Glutine', 'Keto', 'Paleo', 'Mediterranea', 'Proteica', 'Low Carb'];
-    const difficulties = ['Facile', 'Medio', 'Difficile'];
-    const cookingTimes = ['15 min', '30 min', '45 min', '60 min', '90 min'];
-    
-    const sampleRecipes = [
-      'Pasta al pomodoro', 'Risotto ai funghi', 'Pollo alla griglia', 'Salmone al forno', 'Insalata caprese',
-      'Minestrone di verdure', 'Tiramisù', 'Panna cotta', 'Bruschette', 'Caesar salad', 'Carbonara',
-      'Lasagne della nonna', 'Gnocchi al pesto', 'Scaloppine al limone', 'Melanzane parmigiana',
-      'Smoothie bowl', 'Overnight oats', 'Pancakes proteici', 'Hummus di ceci', 'Quinoa bowl',
-      'Zuppa di lenticchie', 'Curry di verdure', 'Tacos vegani', 'Buddha bowl', 'Chia pudding',
-      'Frittata di verdure', 'Wrap proteico', 'Insalata di farro', 'Crema di zucca', 'Polpette vegane',
-      'Ratatouille', 'Poké bowl', 'Zuppa di miso', 'Gazpacho', 'Tabulè', 'Cous cous alle verdure',
-      'Spaghetti aglio e olio', 'Risotto al radicchio', 'Pesce al vapore', 'Torta di carote',
-      'Biscotti integrali', 'Muffin ai mirtilli', 'Granola fatta in casa', 'Porridge di avena',
-      'Insalata di quinoa', 'Vellutata di zucca', 'Branzino in crosta', 'Pollo al curry'
-    ];
-
-    const recipes = [];
-    for (let i = 0; i < 500; i++) {
-      const baseRecipe = sampleRecipes[i % sampleRecipes.length];
-      recipes.push({
-        id: i + 1,
-        name: i < sampleRecipes.length ? baseRecipe : `${baseRecipe} (Variante ${Math.floor(i / sampleRecipes.length) + 1})`,
-        category: categories[Math.floor(Math.random() * categories.length)],
-        mealType: mealTypes[Math.floor(Math.random() * mealTypes.length)],
-        diet: diets[Math.floor(Math.random() * diets.length)],
-        difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
-        cookingTime: cookingTimes[Math.floor(Math.random() * cookingTimes.length)],
-        servings: Math.floor(Math.random() * 6) + 2,
-        calories: Math.floor(Math.random() * 500) + 150,
-        rating: (Math.random() * 2 + 3).toFixed(1),
-        image: `https://images.unsplash.com/photo-${1565299624946 + (i * 100)}-6c5486b0b8e5?w=300&h=200&fit=crop&auto=format`,
-        ingredients: [
-          `Ingrediente principale ${i + 1}`,
-          `Condimento ${i + 1}`,
-          `Verdura ${i + 1}`,
-          `Spezie ${i + 1}`
-        ],
-        tags: ['MealPrep', 'Facile', 'Sano'],
-        prepTime: Math.floor(Math.random() * 30) + 5,
-        description: `Ricetta deliziosa per ${baseRecipe.toLowerCase()}. Perfetta per meal prep e facile da preparare. Ingredienti freschi e genuini per un pasto sano e gustoso.`
-      });
-    }
-    return recipes;
-  };
+  // Inizializza database
+  const recipeDB = RecipeDatabase.getInstance();
 
   // Suggerimenti AI
-  const aiRecommendations = [
-    {
-      type: 'Basato sui tuoi preferiti',
-      recipes: [1, 5, 12, 8],
-      reason: 'Ti piacciono i piatti mediterranei leggeri'
-    },
-    {
-      type: 'Per i tuoi obiettivi fitness',
-      recipes: [23, 45, 67, 89],
-      reason: 'Ricette ad alto contenuto proteico'
-    },
-    {
-      type: 'Nuove scoperte',
-      recipes: [156, 234, 345, 456],
-      reason: 'Ricette trending questa settimana'
-    }
-  ];
+  const getAIRecommendations = () => {
+    const favoriteRecipes = recipeDB.getFavoriteRecipes();
+    const recommendedRecipes = recipeDB.getRecommendedRecipes(4);
+    const seasonalRecipes = recipeDB.getSeasonalRecipes('inverno');
+    
+    return [
+      {
+        type: 'Basato sui tuoi preferiti',
+        recipes: favoriteRecipes.slice(0, 4),
+        reason: 'Ti piacciono i piatti mediterranei leggeri'
+      },
+      {
+        type: 'Ricette più votate',
+        recipes: recommendedRecipes,
+        reason: 'Le ricette con rating più alto della community'
+      },
+      {
+        type: 'Ricette stagionali',
+        recipes: seasonalRecipes.slice(0, 4),
+        reason: 'Ricette perfette per questa stagione'
+      }
+    ];
+  };
 
   useEffect(() => {
-    const generatedRecipes = generateRecipes();
-    setRecipes(generatedRecipes);
-    setFilteredRecipes(generatedRecipes);
+    // Carica ricette dal database
+    const allRecipes = recipeDB.searchRecipes({});
+    setRecipes(allRecipes);
+    setFilteredRecipes(allRecipes);
+    
+    // Carica opzioni filtri
+    const options = recipeDB.getFilterOptions();
+    setFilterOptions(options);
   }, []);
 
   // Filtri intelligenti
   useEffect(() => {
-    let filtered = recipes;
+    const filters = {
+      query: searchTerm,
+      categoria: selectedFilters.categoria || undefined,
+      tipoCucina: selectedFilters.tipoCucina || undefined,
+      difficolta: selectedFilters.difficolta || undefined,
+      maxTempo: selectedFilters.maxTempo ? parseInt(selectedFilters.maxTempo) : undefined,
+      tipoDieta: selectedFilters.tipoDieta.length > 0 ? selectedFilters.tipoDieta : undefined,
+      allergie: selectedFilters.allergie.length > 0 ? selectedFilters.allergie : undefined
+    };
+
+    let filtered = recipeDB.searchRecipes(filters);
 
     // Filtro solo preferiti
     if (showFavoritesOnly) {
-      filtered = filtered.filter(recipe => favorites.has(recipe.id));
+      filtered = filtered.filter(recipe => recipeDB.isFavorite(recipe.id));
     }
-
-    // Filtro ricerca
-    if (searchTerm) {
-      filtered = filtered.filter(recipe => 
-        recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        recipe.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        recipe.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtri categorie
-    Object.keys(selectedFilters).forEach(key => {
-      if (selectedFilters[key]) {
-        filtered = filtered.filter(recipe => recipe[key] === selectedFilters[key]);
-      }
-    });
 
     setFilteredRecipes(filtered);
-  }, [searchTerm, selectedFilters, recipes, favorites, showFavoritesOnly]);
+  }, [searchTerm, selectedFilters, showFavoritesOnly]);
 
-  const toggleFavorite = (recipeId) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(recipeId)) {
-      newFavorites.delete(recipeId);
+  const toggleFavorite = (recipeId: string) => {
+    if (recipeDB.isFavorite(recipeId)) {
+      recipeDB.removeFromFavorites(recipeId);
     } else {
-      newFavorites.add(recipeId);
+      recipeDB.addToFavorites(recipeId);
     }
-    setFavorites(newFavorites);
+    // Forza re-render
+    setRecipes(recipeDB.searchRecipes({}));
   };
 
-  const handleFilterChange = (filterType, value) => {
+  const handleFilterChange = (filterType: string, value: string) => {
     setSelectedFilters(prev => ({
       ...prev,
-      [filterType]: prev[filterType] === value ? '' : value
+      [filterType]: value
     }));
   };
 
   const clearFilters = () => {
     setSelectedFilters({
-      category: '',
-      mealType: '',
-      diet: '',
-      difficulty: '',
-      cookingTime: ''
+      categoria: '',
+      tipoCucina: '',
+      difficolta: '',
+      maxTempo: '',
+      tipoDieta: [],
+      allergie: []
     });
     setSearchTerm('');
     setShowFavoritesOnly(false);
   };
 
-  const sortRecipes = (sortBy) => {
+  const sortRecipes = (sortBy: string) => {
     let sorted = [...filteredRecipes];
     switch (sortBy) {
       case 'rating':
-        sorted = sorted.sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating));
+        sorted = sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       case 'time':
-        sorted = sorted.sort((a, b) => parseInt(a.cookingTime) - parseInt(b.cookingTime));
+        sorted = sorted.sort((a, b) => a.tempoPreparazione - b.tempoPreparazione);
         break;
       case 'calories':
-        sorted = sorted.sort((a, b) => a.calories - b.calories);
+        sorted = sorted.sort((a, b) => a.calorie - b.calorie);
         break;
       default:
         // Rilevanza - nessun ordinamento particolare
@@ -169,6 +136,8 @@ const RicettePage = () => {
     }
     setFilteredRecipes(sorted);
   };
+
+  const favoriteCount = recipeDB.getFavoriteRecipes().length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -217,19 +186,21 @@ const RicettePage = () => {
               <h2 className="text-xl font-semibold">Suggerimenti AI Personalizzati</h2>
             </div>
             <div className="grid md:grid-cols-3 gap-4">
-              {aiRecommendations.map((rec, index) => (
+              {getAIRecommendations().map((rec, index) => (
                 <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                   <h3 className="font-medium text-white mb-2">{rec.type}</h3>
                   <p className="text-sm text-gray-400 mb-3">{rec.reason}</p>
                   <div className="flex space-x-2">
-                    {rec.recipes.slice(0, 3).map(recipeId => (
-                      <div key={recipeId} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                    {rec.recipes.slice(0, 3).map(recipe => (
+                      <div key={recipe.id} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
                         <ChefHat className="w-6 h-6 text-green-400" />
                       </div>
                     ))}
-                    <div className="w-12 h-12 bg-gray-700/50 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                      +{rec.recipes.length - 3}
-                    </div>
+                    {rec.recipes.length > 3 && (
+                      <div className="w-12 h-12 bg-gray-700/50 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                        +{rec.recipes.length - 3}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -275,78 +246,94 @@ const RicettePage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {/* Category Filter */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            {/* Categoria Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
               <select 
-                value={selectedFilters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
+                value={selectedFilters.categoria}
+                onChange={(e) => handleFilterChange('categoria', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Tutte</option>
-                {['Primi', 'Secondi', 'Contorni', 'Dolci', 'Antipasti', 'Zuppe', 'Insalate', 'Smoothies'].map(cat => (
+                {filterOptions.categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
             </div>
 
-            {/* Meal Type Filter */}
+            {/* Tipo Cucina Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tipo Pasto</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Cucina</label>
               <select 
-                value={selectedFilters.mealType}
-                onChange={(e) => handleFilterChange('mealType', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Tutti</option>
-                {['Colazione', 'Pranzo', 'Cena', 'Spuntino', 'Merenda'].map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Diet Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Dieta</label>
-              <select 
-                value={selectedFilters.diet}
-                onChange={(e) => handleFilterChange('diet', e.target.value)}
+                value={selectedFilters.tipoCucina}
+                onChange={(e) => handleFilterChange('tipoCucina', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Tutte</option>
-                {['Vegetariano', 'Vegano', 'Senza Glutine', 'Keto', 'Paleo', 'Mediterranea', 'Proteica', 'Low Carb'].map(diet => (
-                  <option key={diet} value={diet}>{diet}</option>
+                {filterOptions.cuisines.map(cuisine => (
+                  <option key={cuisine} value={cuisine}>{cuisine}</option>
                 ))}
               </select>
             </div>
 
-            {/* Difficulty Filter */}
+            {/* Difficolta Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Difficoltà</label>
               <select 
-                value={selectedFilters.difficulty}
-                onChange={(e) => handleFilterChange('difficulty', e.target.value)}
+                value={selectedFilters.difficolta}
+                onChange={(e) => handleFilterChange('difficolta', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Tutte</option>
-                {['Facile', 'Medio', 'Difficile'].map(diff => (
+                {filterOptions.difficulties.map(diff => (
                   <option key={diff} value={diff}>{diff}</option>
                 ))}
               </select>
             </div>
 
-            {/* Cooking Time Filter */}
+            {/* Tempo Max Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tempo</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Tempo Max</label>
               <select 
-                value={selectedFilters.cookingTime}
-                onChange={(e) => handleFilterChange('cookingTime', e.target.value)}
+                value={selectedFilters.maxTempo}
+                onChange={(e) => handleFilterChange('maxTempo', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Qualsiasi</option>
-                {['15 min', '30 min', '45 min', '60 min', '90 min'].map(time => (
-                  <option key={time} value={time}>{time}</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+              </select>
+            </div>
+
+            {/* Tipo Dieta Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Dieta</label>
+              <select 
+                value={selectedFilters.tipoDieta[0] || ''}
+                onChange={(e) => handleFilterChange('tipoDieta', e.target.value ? [e.target.value] : [])}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Tutte</option>
+                {filterOptions.diets.map(diet => (
+                  <option key={diet} value={diet}>{diet}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Allergie Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Evita</label>
+              <select 
+                value={selectedFilters.allergie[0] || ''}
+                onChange={(e) => handleFilterChange('allergie', e.target.value ? [e.target.value] : [])}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Nessuna</option>
+                {filterOptions.allergies.map(allergy => (
+                  <option key={allergy} value={allergy}>{allergy}</option>
                 ))}
               </select>
             </div>
@@ -368,7 +355,7 @@ const RicettePage = () => {
               }`}
             >
               <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
-              <span>Solo preferiti ({favorites.size})</span>
+              <span>Solo preferiti ({favoriteCount})</span>
             </button>
             <select 
               onChange={(e) => sortRecipes(e.target.value)}
@@ -388,60 +375,62 @@ const RicettePage = () => {
             <div key={recipe.id} className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20">
               <div className="relative">
                 <img 
-                  src={recipe.image} 
-                  alt={recipe.name}
+                  src={recipe.imageUrl || `https://images.unsplash.com/photo-1546554${recipe.id.slice(-3)}-6c5486b0b8e5?w=300&h=200&fit=crop&auto=format`} 
+                  alt={recipe.nome}
                   className="w-full h-48 object-cover"
                 />
                 <button 
                   onClick={() => toggleFavorite(recipe.id)}
                   className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-                    favorites.has(recipe.id) 
+                    recipeDB.isFavorite(recipe.id) 
                       ? 'bg-red-500 text-white' 
                       : 'bg-black/50 text-gray-300 hover:text-red-400'
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${favorites.has(recipe.id) ? 'fill-current' : ''}`} />
+                  <Heart className={`w-4 h-4 ${recipeDB.isFavorite(recipe.id) ? 'fill-current' : ''}`} />
                 </button>
                 <div className="absolute bottom-3 left-3 flex space-x-2">
                   <span className="bg-black/70 text-green-400 px-2 py-1 rounded text-xs font-medium">
-                    {recipe.category}
+                    {recipe.categoria}
                   </span>
                   <span className="bg-black/70 text-blue-400 px-2 py-1 rounded text-xs font-medium">
-                    {recipe.diet}
+                    {recipe.tipoCucina}
                   </span>
                 </div>
               </div>
               
               <div className="p-4">
-                <h3 className="font-semibold text-white mb-2 line-clamp-1">{recipe.name}</h3>
-                <p className="text-sm text-gray-400 mb-3 line-clamp-2">{recipe.description}</p>
+                <h3 className="font-semibold text-white mb-2 line-clamp-1">{recipe.nome}</h3>
+                <p className="text-sm text-gray-400 mb-3 line-clamp-2">
+                  {recipe.ingredienti.slice(0, 3).join(', ')}...
+                </p>
                 
                 <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
                   <div className="flex items-center space-x-1">
                     <Clock className="w-4 h-4" />
-                    <span>{recipe.cookingTime}</span>
+                    <span>{recipe.tempoPreparazione} min</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Users className="w-4 h-4" />
-                    <span>{recipe.servings} porz.</span>
+                    <span>{recipe.porzioni} porz.</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-white">{recipe.rating}</span>
+                    <span className="text-white">{recipe.rating?.toFixed(1) || 'N/A'}</span>
                   </div>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-white">{recipe.calories}</span>
+                    <span className="text-sm font-medium text-white">{recipe.calorie}</span>
                     <span className="text-xs text-gray-400">cal</span>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded ${
-                    recipe.difficulty === 'Facile' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
-                    recipe.difficulty === 'Medio' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
+                    recipe.difficolta === 'facile' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
+                    recipe.difficolta === 'medio' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
                     'bg-red-900/50 text-red-400 border border-red-500/30'
                   }`}>
-                    {recipe.difficulty}
+                    {recipe.difficolta}
                   </span>
                 </div>
               </div>
