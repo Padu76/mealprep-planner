@@ -104,11 +104,152 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // 🎯 FUNZIONE AGGIORNATA CON LOGICA SPUNTINI - FIX CALORIE
-  const parsePlanFromAI = (aiResponse: string) => {
-    console.log('🔧 Parsing AI response...');
+  // 🎯 FUNZIONE AGGIORNATA - USA DATABASE RICETTE
+  const parsePlanFromAI = async (aiResponse: string) => {
+    console.log('🔧 Parsing AI response with Recipe Database...');
     
-    // Dati base sempre presenti
+    try {
+      // Import dinamico del meal planner integrato
+      const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
+      const mealPlanner = MealPlannerIntegration.getInstance();
+      
+      // Genera meal plan usando database ricette
+      const mealPlan = mealPlanner.generateMealPlan(formData);
+      
+      console.log('✅ Meal plan generated with real recipes:', mealPlan);
+      
+      // Converti formato per compatibilità con componenti esistenti
+      const compatiblePlan = {
+        days: mealPlan.days.map(day => ({
+          day: day.day,
+          meals: {
+            colazione: day.meals.colazione ? {
+              nome: day.meals.colazione.nome,
+              calorie: day.meals.colazione.calorie,
+              proteine: day.meals.colazione.proteine,
+              carboidrati: day.meals.colazione.carboidrati,
+              grassi: day.meals.colazione.grassi,
+              tempo: `${day.meals.colazione.tempoPreparazione} min`,
+              porzioni: day.meals.colazione.porzioni,
+              ingredienti: day.meals.colazione.ingredienti,
+              preparazione: day.meals.colazione.preparazione,
+              recipeId: day.meals.colazione.id, // ✅ ID per link dettaglio
+              rating: day.meals.colazione.rating,
+              categoria: day.meals.colazione.categoria,
+              tipoCucina: day.meals.colazione.tipoCucina,
+              difficolta: day.meals.colazione.difficolta
+            } : undefined,
+            pranzo: day.meals.pranzo ? {
+              nome: day.meals.pranzo.nome,
+              calorie: day.meals.pranzo.calorie,
+              proteine: day.meals.pranzo.proteine,
+              carboidrati: day.meals.pranzo.carboidrati,
+              grassi: day.meals.pranzo.grassi,
+              tempo: `${day.meals.pranzo.tempoPreparazione} min`,
+              porzioni: day.meals.pranzo.porzioni,
+              ingredienti: day.meals.pranzo.ingredienti,
+              preparazione: day.meals.pranzo.preparazione,
+              recipeId: day.meals.pranzo.id,
+              rating: day.meals.pranzo.rating,
+              categoria: day.meals.pranzo.categoria,
+              tipoCucina: day.meals.pranzo.tipoCucina,
+              difficolta: day.meals.pranzo.difficolta
+            } : undefined,
+            cena: day.meals.cena ? {
+              nome: day.meals.cena.nome,
+              calorie: day.meals.cena.calorie,
+              proteine: day.meals.cena.proteine,
+              carboidrati: day.meals.cena.carboidrati,
+              grassi: day.meals.cena.grassi,
+              tempo: `${day.meals.cena.tempoPreparazione} min`,
+              porzioni: day.meals.cena.porzioni,
+              ingredienti: day.meals.cena.ingredienti,
+              preparazione: day.meals.cena.preparazione,
+              recipeId: day.meals.cena.id,
+              rating: day.meals.cena.rating,
+              categoria: day.meals.cena.categoria,
+              tipoCucina: day.meals.cena.tipoCucina,
+              difficolta: day.meals.cena.difficolta
+            } : undefined,
+            spuntino1: day.meals.spuntino1 ? {
+              nome: day.meals.spuntino1.nome,
+              calorie: day.meals.spuntino1.calorie,
+              proteine: day.meals.spuntino1.proteine,
+              carboidrati: day.meals.spuntino1.carboidrati,
+              grassi: day.meals.spuntino1.grassi,
+              tempo: `${day.meals.spuntino1.tempoPreparazione} min`,
+              porzioni: day.meals.spuntino1.porzioni,
+              ingredienti: day.meals.spuntino1.ingredienti,
+              preparazione: day.meals.spuntino1.preparazione,
+              recipeId: day.meals.spuntino1.id,
+              rating: day.meals.spuntino1.rating,
+              categoria: day.meals.spuntino1.categoria,
+              tipoCucina: day.meals.spuntino1.tipoCucina,
+              difficolta: day.meals.spuntino1.difficolta
+            } : undefined,
+            spuntino2: day.meals.spuntino2 ? {
+              nome: day.meals.spuntino2.nome,
+              calorie: day.meals.spuntino2.calorie,
+              proteine: day.meals.spuntino2.proteine,
+              carboidrati: day.meals.spuntino2.carboidrati,
+              grassi: day.meals.spuntino2.grassi,
+              tempo: `${day.meals.spuntino2.tempoPreparazione} min`,
+              porzioni: day.meals.spuntino2.porzioni,
+              ingredienti: day.meals.spuntino2.ingredienti,
+              preparazione: day.meals.spuntino2.preparazione,
+              recipeId: day.meals.spuntino2.id,
+              rating: day.meals.spuntino2.rating,
+              categoria: day.meals.spuntino2.categoria,
+              tipoCucina: day.meals.spuntino2.tipoCucina,
+              difficolta: day.meals.spuntino2.difficolta
+            } : undefined,
+            spuntino3: day.meals.spuntino3 ? {
+              nome: day.meals.spuntino3.nome,
+              calorie: day.meals.spuntino3.calorie,
+              proteine: day.meals.spuntino3.proteine,
+              carboidrati: day.meals.spuntino3.carboidrati,
+              grassi: day.meals.spuntino3.grassi,
+              tempo: `${day.meals.spuntino3.tempoPreparazione} min`,
+              porzioni: day.meals.spuntino3.porzioni,
+              ingredienti: day.meals.spuntino3.ingredienti,
+              preparazione: day.meals.spuntino3.preparazione,
+              recipeId: day.meals.spuntino3.id,
+              rating: day.meals.spuntino3.rating,
+              categoria: day.meals.spuntino3.categoria,
+              tipoCucina: day.meals.spuntino3.tipoCucina,
+              difficolta: day.meals.spuntino3.difficolta
+            } : undefined
+          }
+        })),
+        // Aggiungi statistiche del piano
+        planStats: {
+          totalCalories: mealPlan.totalCalories,
+          totalProtein: mealPlan.totalProtein,
+          totalCarbs: mealPlan.totalCarbs,
+          totalFat: mealPlan.totalFat,
+          avgCaloriesPerDay: Math.round(mealPlan.totalCalories / mealPlan.days.length),
+          uniqueRecipes: mealPlanner.getPlanStats(mealPlan).uniqueRecipes,
+          dietCompliance: mealPlanner.getPlanStats(mealPlan).dietCompliance
+        },
+        // Aggiungi lista spesa
+        shoppingList: mealPlanner.generateShoppingList(mealPlan)
+      };
+      
+      console.log('✅ Compatible plan created:', compatiblePlan);
+      return compatiblePlan;
+      
+    } catch (error) {
+      console.error('❌ Error generating meal plan:', error);
+      // Fallback al sistema precedente in caso di errore
+      return parsePlanFromAI_Fallback(aiResponse);
+    }
+  };
+
+  // 🔄 FALLBACK - Sistema precedente per emergenza
+  const parsePlanFromAI_Fallback = (aiResponse: string) => {
+    console.log('🔄 Using fallback meal plan generation...');
+    
+    // Logica precedente come backup
     const baseMeals = {
       colazione: {
         nome: "Toast Avocado e Uovo in Camicia",
@@ -173,120 +314,25 @@ export default function HomePage() {
       }
     };
 
-    // Spuntini disponibili
-    const availableSnacks = {
-      spuntino1: {
-        nome: "Yogurt con Frutti di Bosco",
-        calorie: 180,
-        proteine: 15,
-        carboidrati: 20,
-        grassi: 3,
-        tempo: "5 min",
-        porzioni: 1,
-        ingredienti: [
-          "150g yogurt greco 0%",
-          "80g frutti di bosco misti",
-          "10g miele",
-          "5g mandorle a lamelle"
-        ],
-        preparazione: "Mescola lo yogurt greco con il miele. Aggiungi i frutti di bosco e le mandorle a lamelle."
-      },
-      spuntino2: {
-        nome: "Smoothie Proteico Verde",
-        calorie: 165,
-        proteine: 12,
-        carboidrati: 18,
-        grassi: 4,
-        tempo: "5 min",
-        porzioni: 1,
-        ingredienti: [
-          "1/2 banana (60g)",
-          "50g spinaci freschi",
-          "200ml latte di mandorla",
-          "10g proteine in polvere",
-          "5g burro di mandorle"
-        ],
-        preparazione: "Frulla tutti gli ingredienti fino ad ottenere una consistenza cremosa. Servi freddo."
-      },
-      spuntino3: {
-        nome: "Hummus con Verdure",
-        calorie: 145,
-        proteine: 8,
-        carboidrati: 15,
-        grassi: 6,
-        tempo: "5 min",
-        porzioni: 1,
-        ingredienti: [
-          "60g hummus di ceci",
-          "80g carote baby",
-          "60g cetrioli",
-          "40g peperoni rossi",
-          "Prezzemolo fresco"
-        ],
-        preparazione: "Taglia le verdure a bastoncini. Servi con l'hummus come salsa. Guarnisci con prezzemolo fresco."
-      }
-    };
-
-    // Determina quali pasti includere basandoti sul numero di pasti
+    // Resto della logica fallback...
+    const numDays = parseInt(formData.durata) || 1;
     const numPasti = parseInt(formData.pasti) || 3;
-    console.log('🍽️ Numero pasti:', numPasti);
+    const days = [];
     
-    const createDayMeals = () => {
-      const meals: any = {
+    for (let i = 0; i < numDays; i++) {
+      const dayMeals: any = {
         colazione: baseMeals.colazione,
         pranzo: baseMeals.pranzo,
         cena: baseMeals.cena
       };
-
-      // Aggiungi spuntini basati sul numero di pasti
-      if (numPasti >= 4) {
-        meals.spuntino1 = availableSnacks.spuntino1;
-      }
-      if (numPasti >= 5) {
-        meals.spuntino2 = availableSnacks.spuntino2;
-      }
-      if (numPasti >= 6) {
-        meals.spuntino3 = availableSnacks.spuntino3;
-      }
-
-      return meals;
-    };
-
-    const mockPlan = {
-      days: [
-        {
-          day: "Giorno 1",
-          meals: createDayMeals()
-        },
-        {
-          day: "Giorno 2", 
-          meals: createDayMeals() // Per ora stessi pasti, poi possiamo variare
-        }
-      ]
-    };
-
-    const numDays = parseInt(formData.durata) || 1;
-    const allDays = [];
-    
-    if (formData.varieta === 'ripetuti') {
-      for (let i = 0; i < numDays; i++) {
-        allDays.push({
-          ...mockPlan.days[0],
-          day: `Giorno ${i + 1}`
-        });
-      }
-    } else {
-      for (let i = 0; i < numDays; i++) {
-        allDays.push({
-          ...mockPlan.days[i % 2],
-          day: `Giorno ${i + 1}`
-        });
-      }
+      
+      days.push({
+        day: `Giorno ${i + 1}`,
+        meals: dayMeals
+      });
     }
 
-    const finalPlan = { ...mockPlan, days: allDays };
-    console.log('✅ Plan parsed successfully:', finalPlan);
-    return finalPlan;
+    return { days };
   };
 
   // Test connessione API all'avvio
@@ -306,61 +352,70 @@ export default function HomePage() {
     testAPI();
   }, []);
 
+  // 🔄 SOSTITUZIONE RICETTA MIGLIORATA
   const handleReplacement = async (mealType: string, dayNumber: string) => {
-    console.log('🔄 REPLACEMENT STARTED:', { mealType, dayNumber }); // DEBUG
+    console.log('🔄 REPLACEMENT STARTED (with recipe database):', { mealType, dayNumber });
     setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
-      console.log('📡 Calling replace-meal API...'); // DEBUG
-      const response = await fetch('/api/replace-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          formData,
-          mealType,
-          dayNumber,
-          currentPlan: generatedPlan
-        })
-      });
+      // Importa meal planner integration
+      const { MealPlannerIntegration } = await import('../utils/mealPlannerIntegration');
+      const mealPlanner = MealPlannerIntegration.getInstance();
       
-      console.log('📨 API Response status:', response.status); // DEBUG
-      const result = await response.json();
-      console.log('🔄 Replace meal result:', result); // DEBUG
+      // Converti il piano attuale in formato MealPlan
+      const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
       
-      if (result.success && result.newMeal) {
-        console.log('✅ Processing successful result...'); // DEBUG
+      // Genera nuova ricetta usando il database
+      const currentMealPlan = {
+        days: parsedPlan.days.map((day: any) => ({
+          day: day.day,
+          meals: day.meals
+        })),
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFat: 0,
+        userPreferences: formData
+      };
+      
+      // Sostituisci la ricetta nel piano
+      const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
+      
+      // Riconverti in formato compatibile
+      const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
+      
+      if (newMeal) {
+        const updatedParsedPlan = { ...parsedPlan };
+        updatedParsedPlan.days[dayIndex].meals[mealType] = {
+          nome: newMeal.nome,
+          calorie: newMeal.calorie,
+          proteine: newMeal.proteine,
+          carboidrati: newMeal.carboidrati,
+          grassi: newMeal.grassi,
+          tempo: `${newMeal.tempoPreparazione} min`,
+          porzioni: newMeal.porzioni,
+          ingredienti: newMeal.ingredienti,
+          preparazione: newMeal.preparazione,
+          recipeId: newMeal.id,
+          rating: newMeal.rating,
+          categoria: newMeal.categoria,
+          tipoCucina: newMeal.tipoCucina,
+          difficolta: newMeal.difficolta
+        };
         
-        // Aggiorna il parsedPlan direttamente invece di rigenerarlo
-        const updatedPlan = { ...parsedPlan };
-        const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+        setParsedPlan(updatedParsedPlan);
         
-        console.log('📅 Day index:', dayIndex); // DEBUG
+        // Rigenera il documento completo
+        const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
+        setGeneratedPlan(completeDocument);
         
-        if (updatedPlan.days[dayIndex]) {
-          // Fix sintassi TypeScript
-          const dayMeals = updatedPlan.days[dayIndex].meals;
-          (dayMeals as any)[mealType] = result.newMeal;
-          
-          console.log('🔄 Updating parsed plan...'); // DEBUG
-          setParsedPlan(updatedPlan);
-          
-          // Rigenera il documento completo
-          const completeDocument = generateCompleteDocument(updatedPlan, formData);
-          setGeneratedPlan(completeDocument);
-          
-          console.log('✅ Meal replaced successfully:', result.newMeal.nome);
-        } else {
-          console.log('❌ Day not found:', dayIndex); // DEBUG
-        }
-      } else {
-        console.log('❌ API returned error:', result); // DEBUG
-        alert('Errore nella sostituzione del pasto: ' + (result.error || 'Errore sconosciuto'));
+        console.log('✅ Meal replaced successfully with:', newMeal.nome);
       }
+      
     } catch (error) {
       console.error('❌ Replace meal error:', error);
-      alert('Errore di connessione per la sostituzione');
+      alert('Errore nella sostituzione del pasto');
     } finally {
-      console.log('🏁 Replacement finished'); // DEBUG
       setIsReplacing(null);
     }
   };
@@ -382,7 +437,7 @@ export default function HomePage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 FORM SUBMIT STARTED');
+    console.log('🚀 FORM SUBMIT STARTED (with recipe database integration)');
     console.log('📝 Form Data:', formData);
     e.preventDefault();
     setIsGenerating(true);
@@ -407,143 +462,112 @@ export default function HomePage() {
 
       console.log('🧠 AI Enhanced Prompt:', enhancedPrompt);
       
-      console.log('📡 Making API call...');
-      const response = await fetch('/api/generate-meal-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          aiEnhancedPrompt: enhancedPrompt
-        })
+      // ⚡ NUOVO: Genera direttamente usando il database ricette
+      console.log('🔄 Generating meal plan using recipe database...');
+      const parsed = await parsePlanFromAI('direct_database_generation');
+      setParsedPlan(parsed);
+      
+      const completeDocument = generateCompleteDocument(parsed, formData);
+      setGeneratedPlan(completeDocument);
+      setShowPreview(true);
+      
+      // 🤖 AI Learning: Salva piano nello storico
+      await aiLearning.savePlanToHistory({
+        id: Date.now().toString(),
+        nome: formData.nome,
+        preferences: {
+          preferenceColazione: formData.preferenceColazione,
+          preferencePranzo: formData.preferencePranzo,
+          preferenceCena: formData.preferenceCena,
+          stileAlimentare: formData.stileAlimentare,
+          livelloElaborazione: formData.livelloElaborazione,
+          preferenzeCottura: formData.preferenzeCottura,
+          evitaRipetizioni: formData.evitaRipetizioni
+        },
+        generatedMeals: {
+          colazione: parsed.days.flatMap((day: any) => day.meals.colazione ? [day.meals.colazione.nome] : []),
+          pranzo: parsed.days.flatMap((day: any) => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
+          cena: parsed.days.flatMap((day: any) => day.meals.cena ? [day.meals.cena.nome] : []),
+          spuntini: parsed.days.flatMap((day: any) => [
+            ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
+            ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
+          ])
+        },
+        createdAt: new Date().toISOString()
       });
       
-      console.log('📨 Response received:', response.status);
-      const result = await response.json();
-      console.log('📋 Result:', result);
-      
-      if (result.success) {
-        console.log('✅ Success! Parsing plan...');
-        const parsed = parsePlanFromAI(result.piano);
-        setParsedPlan(parsed);
-        
-        const completeDocument = generateCompleteDocument(parsed, formData);
-        setGeneratedPlan(completeDocument);
-        setShowPreview(true);
-        
-        // 🤖 AI Learning: Salva piano nello storico
-        await aiLearning.savePlanToHistory({
-          id: Date.now().toString(),
-          nome: formData.nome,
-          preferences: {
-            preferenceColazione: formData.preferenceColazione,
-            preferencePranzo: formData.preferencePranzo,
-            preferenceCena: formData.preferenceCena,
-            stileAlimentare: formData.stileAlimentare,
-            livelloElaborazione: formData.livelloElaborazione,
-            preferenzeCottura: formData.preferenzeCottura,
-            evitaRipetizioni: formData.evitaRipetizioni
-          },
-          generatedMeals: {
-            colazione: parsed.days.flatMap(day => day.meals.colazione ? [day.meals.colazione.nome] : []),
-            pranzo: parsed.days.flatMap(day => day.meals.pranzo ? [day.meals.pranzo.nome] : []),
-            cena: parsed.days.flatMap(day => day.meals.cena ? [day.meals.cena.nome] : []),
-            spuntini: parsed.days.flatMap(day => [
-              ...(day.meals.spuntino1 ? [day.meals.spuntino1.nome] : []),
-              ...(day.meals.spuntino2 ? [day.meals.spuntino2.nome] : [])
-            ])
-          },
-          createdAt: new Date().toISOString()
+      // 💾 SALVA IN AIRTABLE
+      try {
+        console.log('💾 Saving to Airtable...');
+        const airtableResponse = await fetch('/api/airtable', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveMealRequest',
+            data: {
+              nome: formData.nome,
+              email: sessionStorage.getItem('userAuth') || '',
+              age: formData.eta,
+              weight: formData.peso,
+              height: formData.altezza,
+              gender: formData.sesso,
+              activity_level: formData.attivita,
+              goal: formData.obiettivo === 'perdita-peso' ? 'dimagrimento' : 
+                    formData.obiettivo === 'aumento-massa' ? 'aumento_massa' : 
+                    formData.obiettivo,
+              duration: formData.durata,
+              meals_per_day: formData.pasti,
+              exclusions: formData.allergie,
+              foods_at_home: formData.preferenze,
+              phone: '',
+              ai_preferences: JSON.stringify({
+                preferenceColazione: formData.preferenceColazione,
+                preferencePranzo: formData.preferencePranzo,
+                preferenceCena: formData.preferenceCena,
+                stileAlimentare: formData.stileAlimentare,
+                livelloElaborazione: formData.livelloElaborazione,
+                preferenzeCottura: formData.preferenzeCottura,
+                evitaRipetizioni: formData.evitaRipetizioni
+              })
+            }
+          })
         });
         
-        // 💾 SALVA IN AIRTABLE
-        try {
-          console.log('💾 Saving to Airtable...');
-          const airtableResponse = await fetch('/api/airtable', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'saveMealRequest',
-              data: {
-                nome: formData.nome,
-                email: sessionStorage.getItem('userAuth') || '',
-                age: formData.eta,
-                weight: formData.peso,
-                height: formData.altezza,
-                gender: formData.sesso,
-                activity_level: formData.attivita,
-                goal: formData.obiettivo === 'perdita-peso' ? 'dimagrimento' : 
-                      formData.obiettivo === 'aumento-massa' ? 'aumento_massa' : 
-                      formData.obiettivo,
-                duration: formData.durata,
-                meals_per_day: formData.pasti,
-                exclusions: formData.allergie,
-                foods_at_home: formData.preferenze,
-                phone: '',
-                // Nuovi campi AI
-                ai_preferences: JSON.stringify({
-                  preferenceColazione: formData.preferenceColazione,
-                  preferencePranzo: formData.preferencePranzo,
-                  preferenceCena: formData.preferenceCena,
-                  stileAlimentare: formData.stileAlimentare,
-                  livelloElaborazione: formData.livelloElaborazione,
-                  preferenzeCottura: formData.preferenzeCottura,
-                  evitaRipetizioni: formData.evitaRipetizioni
-                })
-              }
-            })
-          });
+        if (airtableResponse.ok) {
+          const airtableResult = await airtableResponse.json();
+          console.log('✅ Airtable response:', airtableResult);
           
-          console.log('📊 Airtable response status:', airtableResponse.status);
-          
-          if (airtableResponse.ok) {
-            const airtableResult = await airtableResponse.json();
-            console.log('✅ Airtable response:', airtableResult);
-            
-            // Salva il piano completo per le future visualizzazioni
-            if (airtableResult.recordId) {
-              try {
-                await fetch('/api/airtable', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'updateRequestStatus',
-                    data: {
-                      recordId: airtableResult.recordId,
-                      status: 'Piano generato',
-                      mealPlan: {
-                        generatedPlan: completeDocument,
-                        parsedPlan: parsed,
-                        formData: formData
-                      }
-                    }
-                  })
-                });
-                console.log('✅ Piano completo salvato in Airtable');
-              } catch (updateError) {
-                console.error('❌ Error updating plan:', updateError);
-              }
-            }
-            
-            console.log('✅ Saved to Airtable successfully');
-          } else {
-            const errorText = await airtableResponse.text();
-            console.error('❌ Airtable API error:', airtableResponse.status, errorText);
-            alert('⚠️ Piano generato ma errore nel salvataggio. Verifica la connessione.');
+          if (airtableResult.recordId) {
+            await fetch('/api/airtable', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'updateRequestStatus',
+                data: {
+                  recordId: airtableResult.recordId,
+                  status: 'Piano generato con database ricette',
+                  mealPlan: {
+                    generatedPlan: completeDocument,
+                    parsedPlan: parsed,
+                    formData: formData,
+                    planStats: parsed.planStats,
+                    shoppingList: parsed.shoppingList
+                  }
+                }
+              })
+            });
           }
-        } catch (airtableError) {
-          console.error('❌ Airtable save error:', airtableError);
-          alert('⚠️ Piano generato ma errore nel salvataggio Airtable.');
         }
-        
-        setTimeout(() => {
-          document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        console.log('❌ API returned error:', result.error);
-        alert(`❌ Errore: ${result.error}\n\nDettagli: ${result.details || 'Nessun dettaglio disponibile'}`);
+      } catch (airtableError) {
+        console.error('❌ Airtable save error:', airtableError);
       }
+      
+      setTimeout(() => {
+        document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      
     } catch (error) {
-      console.log('💥 Catch error:', error);
+      console.log('💥 Error:', error);
       alert('❌ Errore di connessione. Riprova più tardi.');
     } finally {
       setIsGenerating(false);
@@ -777,22 +801,22 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="bg-gray-700 rounded-lg p-6">
               <h3 className="text-xl font-bold mb-3">Come funziona la programmazione?</h3>
-              <p className="text-gray-300">Il sistema analizza i tuoi dati personali e crea una programmazione completa con ricette, lista spesa e consigli nutrizionali.</p>
+              <p className="text-gray-300">Il sistema utilizza un database di oltre 500 ricette selezionate e le combina in base alle tue preferenze alimentari, allergie e obiettivi nutrizionali.</p>
             </div>
             
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">Quanto tempo richiede la creazione?</h3>
-              <p className="text-gray-300">La programmazione viene creata in 10-30 secondi, con un piano settimanale completo e ricette dettagliate.</p>
+              <h3 className="text-xl font-bold mb-3">Le ricette sono personalizzate?</h3>
+              <p className="text-gray-300">Sì! Ogni ricetta è selezionata automaticamente in base alle tue allergie, preferenze dietetiche (vegana, vegetariana, keto, ecc.) e tempo disponibile per cucinare.</p>
             </div>
             
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">Posso modificare la programmazione?</h3>
-              <p className="text-gray-300">Sì, puoi sempre creare una nuova programmazione con preferenze diverse o richiedere modifiche specifiche.</p>
+              <h3 className="text-xl font-bold mb-3">Posso vedere i dettagli delle ricette?</h3>
+              <p className="text-gray-300">Assolutamente! Ogni ricetta nel piano è collegata a una pagina dettagliata con ingredienti, preparazione, valori nutrizionali e consigli di cucina.</p>
             </div>
 
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🔀 Come funziona la sostituzione ingredienti?</h3>
-              <p className="text-gray-300">Il sistema analizza ogni ingrediente e suggerisce alternative intelligenti considerando allergie, preferenze e funzione culinaria. Basta fare hover su un ingrediente e cliccare "🔀".</p>
+              <h3 className="text-xl font-bold mb-3">🔀 Come funziona la sostituzione ricette?</h3>
+              <p className="text-gray-300">Puoi sostituire qualsiasi ricetta del piano con una nuova ricetta dal database che rispetta le tue preferenze e restrizioni alimentari.</p>
             </div>
           </div>
         </div>
@@ -807,7 +831,7 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold">Meal Prep Planner</h3>
           </div>
           <p className="text-gray-400 mb-6">
-            Semplificare la tua alimentazione con programmazione intelligente.
+            Semplificare la tua alimentazione con programmazione intelligente e ricette personalizzate.
           </p>
           <div className="flex justify-center gap-6">
             <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
