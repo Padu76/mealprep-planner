@@ -121,78 +121,180 @@ export default function HomePage() {
     testAPI();
   }, []);
 
-  // 🔄 SOSTITUZIONE RICETTA CON DATABASE + FITNESS PRIORITY
+  // 🔄 SOSTITUZIONE RICETTA CON CLAUDE AI
   const handleReplacement = async (mealType: string, dayNumber: string) => {
-    console.log('🔄 REPLACEMENT STARTED (Fitness Priority):', { mealType, dayNumber });
+    console.log('🔄 REPLACEMENT STARTED (Claude AI):', { mealType, dayNumber });
     setIsReplacing(`${dayNumber}-${mealType}`);
     
     try {
-      // Importa meal planner integration e AI fitness enhancer
-      const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
-      const { aiRecipeEnhancer } = await import('../utils/aiRecipeEnhancer');
-      const mealPlanner = MealPlannerIntegration.getInstance();
-      
-      // Converti il piano attuale in formato MealPlan
       const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+      const currentMeal = parsedPlan.days[dayIndex].meals[mealType];
       
-      // Genera nuova ricetta usando il database
-      const currentMealPlan = {
-        days: parsedPlan.days.map((day: any) => ({
-          day: day.day,
-          meals: day.meals
-        })),
-        totalCalories: 0,
-        totalProtein: 0,
-        totalCarbs: 0,
-        totalFat: 0,
-        userPreferences: formData
-      };
+      // 🤖 STEP 1: Chiama la tua API Claude AI esistente
+      const response = await fetch('/api/replace-meal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formData: formData,
+          mealType: mealType,
+          dayNumber: dayNumber,
+          currentPlan: parsedPlan
+        })
+      });
       
-      // Sostituisci la ricetta nel piano
-      const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
-      
-      // Riconverti in formato compatibile
-      const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
-      
-      if (newMeal) {
-        // 🏋️‍♂️ APPLICA FITNESS ENHANCEMENT
-        const fitnessScore = aiRecipeEnhancer.calculateFitnessScore(newMeal, formData.obiettivo);
-        const enhancedPreparation = await aiRecipeEnhancer.enhanceRecipeForFitness(newMeal, formData.obiettivo);
-        const imageUrl = await aiRecipeEnhancer.generateRecipeImage(newMeal);
+      if (response.ok) {
+        const result = await response.json();
         
-        const updatedParsedPlan = { ...parsedPlan };
-        updatedParsedPlan.days[dayIndex].meals[mealType] = {
-          nome: newMeal.nome,
-          calorie: newMeal.calorie,
-          proteine: newMeal.proteine,
-          carboidrati: newMeal.carboidrati,
-          grassi: newMeal.grassi,
-          tempo: `${newMeal.tempoPreparazione} min`,
-          porzioni: newMeal.porzioni,
-          ingredienti: newMeal.ingredienti,
-          preparazione: enhancedPreparation, // Preparazione migliorata per fitness
-          recipeId: newMeal.id,
-          rating: newMeal.rating,
-          categoria: newMeal.categoria,
-          tipoCucina: newMeal.tipoCucina,
-          difficolta: newMeal.difficolta,
-          fitnessScore: fitnessScore.score, // Aggiungi fitness score
-          fitnessReasons: fitnessScore.reasons,
-          imageUrl: imageUrl, // Immagine AI generata
-          source: 'database-fitness-enhanced'
-        };
-        
-        setParsedPlan(updatedParsedPlan);
-        
-        // Rigenera il documento completo
-        const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
-        setGeneratedPlan(completeDocument);
-        
-        console.log('✅ Meal replaced with FITNESS enhancement:', newMeal.nome, 'Score:', fitnessScore.score);
+        if (result.success && result.newMeal) {
+          // 🎯 Usa la ricetta generata da Claude AI
+          const newMeal = result.newMeal;
+          
+          // 🖼️ Genera immagine per la nuova ricetta
+          let imageUrl = '';
+          try {
+            const imageResponse = await fetch('/api/generate-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: `Professional food photography of ${newMeal.nome}, healthy fitness meal, appetizing`
+              })
+            });
+            const imageResult = await imageResponse.json();
+            imageUrl = imageResult.imageUrl || '';
+          } catch (imageError) {
+            console.log('⚠️ Image generation failed:', imageError);
+          }
+          
+          // 🏋️‍♂️ Calcola fitness score per la nuova ricetta
+          let fitnessScore = 75; // Score base
+          const proteinRatio = newMeal.proteine / newMeal.calorie * 4;
+          
+          // Bonus proteine
+          if (proteinRatio >= 0.20 && proteinRatio <= 0.35) {
+            fitnessScore += 15;
+          }
+          
+          // Bonus per obiettivo
+          if (formData.obiettivo === 'perdita-peso' && newMeal.calorie <= 400) {
+            fitnessScore += 10;
+          } else if (formData.obiettivo === 'aumento-massa' && newMeal.calorie >= 500) {
+            fitnessScore += 10;
+          }
+          
+          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI
+          const updatedParsedPlan = { ...parsedPlan };
+          updatedParsedPlan.days[dayIndex].meals[mealType] = {
+            nome: newMeal.nome,
+            calorie: newMeal.calorie,
+            proteine: newMeal.proteine,
+            carboidrati: newMeal.carboidrati,
+            grassi: newMeal.grassi,
+            tempo: newMeal.tempo,
+            porzioni: newMeal.porzioni,
+            ingredienti: newMeal.ingredienti,
+            preparazione: newMeal.preparazione,
+            imageUrl: imageUrl,
+            fitnessScore: Math.min(100, fitnessScore),
+            fitnessReasons: [
+              `Fitness Score: ${Math.min(100, fitnessScore)}/100`,
+              `Proteine: ${newMeal.proteine}g (${(proteinRatio * 100).toFixed(1)}%)`,
+              `Calorie ottimizzate per ${formData.obiettivo}`,
+              `Generato da Claude AI`
+            ],
+            source: result.isAI ? 'claude-ai' : 'fallback',
+            recipeId: `ai-${Date.now()}`,
+            rating: 4.5,
+            categoria: mealType,
+            tipoCucina: 'italiana',
+            difficolta: 'facile'
+          };
+          
+          setParsedPlan(updatedParsedPlan);
+          
+          // Rigenera il documento completo
+          const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
+          setGeneratedPlan(completeDocument);
+          
+          console.log('✅ Meal replaced with Claude AI:', newMeal.nome, 'Score:', Math.min(100, fitnessScore));
+        } else {
+          throw new Error('No meal generated');
+        }
+      } else {
+        throw new Error('API replacement failed');
       }
       
     } catch (error) {
-      console.error('❌ Replace meal error:', error);
+      console.error('❌ Claude AI replacement failed, trying database fallback:', error);
+      
+      // 🔄 FALLBACK: Usa il sistema database esistente
+      try {
+        const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
+        const mealPlanner = MealPlannerIntegration.getInstance();
+        
+        const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+        const currentMealPlan = {
+          days: parsedPlan.days.map((day: any) => ({
+            day: day.day,
+            meals: day.meals
+          })),
+          totalCalories: 0,
+          totalProtein: 0,
+          totalCarbs: 0,
+          totalFat: 0,
+          userPreferences: formData
+        };
+        
+        const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
+        const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
+        
+        if (newMeal) {
+          // 🖼️ Genera immagine
+          let imageUrl = '';
+          try {
+            const imageResponse = await fetch('/api/generate-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: `Professional food photography of ${newMeal.nome}, healthy fitness meal`
+              })
+            });
+            const imageResult = await imageResponse.json();
+            imageUrl = imageResult.imageUrl || '';
+          } catch (imageError) {
+            console.log('⚠️ Fallback image generation failed:', imageError);
+          }
+          
+          const updatedParsedPlan = { ...parsedPlan };
+          updatedParsedPlan.days[dayIndex].meals[mealType] = {
+            nome: newMeal.nome,
+            calorie: newMeal.calorie,
+            proteine: newMeal.proteine,
+            carboidrati: newMeal.carboidrati,
+            grassi: newMeal.grassi,
+            tempo: `${newMeal.tempoPreparazione} min`,
+            porzioni: newMeal.porzioni,
+            ingredienti: newMeal.ingredienti,
+            preparazione: newMeal.preparazione,
+            recipeId: newMeal.id,
+            rating: newMeal.rating,
+            categoria: newMeal.categoria,
+            tipoCucina: newMeal.tipoCucina,
+            difficolta: newMeal.difficolta,
+            fitnessScore: 70,
+            fitnessReasons: ['Ricetta dal database', 'Fallback system'],
+            imageUrl: imageUrl,
+            source: 'database-fallback'
+          };
+          
+          setParsedPlan(updatedParsedPlan);
+          const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
+          setGeneratedPlan(completeDocument);
+          
+          console.log('✅ Fallback replacement successful:', newMeal.nome);
+        }
+      } catch (fallbackError) {
+        console.error('❌ Complete replacement failure:', fallbackError);
+      }
     } finally {
       setIsReplacing(null);
     }
