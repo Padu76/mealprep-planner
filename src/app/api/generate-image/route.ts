@@ -6,34 +6,49 @@ async function generateWithUnsplash(prompt: string): Promise<string> {
   const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
   
   if (!UNSPLASH_ACCESS_KEY) {
+    console.log('❌ Unsplash API key not found');
     throw new Error('Unsplash API key not configured');
   }
 
-  // Estrai keywords dal prompt
+  // Estrai keywords dal prompt per cercare meglio
   const keywords = prompt.toLowerCase()
     .replace(/professional food photography of|healthy meal|appetizing|clean background|natural lighting|ingredients:/g, '')
     .split(',')[0]
+    .split(' ')
+    .slice(0, 3) // Solo prime 3 parole
+    .join(' ')
     .trim();
 
+  console.log('🔍 Searching Unsplash for:', keywords);
+
   try {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords + ' food meal')}&per_page=1&orientation=landscape`,
-      {
-        headers: {
-          'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
-        }
+    const searchUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keywords + ' food healthy meal')}&per_page=1&orientation=landscape&content_filter=high`;
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+        'Accept': 'application/json'
       }
-    );
+    });
+
+    if (!response.ok) {
+      console.log('❌ Unsplash API error:', response.status, response.statusText);
+      throw new Error(`Unsplash API error: ${response.status}`);
+    }
 
     const data = await response.json();
+    console.log('📊 Unsplash response:', data.total, 'images found');
     
     if (data.results && data.results.length > 0) {
-      return data.results[0].urls.regular;
+      const imageUrl = data.results[0].urls.regular;
+      console.log('✅ Unsplash image found:', imageUrl);
+      return imageUrl;
     }
     
+    console.log('⚠️ No images found for:', keywords);
     throw new Error('No images found');
   } catch (error) {
-    console.error('Unsplash API error:', error);
+    console.error('❌ Unsplash API error:', error);
     throw error;
   }
 }
@@ -78,9 +93,13 @@ async function generateWithDALLE(prompt: string): Promise<string> {
 // OPZIONE 3: Placeholder intelligente (Fallback sempre funzionante)
 function generatePlaceholder(prompt: string): string {
   // Estrai il nome del piatto dal prompt
-  const dishName = prompt.split(',')[0]
+  let dishName = prompt.split(',')[0]
     .replace('Professional food photography of', '')
-    .trim();
+    .replace(/[^a-zA-Z0-9\s]/g, '') // Rimuovi caratteri speciali
+    .trim()
+    .substring(0, 20); // Limita lunghezza
+  
+  if (!dishName) dishName = 'Recipe';
   
   const encodedName = encodeURIComponent(dishName);
   
@@ -88,6 +107,7 @@ function generatePlaceholder(prompt: string): string {
   const colors = ['8FBC8F', 'FF6B6B', 'FFD93D', '6BCF7F', 'A8E6CF', 'FFB347'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
   
+  // URL sicuro e funzionante
   return `https://via.placeholder.com/400x300/${randomColor}/ffffff?text=${encodedName}`;
 }
 
@@ -108,33 +128,26 @@ export async function POST(request: NextRequest) {
     let imageUrl: string;
     
     try {
-      // PER ORA: Usa sempre placeholder colorati
-      console.log('🎨 Using smart placeholder...');
-      imageUrl = generatePlaceholder(prompt);
-      console.log('✅ Placeholder generated:', imageUrl);
-      
-      // QUANDO AVRAI API KEY, decommentare:
-      /*
-      // PRIORITÀ 1: Prova Unsplash (gratuito)
+      // PRIORITÀ 1: Prova Unsplash con logging dettagliato
       if (process.env.UNSPLASH_ACCESS_KEY) {
-        console.log('📸 Trying Unsplash...');
+        console.log('📸 Trying Unsplash with key:', process.env.UNSPLASH_ACCESS_KEY ? 'Found' : 'Missing');
         imageUrl = await generateWithUnsplash(prompt);
         console.log('✅ Unsplash success:', imageUrl);
       } 
-      // PRIORITÀ 2: Prova DALL-E (a pagamento)
-      else if (process.env.OPENAI_API_KEY) {
-        console.log('🎨 Trying DALL-E...');
-        imageUrl = await generateWithDALLE(prompt);
-        console.log('✅ DALL-E success:', imageUrl);
-      } 
-      // FALLBACK: Placeholder intelligente
+      // PRIORITÀ 2: Fallback a placeholder se Unsplash fallisce
       else {
+        console.log('⚠️ No Unsplash key, using placeholder');
         throw new Error('No image generation service configured');
       }
-      */
     } catch (error) {
-      console.log('⚠️ Image generation failed, using placeholder:', error);
+      console.log('⚠️ Image generation failed, using safe placeholder:', error);
       imageUrl = generatePlaceholder(prompt);
+    }
+
+    // Verifica che l'URL sia valido
+    if (!imageUrl || !imageUrl.startsWith('http')) {
+      console.log('❌ Invalid imageUrl, using fallback');
+      imageUrl = 'https://via.placeholder.com/400x300/8FBC8F/ffffff?text=Recipe+Image';
     }
 
     return NextResponse.json({
