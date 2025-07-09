@@ -32,7 +32,7 @@ export default function HomePage() {
   const [substitutes, setSubstitutes] = useState<any[]>([]);
 
   // Usa il hook useFormData
-  const { formData, hasSavedData, handleInputChange, clearSavedData, resetFormData } = useFormData();
+  const { formData, hasSavedData, handleInputChange, handleArrayChange, clearSavedData, resetFormData } = useFormData();
 
   // Funzione per richiedere sostituzione ingrediente AI
   const handleIngredientSubstitution = async (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => {
@@ -567,42 +567,36 @@ export default function HomePage() {
   };
 
   // 🔧 Utility functions
-  const parseAllergies = (allergie: string): string[] => {
-    if (!allergie) return [];
+  const parseAllergies = (allergie: string[]): string[] => {
+    if (!allergie || !Array.isArray(allergie)) return [];
     
-    const allergieText = allergie.toLowerCase();
+    // Le allergie sono già standardizzate dalle checkbox
     const allergieMap: { [key: string]: string } = {
       'glutine': 'glutine',
       'lattosio': 'latte',
       'latte': 'latte',
-      'latticini': 'latte',
       'uova': 'uova',
       'pesce': 'pesce',
-      'frutti di mare': 'pesce',
-      'crostacei': 'pesce',
+      'frutti_mare': 'pesce',
       'noci': 'frutta_secca',
-      'mandorle': 'frutta_secca',
-      'nocciole': 'frutta_secca',
-      'pistacchi': 'frutta_secca',
-      'frutta secca': 'frutta_secca',
+      'arachidi': 'frutta_secca',
       'soia': 'soia',
       'sesamo': 'sesamo',
-      'arachidi': 'frutta_secca',
       'sedano': 'sedano',
       'senape': 'senape',
       'lupini': 'lupini',
-      'molluschi': 'pesce',
-      'anidride solforosa': 'solfiti',
       'solfiti': 'solfiti'
     };
     
     const result: string[] = [];
-    Object.keys(allergieMap).forEach(key => {
-      if (allergieText.includes(key)) {
-        result.push(allergieMap[key]);
+    allergie.forEach(allergia => {
+      const mapped = allergieMap[allergia];
+      if (mapped && !result.includes(mapped)) {
+        result.push(mapped);
       }
     });
     
+    console.log('⚠️ Parsed allergies:', result);
     return result;
   };
 
@@ -817,6 +811,7 @@ Genera ricette creative e personalizzate per ogni pasto.`;
       <MealForm 
         formData={formData}
         handleInputChange={handleInputChange}
+        handleArrayChange={handleArrayChange}
         handleSubmit={handleSubmit}
         isGenerating={isGenerating}
         hasSavedData={hasSavedData}
