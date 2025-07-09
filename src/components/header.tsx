@@ -11,8 +11,16 @@ export default function Header() {
         
         <nav className="hidden md:flex gap-6">
           <Link href="/" className="text-white hover:text-green-400 transition-colors">Home</Link>
-          <Link href="/dashboard" className="text-white hover:text-green-400 transition-colors">Dashboard</Link>
-          <Link href="/ricette" className="text-white hover:text-green-400 transition-colors">Ricette</Link>
+          <Link 
+            href="/dashboard" 
+            className="text-white hover:text-green-400 transition-colors"
+            onClick={(e) => {
+              console.log('🔍 Dashboard link clicked');
+              // Test se il link funziona
+            }}
+          >
+            Dashboard
+          </Link>
         </nav>
       </div>
     </header>
