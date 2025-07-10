@@ -131,15 +131,11 @@ function calculateNutritionalNeedsFixed(formData: any) {
   const tdee = bmr * activityFactor;
   console.log('🔥 TDEE calculated:', Math.round(tdee));
 
-  // 🎯 FATTORI OBIETTIVO - MAPPING CORRETTO E COMPLETO
+  // 🎯 FATTORI OBIETTIVO - I TUOI 3 PARAMETRI
   const goalFactors: { [key: string]: number } = {
-    'dimagrimento': 0.85,
-    'perdita-peso': 0.85,
-    'perdita peso': 0.85,
-    'mantenimento': 1.0,
-    'aumento-massa': 1.15,
-    'aumento massa': 1.15,
-    'massa': 1.15
+    'dimagrimento': 0.85,        // ← Toglie calorie
+    'mantenimento': 1.0,         // ← Tiene calcolo
+    'aumento-massa': 1.15        // ← Aumenta calorie
   };
 
   const goalFactor = goalFactors[goal] || 1.0; // Default mantenimento
@@ -261,26 +257,22 @@ function normalizeActivity(activity: string): string {
 // 🔧 MAPPING OBIETTIVO COMPLETAMENTE FIXATO
 function normalizeGoal(goal: string): string {
   const goalMap: { [key: string]: string } = {
-    // Valori diretti dal form
-    'perdita-peso': 'perdita-peso',
+    // Valori diretti dal form - CORRETTI PER I TUOI 3 PARAMETRI
+    'dimagrimento': 'dimagrimento',
     'mantenimento': 'mantenimento',
     'aumento-massa': 'aumento-massa',
     
     // Varianti con maiuscole
-    'Perdita-peso': 'perdita-peso',
+    'Dimagrimento': 'dimagrimento',
     'Mantenimento': 'mantenimento',          // ← FIX PRINCIPALE!
     'Aumento-massa': 'aumento-massa',
     
-    // Varianti complete
-    'Perdita di Peso': 'perdita-peso',
-    'Aumento Massa Muscolare': 'aumento-massa',
-    
     // Varianti alternative
-    'dimagrimento': 'perdita-peso',
-    'perdita peso': 'perdita-peso',
-    'perdita di peso': 'perdita-peso',
-    'perdere peso': 'perdita-peso',
-    'dimagrire': 'perdita-peso',
+    'perdita-peso': 'dimagrimento',
+    'perdita peso': 'dimagrimento',
+    'perdita di peso': 'dimagrimento',
+    'perdere peso': 'dimagrimento',
+    'dimagrire': 'dimagrimento',
     
     'mantenere': 'mantenimento',
     'maintain': 'mantenimento',
