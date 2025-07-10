@@ -1,4 +1,4 @@
-// 🔧 /src/app/api/airtable/route.ts - FIX Created_At
+// 🔧 /src/app/api/airtable/route.ts - FIX Created_At Sorting
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 💾 SAVE MEAL REQUEST ACTION - FIX Created_At
+    // 💾 SAVE MEAL REQUEST ACTION
     if (action === 'saveMealRequest') {
       console.log('💾 Saving meal request to Airtable...');
       console.log('📝 Data received:', data);
@@ -87,13 +87,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // 🔧 FIX: Formato data corretto per Airtable
-        const today = new Date();
-        const dateString = today.getFullYear() + '-' + 
-                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(today.getDate()).padStart(2, '0');
-
-        // 🔧 FIX: Prepara i dati con controlli di tipo
+        // 🔧 PREPARA DATI CON CONTROLLI DI TIPO
         const airtableFields = {
           Nome: String(data.nome || ''),
           Email: String(data.email || ''),
@@ -112,8 +106,7 @@ export async function POST(request: NextRequest) {
           Source: 'Website Form'
         };
 
-        // 🔧 FIX: Aggiungi Created_At solo se non è automatico
-        // Prova prima senza Created_At
+        // 🔧 NON AGGIUNGIAMO Created_At - Airtable lo gestisce automaticamente
         console.log('📤 Sending to Airtable:', airtableFields);
 
         const airtableResponse = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests`, {
@@ -141,12 +134,6 @@ export async function POST(request: NextRequest) {
           const errorData = await airtableResponse.json();
           console.log('❌ Airtable save failed:', errorData);
           
-          // 🔧 FIX: Prova con Created_At formato diverso se il primo tentativo fallisce
-          if (errorData.error?.type === 'INVALID_VALUE_FOR_COLUMN') {
-            console.log('🔄 Retry without Created_At...');
-            // Il primo tentativo già è senza Created_At, quindi restituisci l'errore
-          }
-          
           return NextResponse.json({
             success: false,
             error: 'Failed to save to Airtable',
@@ -163,7 +150,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 📋 GET MEAL REQUESTS ACTION
+    // 📋 GET MEAL REQUESTS ACTION - FIX: USA Created_At
     if (action === 'getMealRequests') {
       console.log('📋 Getting meal requests from Airtable...');
       
@@ -178,12 +165,15 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const response = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests?sort[0][field]=Created&sort[0][direction]=desc`, {
+        // 🔧 FIX: USA Created_At per il sorting
+        const response = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests?sort[0][field]=Created_At&sort[0][direction]=desc`, {
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
           }
         });
+
+        console.log('📡 getMealRequests response status:', response.status);
 
         if (response.ok) {
           const result = await response.json();
@@ -205,7 +195,7 @@ export async function POST(request: NextRequest) {
               Exclusions: record.fields?.Exclusions || '',
               Foods_At_Home: record.fields?.Foods_At_Home || '',
               Phone: record.fields?.Phone || '',
-              Created_At: record.fields?.Created || record.fields?.Created_At || '',
+              Created_At: record.fields?.Created_At || '',
               Status: record.fields?.Status || 'In attesa',
               Source: record.fields?.Source || 'Manual'
             }
@@ -235,7 +225,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 📊 GET DASHBOARD METRICS ACTION
+    // 📊 GET DASHBOARD METRICS ACTION - FIX: USA Created_At
     if (action === 'getDashboardMetrics') {
       console.log('📊 Getting dashboard metrics...');
       
@@ -270,8 +260,8 @@ export async function POST(request: NextRequest) {
           records.forEach((record: any) => {
             const fields = record.fields || {};
             
-            // Controlla sia Created che Created_At
-            const createdDate = fields.Created || fields.Created_At || '';
+            // 🔧 FIX: USA Created_At per il conteggio giornaliero
+            const createdDate = fields.Created_At || '';
             if (createdDate.startsWith(today)) {
               todayRequests++;
             }
@@ -321,7 +311,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 👤 GET USER MEAL REQUESTS ACTION
+    // 👤 GET USER MEAL REQUESTS ACTION - FIX: USA Created_At
     if (action === 'getUserMealRequests') {
       console.log('👤 Getting user meal requests...');
       
@@ -345,8 +335,9 @@ export async function POST(request: NextRequest) {
 
       try {
         const filterFormula = `{Email} = "${email}"`;
+        // 🔧 FIX: USA Created_At per il sorting
         const response = await fetch(
-          `https://api.airtable.com/v0/${baseId}/Meal_Requests?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created&sort[0][direction]=desc`,
+          `https://api.airtable.com/v0/${baseId}/Meal_Requests?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created_At&sort[0][direction]=desc`,
           {
             headers: {
               'Authorization': `Bearer ${apiKey}`,
