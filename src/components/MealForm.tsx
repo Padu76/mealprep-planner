@@ -184,9 +184,9 @@ export default function MealForm({
               disabled={isGenerating}
             >
               <option value="">Seleziona...</option>
-              <option value="perdita-peso">Perdita di Peso</option>
-              <option value="mantenimento">Mantenimento</option>
-              <option value="aumento-massa">Aumento Massa Muscolare</option>
+              <option value="dimagrimento">Dimagrimento - Toglie Calorie</option>
+              <option value="mantenimento">Mantenimento - Tiene Calcolo</option>
+              <option value="aumento-massa">Aumento Massa - Aumenta Calorie</option>
             </select>
           </div>
 
