@@ -176,7 +176,7 @@ export default function HomePage() {
           }
           
           // Bonus per obiettivo
-          if (formData.obiettivo === 'perdita-peso' && newMeal.calorie <= 400) {
+          if (formData.obiettivo === 'dimagrimento' && newMeal.calorie <= 400) {
             fitnessScore += 10;
           } else if (formData.obiettivo === 'aumento-massa' && newMeal.calorie >= 500) {
             fitnessScore += 10;
@@ -671,157 +671,198 @@ export default function HomePage() {
     return { days };
   };
 
-  // 🔄 Piano fallback FITNESS-OTTIMIZZATO
+  // 🔄 Piano fallback FITNESS-OTTIMIZZATO CON VARIETÀ
   const createFallbackPlan = (formData: any) => {
     const numDays = parseInt(formData.durata) || 2;
     const numPasti = parseInt(formData.pasti) || 4;
+    const varieta = formData.varieta || 'diversi';
+    
+    console.log(`🍽️ Creating fallback plan: ${numDays} days, ${numPasti} meals, variety: ${varieta}`);
     
     const days = [];
     
-    // Template varietà per giorni diversi
-    const varietyThemes = [
-      { theme: 'italiana', cuisine: 'italiana' },
-      { theme: 'mediterranea', cuisine: 'mediterranea' },
-      { theme: 'fitness', cuisine: 'fitness' },
-      { theme: 'asiatica', cuisine: 'asiatica' }
+    // 🎨 VARIETÀ PASTI - RICETTE DIVERSE PER GIORNO
+    const mealVariations = {
+      colazione: [
+        {
+          nome: 'Power Breakfast Bowl',
+          calorie: 420, proteine: 25, carboidrati: 35, grassi: 18,
+          ingredienti: ['60g avena', '25g proteine whey', '100g frutti di bosco', '15g mandorle'],
+          preparazione: 'Bowl proteico con avena, proteine e frutti di bosco per energia duratura'
+        },
+        {
+          nome: 'Pancakes Proteici',
+          calorie: 450, proteine: 28, carboidrati: 38, grassi: 16,
+          ingredienti: ['150g ricotta', '40g farina avena', '2 uova', '80g mirtilli'],
+          preparazione: 'Pancakes con ricotta e mirtilli, ricchi di proteine e gusto'
+        },
+        {
+          nome: 'Overnight Oats Fitness',
+          calorie: 390, proteine: 22, carboidrati: 42, grassi: 14,
+          ingredienti: ['50g avena', '30g proteine', '1 mela', '10g burro mandorle'],
+          preparazione: 'Overnight oats con mela e burro di mandorle, preparati la sera prima'
+        },
+        {
+          nome: 'Smoothie Energetico',
+          calorie: 380, proteine: 26, carboidrati: 35, grassi: 12,
+          ingredienti: ['30g proteine whey', '1 banana', '200ml latte mandorle', '20g spinaci', '15g mandorle'],
+          preparazione: 'Smoothie verde energetico con proteine e frutta fresca'
+        }
+      ],
+      pranzo: [
+        {
+          nome: 'Chicken Power Bowl',
+          calorie: 480, proteine: 40, carboidrati: 35, grassi: 18,
+          ingredienti: ['120g pollo', '80g quinoa', '100g verdure miste', '1/2 avocado'],
+          preparazione: 'Bowl completo con pollo grigliato, quinoa e verdure fresche'
+        },
+        {
+          nome: 'Risotto Fitness',
+          calorie: 520, proteine: 35, carboidrati: 45, grassi: 20,
+          ingredienti: ['90g riso integrale', '100g pollo', '80g zucchine', '30g parmigiano'],
+          preparazione: 'Risotto cremoso con pollo e zucchine, versione fitness'
+        },
+        {
+          nome: 'Salmone Teriyaki Bowl',
+          calorie: 460, proteine: 38, carboidrati: 32, grassi: 22,
+          ingredienti: ['130g salmone', '100g riso venere', '80g edamame', 'Salsa teriyaki'],
+          preparazione: 'Salmone teriyaki con riso venere ed edamame, sapori orientali'
+        },
+        {
+          nome: 'Buddha Bowl Proteico',
+          calorie: 440, proteine: 32, carboidrati: 38, grassi: 19,
+          ingredienti: ['100g tofu', '70g quinoa', '80g ceci', '100g verdure miste', 'Tahina'],
+          preparazione: 'Bowl vegetariano completo con tofu, quinoa e verdure colorate'
+        }
+      ],
+      cena: [
+        {
+          nome: 'Lean Salmon Plate',
+          calorie: 420, proteine: 35, carboidrati: 20, grassi: 20,
+          ingredienti: ['130g salmone', '100g broccoli', '80g patate dolci'],
+          preparazione: 'Salmone con verdure e carboidrati complessi per il recovery'
+        },
+        {
+          nome: 'Tagliata Fitness',
+          calorie: 390, proteine: 38, carboidrati: 15, grassi: 18,
+          ingredienti: ['120g tagliata manzo', '80g rucola', '60g pomodorini', '20g grana'],
+          preparazione: 'Tagliata su letto di rucola con pomodorini e grana'
+        },
+        {
+          nome: 'Curry di Pollo Light',
+          calorie: 410, proteine: 36, carboidrati: 25, grassi: 16,
+          ingredienti: ['120g pollo', '60g riso basmati', '100g verdure curry', 'Latte cocco light'],
+          preparazione: 'Curry leggero con pollo e verdure, ricco di sapore'
+        },
+        {
+          nome: 'Orata Mediterranean',
+          calorie: 380, proteine: 34, carboidrati: 18, grassi: 17,
+          ingredienti: ['140g orata', '80g verdure grigliate', '60g patate novelle', 'Erbe mediterrane'],
+          preparazione: 'Orata al forno con verdure mediterranee e patate novelle'
+        }
+      ]
+    };
+    
+    // 🎯 SPUNTINI VARIATI
+    const spuntiniVariations = [
+      {
+        nome: 'Protein Greek Yogurt',
+        calorie: 180, proteine: 20, carboidrati: 15, grassi: 3,
+        ingredienti: ['150g yogurt greco', '80g frutti di bosco', '15g granola proteica'],
+        preparazione: 'Yogurt greco con frutti di bosco e granola per uno spuntino proteico'
+      },
+      {
+        nome: 'Energy Balls',
+        calorie: 170, proteine: 12, carboidrati: 18, grassi: 8,
+        ingredienti: ['20g proteine', '30g datteri', '15g mandorle', '10g cacao'],
+        preparazione: 'Palline energetiche con proteine e frutta secca'
+      },
+      {
+        nome: 'Hummus Veggie',
+        calorie: 160, proteine: 8, carboidrati: 20, grassi: 6,
+        ingredienti: ['80g hummus', '100g verdure crude', '10g semi girasole'],
+        preparazione: 'Hummus cremoso con verdure croccanti e semi'
+      },
+      {
+        nome: 'Protein Smoothie',
+        calorie: 190, proteine: 18, carboidrati: 16, grassi: 5,
+        ingredienti: ['25g proteine whey', '1/2 banana', '200ml latte vegetale'],
+        preparazione: 'Smoothie proteico cremoso e rinfrescante'
+      }
     ];
     
     for (let i = 0; i < numDays; i++) {
-      const dayTheme = varietyThemes[i % varietyThemes.length];
-      
       const day = {
         day: `Giorno ${i + 1}`,
-        meals: {
-          colazione: {
-            nome: i === 0 ? 'Power Breakfast Bowl' : i === 1 ? 'Pancakes Proteici' : 'Overnight Oats Fitness',
-            calorie: 420,
-            proteine: 25,
-            carboidrati: 35,
-            grassi: 18,
-            tempo: '15 min',
-            porzioni: 1,
-            ingredienti: i === 0 
-              ? ['60g avena', '25g proteine whey', '100g frutti di bosco', '15g mandorle']
-              : i === 1 
-              ? ['150g ricotta', '40g farina avena', '2 uova', '80g mirtilli']
-              : ['50g avena', '30g proteine', '1 mela', '10g burro mandorle'],
-            preparazione: i === 0 
-              ? 'Bowl proteico con avena, proteine e frutti di bosco per energia duratura'
-              : i === 1 
-              ? 'Pancakes con ricotta e mirtilli, ricchi di proteine e gusto'
-              : 'Overnight oats con mela e burro di mandorle, preparati la sera prima',
-            fitnessScore: 88,
-            tipoCucina: dayTheme.cuisine,
-            difficolta: 'facile',
-            rating: 4.5
-          },
-          pranzo: {
-            nome: i === 0 ? 'Chicken Power Bowl' : i === 1 ? 'Risotto Fitness' : 'Salmone Teriyaki',
-            calorie: 480,
-            proteine: 40,
-            carboidrati: 35,
-            grassi: 18,
-            tempo: '20 min',
-            porzioni: 1,
-            ingredienti: i === 0 
-              ? ['120g pollo', '80g quinoa', '100g verdure miste', '1/2 avocado']
-              : i === 1 
-              ? ['90g riso integrale', '100g pollo', '80g zucchine', '30g parmigiano']
-              : ['130g salmone', '100g riso venere', '80g edamame', 'Salsa teriyaki'],
-            preparazione: i === 0 
-              ? 'Bowl completo con pollo grigliato, quinoa e verdure fresche'
-              : i === 1 
-              ? 'Risotto cremoso con pollo e zucchine, versione fitness'
-              : 'Salmone teriyaki con riso venere ed edamame, sapori orientali',
-            fitnessScore: 92,
-            tipoCucina: dayTheme.cuisine,
-            difficolta: 'medio',
-            rating: 4.7
-          },
-          cena: {
-            nome: i === 0 ? 'Lean Salmon Plate' : i === 1 ? 'Tagliata Fitness' : 'Tofu Curry',
-            calorie: 420,
-            proteine: 35,
-            carboidrati: 20,
-            grassi: 20,
-            tempo: '25 min',
-            porzioni: 1,
-            ingredienti: i === 0 
-              ? ['130g salmone', '100g broccoli', '80g patate dolci']
-              : i === 1 
-              ? ['120g tagliata manzo', '80g rucola', '60g pomodorini', '20g grana']
-              : ['140g tofu', '80g verdure curry', '60g riso basmati', 'Latte cocco'],
-            preparazione: i === 0 
-              ? 'Salmone con verdure e carboidrati complessi per il recovery'
-              : i === 1 
-              ? 'Tagliata su letto di rucola con pomodorini e grana'
-              : 'Curry vegetariano con tofu e verdure, ricco di proteine vegetali',
-            fitnessScore: 85,
-            tipoCucina: dayTheme.cuisine,
-            difficolta: 'medio',
-            rating: 4.3
-          }
-        } as any
+        meals: {} as any
       };
       
-      // Aggiungi spuntini FITNESS puliti
+      // 🎨 SELEZIONE VARIETÀ BASATA SU PREFERENZA UTENTE
+      if (varieta === 'diversi') {
+        // Pasti diversi per ogni giorno
+        day.meals.colazione = {
+          ...mealVariations.colazione[i % mealVariations.colazione.length],
+          tempo: '15 min', porzioni: 1, fitnessScore: 88, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.5
+        };
+        day.meals.pranzo = {
+          ...mealVariations.pranzo[i % mealVariations.pranzo.length],
+          tempo: '20 min', porzioni: 1, fitnessScore: 92, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.7
+        };
+        day.meals.cena = {
+          ...mealVariations.cena[i % mealVariations.cena.length],
+          tempo: '25 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.3
+        };
+      } else {
+        // Stessi pasti per tutti i giorni (ripetuti)
+        day.meals.colazione = {
+          ...mealVariations.colazione[0],
+          tempo: '15 min', porzioni: 1, fitnessScore: 88, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.5
+        };
+        day.meals.pranzo = {
+          ...mealVariations.pranzo[0],
+          tempo: '20 min', porzioni: 1, fitnessScore: 92, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.7
+        };
+        day.meals.cena = {
+          ...mealVariations.cena[0],
+          tempo: '25 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.3
+        };
+      }
+      
+      // Aggiungi spuntini FITNESS variati
       if (numPasti >= 4) {
         day.meals.spuntino1 = {
-          nome: 'Protein Greek Yogurt',
-          calorie: 180,
-          proteine: 20,
-          carboidrati: 15,
-          grassi: 3,
-          tempo: '5 min',
-          porzioni: 1,
-          ingredienti: ['150g yogurt greco', '80g frutti di bosco', '15g granola proteica'],
-          preparazione: 'Yogurt greco con frutti di bosco e granola per uno spuntino proteico',
-          fitnessScore: 85,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.1
+          ...spuntiniVariations[i % spuntiniVariations.length],
+          tempo: '5 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.1
         };
       }
       
       if (numPasti >= 5) {
         day.meals.spuntino2 = {
           nome: 'Power Shake',
-          calorie: 250,
-          proteine: 25,
-          carboidrati: 20,
-          grassi: 8,
-          tempo: '2 min',
-          porzioni: 1,
+          calorie: 250, proteine: 25, carboidrati: 20, grassi: 8,
+          tempo: '2 min', porzioni: 1,
           ingredienti: ['30g proteine whey', '1 banana', '15g burro mandorle', '200ml acqua'],
           preparazione: 'Shake proteico post-workout completo per il recovery',
-          fitnessScore: 90,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.4
+          fitnessScore: 90, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.4
         };
       }
       
       if (numPasti >= 6) {
         day.meals.spuntino3 = {
           nome: 'Night Protein Snack',
-          calorie: 160,
-          proteine: 15,
-          carboidrati: 8,
-          grassi: 6,
-          tempo: '5 min',
-          porzioni: 1,
+          calorie: 160, proteine: 15, carboidrati: 8, grassi: 6,
+          tempo: '5 min', porzioni: 1,
           ingredienti: ['100g ricotta light', '10g noci', 'Cannella'],
           preparazione: 'Ricotta con noci per proteine a lento rilascio durante la notte',
-          fitnessScore: 78,
-          tipoCucina: 'italiana',
-          difficolta: 'facile',
-          rating: 4.0
+          fitnessScore: 78, tipoCucina: 'italiana', difficolta: 'facile', rating: 4.0
         };
       }
       
+      console.log(`✅ Day ${i + 1} meals created:`, Object.keys(day.meals));
       days.push(day);
     }
     
+    console.log(`🎉 Fallback plan created with ${days.length} days and variety: ${varieta}`);
     return { days };
   };
 
@@ -988,7 +1029,7 @@ export default function HomePage() {
           enrichedPlan = await parseAIPlan(result.piano, formData);
         }
         
-        // 🔥 FIX CALORIE: FORZA LE CALORIE DAL BACKEND
+        // 🔥 FIX CALORIE: FORZA LE CALORIE DAL BACKEND - VERSIONE CORRETTA
         if (result.metadata?.dailyTarget && enrichedPlan?.days) {
           const targetCalories = result.metadata.dailyTarget;
           console.log('🔧 FORCING frontend calories to match backend:', targetCalories);
@@ -1000,19 +1041,32 @@ export default function HomePage() {
               currentTotal += meal.calorie || 0;
             });
             
-            // Se il totale è troppo basso (come 120), scaliamo proporzionalmente
-            if (currentTotal < targetCalories * 0.5) {
+            console.log(`📊 Day ${day.day}: Current ${currentTotal} kcal, Target ${targetCalories} kcal`);
+            
+            // 🔧 FIX: SCALA SEMPRE SE DIVERSO DAL TARGET (non solo se < 50%)
+            if (Math.abs(currentTotal - targetCalories) > 100) {
               const scaleFactor = targetCalories / Math.max(currentTotal, 1);
-              console.log(`🔧 Scaling day ${day.day} calories by factor:`, scaleFactor);
+              console.log(`🔧 Scaling day ${day.day} calories by factor:`, scaleFactor.toFixed(2));
               
               Object.values(day.meals).forEach((meal: any) => {
                 if (meal) {
+                  const oldCalories = meal.calorie;
                   meal.calorie = Math.round(meal.calorie * scaleFactor);
                   meal.proteine = Math.round(meal.proteine * scaleFactor);
                   meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
                   meal.grassi = Math.round(meal.grassi * scaleFactor);
+                  console.log(`  📈 ${meal.nome}: ${oldCalories} → ${meal.calorie} kcal`);
                 }
               });
+              
+              // Verifica finale
+              let newTotal = 0;
+              Object.values(day.meals).forEach((meal: any) => {
+                newTotal += meal.calorie || 0;
+              });
+              console.log(`✅ Day ${day.day} final total: ${newTotal} kcal`);
+            } else {
+              console.log(`✅ Day ${day.day} calories already correct: ${currentTotal} kcal`);
             }
           });
         }
@@ -1048,7 +1102,7 @@ export default function HomePage() {
     } catch (error) {
       console.error('❌ Error in meal plan generation:', error);
       
-      // 🔄 FALLBACK: Piano con ricette FITNESS
+      // 🔄 FALLBACK: Piano con ricette FITNESS CON VARIETÀ
       const fallbackPlan = createFallbackPlan(formData);
       setParsedPlan(fallbackPlan);
       
@@ -1250,66 +1304,4 @@ export default function HomePage() {
                   setShowPreview(false);
                   resetFormData();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                🔄 Nuovo Piano Fitness
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-      
-      {/* FAQ Section */}
-      {!generatedPlan && !showPreview && !showComplete && (
-      <section className="bg-gray-800 py-20">
-        <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
-            Domande Frequenti - Sistema Fitness
-          </h2>
-          
-          <div className="space-y-6">
-            <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🏋️‍♂️ Come funziona la priorità fitness?</h3>
-              <p className="text-gray-300">Il sistema calcola un fitness score (0-100) per ogni ricetta basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
-            </div>
-            
-            <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">📊 Che cosa include il fitness score?</h3>
-              <p className="text-gray-300">Il sistema analizza: rapporto proteine/calorie, ingredienti fitness-friendly (avena, pollo, quinoa), tempo preparazione, categoria pasto e compatibilità con il tuo obiettivo.</p>
-            </div>
-            
-            <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🎯 Le ricette cambiano per obiettivo?</h3>
-              <p className="text-gray-300">Sì! Per perdita peso: ricette sotto 400 cal, alto contenuto proteico. Per massa: ricette 500+ cal, surplus calorico. Per mantenimento: bilanciate.</p>
-            </div>
-
-            <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🖼️ Come vengono generate le immagini?</h3>
-              <p className="text-gray-300">Il sistema genera immagini food photography professionali per ogni ricetta, ottimizzate per mostrare ingredienti fitness e presentazione appetitosa.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      )}
-
-      {/* Footer */}
-      <footer className="bg-gray-900 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex justify-center items-center gap-3 mb-6">
-            <img src="/images/icon-192x192.png" alt="Meal Prep Logo" className="w-10 h-10 rounded-full" />
-            <h3 className="text-2xl font-bold">Meal Prep Planner 💪</h3>
-          </div>
-          <p className="text-gray-400 mb-6">
-            Semplificare la tua alimentazione con programmazione fitness-ottimizzata e ricette personalizzate per i tuoi obiettivi.
-          </p>
-          <div className="flex justify-center gap-6">
-            <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
-            <Link href="/terms" className="text-gray-400 hover:text-green-400">Termini</Link>
-            <Link href="/contact" className="text-gray-400 hover:text-green-400">Contatti</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
+                
