@@ -57,16 +57,31 @@ export default function AdminDashboard() {
     try {
       console.log('📊 Loading Airtable data...');
       
-      // Carica richieste utenti - FIX: usa getMealRequests
-      const usersResponse = await fetch('/api/airtable?action=getMealRequests');
-      const usersData = await usersResponse.json();
+      // 🔧 FIX: USA POST REQUESTS INVECE DI GET
+      console.log('🔄 Calling getMealRequests...');
+      const usersResponse = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getMealRequests' })
+      });
       
-      // Carica metriche dashboard
-      const metricsResponse = await fetch('/api/airtable?action=getDashboardMetrics');
+      console.log('🔄 Calling getDashboardMetrics...');
+      const metricsResponse = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getDashboardMetrics' })
+      });
+      
+      console.log('📡 Users response status:', usersResponse.status);
+      console.log('📡 Metrics response status:', metricsResponse.status);
+      
+      const usersData = await usersResponse.json();
       const metricsData = await metricsResponse.json();
       
       console.log('🔍 Raw usersData:', usersData);
       console.log('🔍 Raw metricsData:', metricsData);
+      console.log('✅ usersData.success:', usersData.success);
+      console.log('✅ metricsData.success:', metricsData.success);
       
       if (usersData.success && metricsData.success) {
         // FIX: usa records invece di data
@@ -94,7 +109,7 @@ export default function AdminDashboard() {
           source: record.fields?.Source || 'Manual'
         }));
         
-        console.log('🔍 Mapped users:', mappedUsers);
+        console.log('🔍 Mapped users sample:', mappedUsers[0]);
         setAllUsers(mappedUsers);
         
         // Calcola statistiche business
@@ -104,7 +119,7 @@ export default function AdminDashboard() {
         const conversionRate = totalUsers > 0 ? Math.round((paidUsers / totalUsers) * 100) : 0;
         const monthlyRevenue = paidUsers * 9.99;
         
-        setBusinessStats({
+        const stats = {
           totalUsers,
           freeUsers,
           paidUsers,
@@ -114,17 +129,29 @@ export default function AdminDashboard() {
           todayRequests: metricsData.data?.todayRequests || 0,
           completedRequests: metricsData.data?.completedRequests || 0,
           processingRequests: metricsData.data?.processingRequests || 0
-        });
+        };
+        
+        console.log('📊 Business stats calculated:', stats);
+        setBusinessStats(stats);
         
         setLastRefresh(new Date().toLocaleTimeString('it-IT'));
+        console.log('✅ Dashboard data loaded successfully');
       } else {
         console.error('❌ Failed to load Airtable data');
-        console.error('usersData.success:', usersData.success, 'metricsData.success:', metricsData.success);
-        alert('❌ Errore nel caricamento dati. Controlla la connessione Airtable.');
+        console.error('- usersData.success:', usersData.success);
+        console.error('- usersData.error:', usersData.error);
+        console.error('- metricsData.success:', metricsData.success);
+        console.error('- metricsData.error:', metricsData.error);
+        
+        let errorMsg = '❌ Errore nel caricamento dati:\n';
+        if (!usersData.success) errorMsg += `- Users: ${usersData.error || 'Unknown error'}\n`;
+        if (!metricsData.success) errorMsg += `- Metrics: ${metricsData.error || 'Unknown error'}`;
+        
+        alert(errorMsg);
       }
     } catch (error) {
       console.error('❌ Error loading Airtable data:', error);
-      alert('❌ Errore di connessione con Airtable');
+      alert('❌ Errore di connessione con Airtable: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsLoading(false);
     }
@@ -141,17 +168,23 @@ export default function AdminDashboard() {
         body: JSON.stringify({ action: 'testConnection' })
       });
       
+      console.log('🔍 Test response status:', response.status);
       const data = await response.json();
       console.log('🔍 Test result:', data);
       
       if (data.success) {
-        alert('✅ Connessione Airtable attiva!\n\nStatus: ' + data.status + '\nTable: ' + data.tableName);
+        alert(
+          '✅ Connessione Airtable attiva!\n\n' +
+          `Status: ${data.status}\n` +
+          `Table: ${data.tableName}\n` +
+          `Records found: ${data.recordsFound || 0}`
+        );
       } else {
-        alert('❌ Errore connessione: ' + data.error);
+        alert('❌ Errore connessione: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('❌ Test connection error:', error);
-      alert('❌ Errore di rete: ' + error);
+      alert('❌ Errore di rete: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -274,7 +307,7 @@ export default function AdminDashboard() {
           📊 CRM Dashboard (Live Data)
         </h1>
         <p className="text-lg text-gray-800 mb-4 max-w-2xl mx-auto">
-          Dati in tempo reale da Airtable - Ultimo aggiornamento: {lastRefresh}
+          Dati in tempo reale da Airtable - Ultimo aggiornamento: {lastRefresh || 'Mai'}
         </p>
         <div className="bg-black/20 rounded-lg px-6 py-2 inline-block">
           <span className="text-white font-semibold">
@@ -351,7 +384,7 @@ export default function AdminDashboard() {
               <span className="text-sm text-gray-400">
                 {allUsers.length} records caricati
               </span>
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className={`w-3 h-3 rounded-full ${allUsers.length > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
             </div>
           </div>
           
@@ -447,7 +480,17 @@ export default function AdminDashboard() {
                   }) : (
                     <tr>
                       <td colSpan={6} className="py-8 px-6 text-center text-gray-400">
-                        {isLoading ? '⏳ Caricamento dati da Airtable...' : 'Nessun utente trovato in Airtable'}
+                        {isLoading ? (
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                            ⏳ Caricamento dati da Airtable...
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-lg font-semibold mb-2">📭 Nessun utente trovato</p>
+                            <p className="text-sm">Controlla la connessione Airtable o aggiungi dati di test</p>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}
