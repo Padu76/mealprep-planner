@@ -200,9 +200,7 @@ export default function HomePage() {
               `Fitness Score: ${Math.min(100, fitnessScore)}/100`,
               `Proteine: ${newMeal.proteine}g (${(proteinRatio * 100).toFixed(1)}%)`,
               `Calorie ottimizzate per ${formData.obiettivo}`
-              // ❌ RIMOSSO: `Generato da Claude AI`
             ],
-            // ❌ RIMOSSO: source: result.isAI ? 'claude-ai' : 'fallback',
             recipeId: `recipe-${Date.now()}`,
             rating: 4.5,
             categoria: mealType,
@@ -227,7 +225,7 @@ export default function HomePage() {
     } catch (error) {
       console.error('❌ Claude AI replacement failed, trying database fallback:', error);
       
-      // 🔄 FALLBACK: Usa il sistema database esistente - SENZA TAG DEBUG
+      // 🔄 FALLBACK: Usa il sistema database esistente
       try {
         const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
         const mealPlanner = MealPlannerIntegration.getInstance();
@@ -284,7 +282,6 @@ export default function HomePage() {
             fitnessScore: 70,
             fitnessReasons: ['Ricetta bilanciata', 'Ingredienti fitness'],
             imageUrl: imageUrl
-            // ❌ RIMOSSO: source: 'database-fallback'
           };
           
           setParsedPlan(updatedParsedPlan);
@@ -317,7 +314,7 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🤖 Funzione per arricchire piano AI con database + FITNESS PRIORITY - SENZA TAG DEBUG
+  // 🤖 Funzione per arricchire piano AI con database + FITNESS PRIORITY
   const enrichAIPlanWithDatabase = async (aiPlan: string, formData: any, mealPlanner: any) => {
     console.log('🔄 Enriching AI plan with database + FITNESS PRIORITY...');
     
@@ -355,7 +352,7 @@ export default function HomePage() {
             tempo: `${dbRecipe.tempoPreparazione} min`,
             porzioni: dbRecipe.porzioni,
             ingredienti: dbRecipe.ingredienti,
-            preparazione: enhancedPreparation, // Versione fitness-enhanced
+            preparazione: enhancedPreparation,
             recipeId: dbRecipe.id,
             rating: dbRecipe.rating,
             categoria: dbRecipe.categoria,
@@ -364,14 +361,13 @@ export default function HomePage() {
             fitnessScore: fitnessScore.score,
             fitnessReasons: fitnessScore.reasons,
             imageUrl: imageUrl
-            // ❌ RIMOSSO: source: 'database-fitness-enhanced'
           };
         } else {
           day.meals[mealType] = createGenericMeal(mealType, i);
         }
       }
       
-      // Aggiungi spuntini con FOCUS FITNESS - SENZA TAG DEBUG
+      // Aggiungi spuntini con FOCUS FITNESS
       if (numPasti >= 4) {
         const spuntino1 = await findSimilarRecipeInDatabase('spuntino', formData, mealPlanner);
         if (spuntino1) {
@@ -391,7 +387,6 @@ export default function HomePage() {
             recipeId: spuntino1.id,
             fitnessScore: fitnessScore.score,
             imageUrl: imageUrl
-            // ❌ RIMOSSO: source: 'database-fitness'
           };
         } else {
           day.meals.spuntino1 = {
@@ -405,7 +400,6 @@ export default function HomePage() {
             ingredienti: ['Yogurt greco', 'Frutti di bosco', 'Mandorle'],
             preparazione: 'Mescola yogurt greco con frutti di bosco e mandorle per uno spuntino ricco di proteine',
             fitnessScore: 85
-            // ❌ RIMOSSO: source: 'ai-fitness-optimized'
           };
         }
       }
@@ -422,7 +416,6 @@ export default function HomePage() {
           ingredienti: ['Proteine in polvere', 'Banana', 'Latte mandorle', 'Avena'],
           preparazione: 'Frulla tutti gli ingredienti per uno shake post-workout completo',
           fitnessScore: 90
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         };
       }
       
@@ -438,7 +431,6 @@ export default function HomePage() {
           ingredienti: ['Ricotta light', 'Noci', 'Cannella'],
           preparazione: 'Ricotta con noci e cannella per il recovery notturno',
           fitnessScore: 80
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         };
       }
       
@@ -492,7 +484,7 @@ export default function HomePage() {
     }
   };
 
-  // 🍽️ Crea pasto generico FITNESS-OTTIMIZZATO - SENZA TAG DEBUG
+  // 🍽️ Crea pasto generico FITNESS-OTTIMIZZATO
   const createGenericMeal = (mealType: string, dayIndex: number) => {
     const fitnessGoal = formData.obiettivo || 'mantenimento';
     
@@ -512,7 +504,6 @@ export default function HomePage() {
           tipoCucina: 'italiana',
           difficolta: 'facile',
           rating: 4.2
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         pranzo: {
           nome: `Pranzo Proteico ${dayIndex + 1}`,
@@ -528,7 +519,6 @@ export default function HomePage() {
           tipoCucina: 'mediterranea',
           difficolta: 'facile',
           rating: 4.5
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         cena: {
           nome: `Cena Bilanciata ${dayIndex + 1}`,
@@ -544,7 +534,6 @@ export default function HomePage() {
           tipoCucina: 'mediterranea',
           difficolta: 'medio',
           rating: 4.3
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         }
       },
       'aumento-massa': {
@@ -562,7 +551,6 @@ export default function HomePage() {
           tipoCucina: 'fitness',
           difficolta: 'facile',
           rating: 4.6
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         pranzo: {
           nome: `Pranzo Anabolico ${dayIndex + 1}`,
@@ -578,7 +566,6 @@ export default function HomePage() {
           tipoCucina: 'fitness',
           difficolta: 'facile',
           rating: 4.4
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         cena: {
           nome: `Cena Muscolare ${dayIndex + 1}`,
@@ -594,7 +581,6 @@ export default function HomePage() {
           tipoCucina: 'americana',
           difficolta: 'medio',
           rating: 4.2
-          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         }
       }
     };
@@ -605,7 +591,7 @@ export default function HomePage() {
     return (selectedMeals as any)[mealType] || selectedMeals.colazione;
   };
 
-  // 🔄 Parse piano AI semplificato con FITNESS FOCUS - SENZA TAG DEBUG
+  // 🔄 Parse piano AI semplificato con FITNESS FOCUS
   const parseAIPlan = async (aiResponse: string, formData: any) => {
     console.log('🔄 Parsing AI plan with FITNESS focus...');
     
@@ -624,7 +610,7 @@ export default function HomePage() {
         } as any
       };
       
-      // Aggiungi spuntini FITNESS - SENZA TAG DEBUG
+      // Aggiungi spuntini FITNESS
       if (numPasti >= 4) {
         day.meals.spuntino1 = {
           nome: `Spuntino Pre-Workout ${i + 1}`,
@@ -640,7 +626,6 @@ export default function HomePage() {
           tipoCucina: 'fitness',
           difficolta: 'facile',
           rating: 4.1
-          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -659,7 +644,6 @@ export default function HomePage() {
           tipoCucina: 'fitness',
           difficolta: 'facile',
           rating: 4.4
-          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -678,7 +662,6 @@ export default function HomePage() {
           tipoCucina: 'italiana',
           difficolta: 'facile',
           rating: 4.0
-          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -688,7 +671,7 @@ export default function HomePage() {
     return { days };
   };
 
-  // 🔄 Piano fallback FITNESS-OTTIMIZZATO - SENZA TAG DEBUG
+  // 🔄 Piano fallback FITNESS-OTTIMIZZATO
   const createFallbackPlan = (formData: any) => {
     const numDays = parseInt(formData.durata) || 2;
     const numPasti = parseInt(formData.pasti) || 4;
@@ -886,37 +869,79 @@ export default function HomePage() {
     return timeMap[mealType] || 30;
   };
 
-  // 💾 Salva in Airtable
+  // 💾 SALVA IN AIRTABLE - FUNZIONE CORRETTA CON MAPPING
   const saveToAirtable = async (plan: any, formData: any) => {
+    console.log('💾 Attempting to save to Airtable...');
+    console.log('📝 Form data for save:', formData);
+    
     try {
+      // 🔧 MAPPING CORRETTO PER CAMPI SELECT
+      const goalMapping: { [key: string]: string } = {
+        'perdita-peso': 'Perdita peso',
+        'dimagrimento': 'Dimagrimento', 
+        'aumento-massa': 'Aumento massa',
+        'mantenimento': 'Mantenimento',
+        'definizione': 'Definizione'
+      };
+
+      const activityMapping: { [key: string]: string } = {
+        'sedentario': 'sedentario',
+        'leggero': 'leggero',
+        'moderato': 'moderato', 
+        'intenso': 'intenso',
+        'molto_intenso': 'molto intenso'
+      };
+
+      const genderMapping: { [key: string]: string } = {
+        'maschio': 'maschio',
+        'femmina': 'femmina',
+        'uomo': 'maschio',
+        'donna': 'femmina'
+      };
+
+      // 🔧 PREPARA DATI CON MAPPING CORRETTO
+      const mappedData = {
+        nome: formData.nome || '',
+        email: sessionStorage.getItem('userAuth') || formData.email || '',
+        age: formData.eta || '',
+        weight: formData.peso || '',
+        height: formData.altezza || '',
+        gender: genderMapping[formData.sesso] || formData.sesso || '',
+        activity_level: activityMapping[formData.attivita] || formData.attivita || '',
+        goal: goalMapping[formData.obiettivo] || formData.obiettivo || '',
+        duration: formData.durata || '',
+        meals_per_day: formData.pasti || '',
+        exclusions: Array.isArray(formData.allergie) ? formData.allergie.join(', ') : formData.allergie || '',
+        foods_at_home: Array.isArray(formData.preferenze) ? formData.preferenze.join(', ') : formData.preferenze || '',
+        phone: formData.telefono || ''
+      };
+
+      console.log('📤 Mapped data for Airtable:', mappedData);
+
       const response = await fetch('/api/airtable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'saveMealRequest',
-          data: {
-            nome: formData.nome,
-            email: sessionStorage.getItem('userAuth') || '',
-            age: formData.eta,
-            weight: formData.peso,
-            height: formData.altezza,
-            gender: formData.sesso,
-            activity_level: formData.attivita,
-            goal: formData.obiettivo,
-            duration: formData.durata,
-            meals_per_day: formData.pasti,
-            exclusions: formData.allergie?.join(', ') || '',
-            foods_at_home: formData.preferenze?.join(', ') || '',
-            phone: ''
-          }
+          data: mappedData
         })
       });
       
-      if (response.ok) {
-        console.log('✅ Saved to Airtable successfully');
+      console.log('📡 Airtable response status:', response.status);
+      const result = await response.json();
+      console.log('📊 Airtable response data:', result);
+      
+      if (response.ok && result.success) {
+        console.log('✅ Saved to Airtable successfully:', result.recordId);
+        return { success: true, recordId: result.recordId };
+      } else {
+        console.error('❌ Airtable save failed:', result.error);
+        console.error('❌ Error details:', result.details);
+        return { success: false, error: result.error };
       }
     } catch (error) {
-      console.log('⚠️ Airtable save error:', error);
+      console.error('❌ Airtable save error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
@@ -969,9 +994,15 @@ export default function HomePage() {
         setGeneratedPlan(completeDocument);
         setShowPreview(true);
         
-        // Salva piano (opzionale)
+        // 🔧 STEP 3: SALVA IN AIRTABLE CON MAPPING CORRETTO
+        console.log('💾 Saving to Airtable with correct mapping...');
         try {
-          await saveToAirtable(enrichedPlan, formData);
+          const saveResult = await saveToAirtable(enrichedPlan, formData);
+          if (saveResult.success) {
+            console.log('✅ Successfully saved to Airtable:', saveResult.recordId);
+          } else {
+            console.log('❌ Failed to save to Airtable:', saveResult.error);
+          }
         } catch (airtableError) {
           console.log('⚠️ Airtable save error (non-blocking):', airtableError);
         }
@@ -995,6 +1026,16 @@ export default function HomePage() {
       const completeDocument = generateCompleteDocument(fallbackPlan, formData);
       setGeneratedPlan(completeDocument);
       setShowPreview(true);
+      
+      // 🔧 SALVA ANCHE IL FALLBACK
+      try {
+        const saveResult = await saveToAirtable(fallbackPlan, formData);
+        if (saveResult.success) {
+          console.log('✅ Fallback plan saved to Airtable:', saveResult.recordId);
+        }
+      } catch (airtableError) {
+        console.log('⚠️ Fallback save error:', airtableError);
+      }
       
       setTimeout(() => {
         document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
