@@ -1,4 +1,13 @@
-// MealPreview.tsx - VERSIONE PULITA SENZA TAG DEBUG
+import React from 'react';
+
+interface MealPreviewProps {
+  parsedPlan: any;
+  handleReplacement: (mealType: string, dayNumber: string) => void;
+  handleIngredientSubstitution: (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => void;
+  isReplacing: string | null;
+  confirmPlan: () => void;
+  onGenerateNewPlan: () => void;
+}
 
 export default function MealPreview({
   parsedPlan,
@@ -8,307 +17,241 @@ export default function MealPreview({
   confirmPlan,
   onGenerateNewPlan
 }: MealPreviewProps) {
-  
-  // 🧹 FUNZIONE PER PULIRE E RENDERE I TAG
-  const renderCleanMealTags = (meal: any) => {
-    const excludedTags = [
-      'database-fitness-enhanced',
-      'ai-generated', 
-      'fallback',
-      'ai-fitness-optimized',
-      'calorie-corrected',
-      'database-fallback',
-      'claude-ai',
-      'ai-fallback',
-      'calorie-corrected-fallback',
-      'database-fitness',
-      'ai-fitness'
-    ];
-
-    // Funzione per pulire categorie
-    const cleanCategory = (category: string): string | null => {
-      if (!category) return null;
-      
-      const cleanCat = category.toLowerCase().trim();
-      
-      // Escludi tag debug
-      if (excludedTags.includes(cleanCat)) return null;
-      
-      // Traduci solo categorie utili
-      const translations: { [key: string]: string } = {
-        'colazione': '🌅 Colazione',
-        'pranzo': '☀️ Pranzo', 
-        'cena': '🌙 Cena',
-        'spuntino': '🍎 Spuntino',
-        'spuntino1': '🥤 Spuntino',
-        'spuntino2': '🥜 Spuntino',
-        'spuntino3': '🌆 Spuntino'
-      };
-      
-      return translations[cleanCat] || null;
+  const getMealTypeIcon = (mealType: string) => {
+    const icons: { [key: string]: string } = {
+      'colazione': '🌅',
+      'pranzo': '🍽️',
+      'cena': '🌙',
+      'spuntino1': '🍎',
+      'spuntino2': '🥨',
+      'spuntino3': '🧃'
     };
+    return icons[mealType] || '🍽️';
+  };
 
-    // Funzione per pulire tipoCucina
-    const cleanCuisine = (cuisine: string): string | null => {
-      if (!cuisine) return null;
-      
-      const cleanCuis = cuisine.toLowerCase().trim();
-      
-      // Escludi tag debug
-      if (excludedTags.includes(cleanCuis)) return null;
-      
-      // Traduci solo cucine riconosciute
-      const translations: { [key: string]: string } = {
-        'italiana': '🇮🇹 Italiana',
-        'mediterranea': '🫒 Mediterranea',
-        'asiatica': '🥢 Asiatica',
-        'americana': '🇺🇸 Americana',
-        'francese': '🇫🇷 Francese',
-        'messicana': '🌮 Messicana',
-        'giapponese': '🍱 Giapponese',
-        'fusion': '🌍 Fusion',
-        'vegetariana': '🥬 Vegetariana'
-      };
-      
-      return translations[cleanCuis] || null;
+  const getMealTypeName = (mealType: string) => {
+    const names: { [key: string]: string } = {
+      'colazione': 'Colazione',
+      'pranzo': 'Pranzo',
+      'cena': 'Cena',
+      'spuntino1': 'Spuntino 1',
+      'spuntino2': 'Spuntino 2',
+      'spuntino3': 'Spuntino 3'
     };
+    return names[mealType] || mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  };
 
+  const calculateDayTotals = (day: any) => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+
+    Object.values(day.meals || {}).forEach((meal: any) => {
+      totalCalories += meal.calorie || 0;
+      totalProtein += meal.proteine || 0;
+      totalCarbs += meal.carboidrati || 0;
+      totalFat += meal.grassi || 0;
+    });
+
+    return { totalCalories, totalProtein, totalCarbs, totalFat };
+  };
+
+  if (!parsedPlan || !parsedPlan.days) {
     return (
-      <div className="flex flex-wrap gap-2">
-        {/* Solo rating se presente e valido */}
-        {meal.rating && meal.rating > 0 && (
-          <span className="px-3 py-1 bg-orange-600/20 text-orange-400 rounded-full text-sm">
-            ⭐ {meal.rating.toFixed(1)}
-          </span>
-        )}
-        
-        {/* Categoria pulita */}
-        {cleanCategory(meal.categoria) && (
-          <span className="px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-sm">
-            {cleanCategory(meal.categoria)}
-          </span>
-        )}
-        
-        {/* Tipo cucina pulito */}
-        {cleanCuisine(meal.tipoCucina) && (
-          <span className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm">
-            {cleanCuisine(meal.tipoCucina)}
-          </span>
-        )}
-        
-        {/* Difficoltà se presente e utile */}
-        {meal.difficolta && meal.difficolta !== 'unknown' && ['facile', 'medio', 'difficile'].includes(meal.difficolta.toLowerCase()) && (
-          <span className="px-3 py-1 bg-yellow-600/20 text-yellow-400 rounded-full text-sm">
-            {meal.difficolta === 'facile' && '😊 Facile'}
-            {meal.difficolta === 'medio' && '🤔 Medio'}
-            {meal.difficolta === 'difficile' && '😰 Difficile'}
-          </span>
-        )}
+      <div className="max-w-6xl mx-auto px-4 py-8 text-center">
+        <p className="text-gray-400">Errore nel caricamento del piano</p>
       </div>
     );
-  };
-  
-  const renderMealCard = (meal: any, mealType: string, dayIndex: number) => {
-    const isCurrentlyReplacing = isReplacing === `${parsedPlan.days[dayIndex].day}-${mealType}`;
-    
-    return (
-      <div className="bg-gray-700 rounded-xl p-6 shadow-lg hover:shadow-xl transition-all">
-        {/* 🖼️ IMMAGINE RICETTA */}
-        <div className="relative mb-4">
-          <img
-            src={meal.imageUrl || `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodeURIComponent(meal.nome || 'Recipe')}`}
-            alt={meal.nome}
-            className="w-full h-48 object-cover rounded-lg"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = `https://via.placeholder.com/400x300/8FBC8F/ffffff?text=${encodeURIComponent(meal.nome || 'Recipe')}`;
-            }}
-          />
-          
-          {/* 🏋️‍♂️ FITNESS SCORE BADGE */}
-          {meal.fitnessScore && meal.fitnessScore > 0 && (
-            <div className="absolute top-2 right-2 bg-green-600 text-white px-2 py-1 rounded-full text-sm font-bold">
-              💪 {meal.fitnessScore}/100
-            </div>
-          )}
-          
-          {/* 📊 MACROS OVERLAY */}
-          <div className="absolute bottom-2 left-2 bg-black/70 text-white px-3 py-1 rounded-lg text-sm">
-            {meal.calorie} cal • {meal.proteine}P • {meal.carboidrati}C • {meal.grassi}F
-          </div>
-        </div>
-
-        {/* 📝 CONTENUTO RICETTA */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-white">{meal.nome}</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">{meal.tempo}</span>
-            </div>
-          </div>
-
-          {/* 🏷️ TAG PULITI SENZA DEBUG */}
-          {renderCleanMealTags(meal)}
-
-          {/* 🏋️‍♂️ FITNESS DETAILS */}
-          {meal.fitnessReasons && meal.fitnessReasons.length > 0 && (
-            <div className="bg-green-600/10 border border-green-500/30 rounded-lg p-3">
-              <h4 className="text-sm font-semibold text-green-400 mb-2">💪 Perché è Fitness:</h4>
-              <ul className="text-sm text-green-300 space-y-1">
-                {meal.fitnessReasons
-                  .filter((reason: string) => {
-                    // Filtra via i motivi di debug
-                    const lowerReason = reason.toLowerCase();
-                    return !lowerReason.includes('generato da claude') && 
-                           !lowerReason.includes('ricetta dal database') && 
-                           !lowerReason.includes('fallback') &&
-                           !lowerReason.includes('calorie corrette');
-                  })
-                  .map((reason: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="text-green-500 mt-1">•</span>
-                      <span>{reason}</span>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          )}
-
-          {/* 🥄 INGREDIENTI CLICCABILI */}
-          <div>
-            <h4 className="font-semibold text-gray-300 mb-2">Ingredienti:</h4>
-            <div className="flex flex-wrap gap-2">
-              {meal.ingredienti?.map((ingrediente: string, idx: number) => (
-                <button
-                  key={idx}
-                  onClick={() => handleIngredientSubstitution(ingrediente, dayIndex, mealType, idx)}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-gray-300 rounded-lg text-sm transition-colors cursor-pointer"
-                  title="Clicca per sostituire questo ingrediente"
-                >
-                  {ingrediente}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 👨‍🍳 PREPARAZIONE */}
-          <div>
-            <h4 className="font-semibold text-gray-300 mb-2">Preparazione:</h4>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              {meal.preparazione?.replace(/⚠️ NOTA:.*$/g, '').trim()}
-            </p>
-          </div>
-
-          {/* 🔄 BOTTONE SOSTITUZIONE */}
-          <button
-            onClick={() => handleReplacement(mealType, parsedPlan.days[dayIndex].day)}
-            disabled={isCurrentlyReplacing}
-            className={`w-full py-3 rounded-lg font-semibold transition-all ${
-              isCurrentlyReplacing
-                ? 'bg-yellow-600 text-yellow-100 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white hover:scale-105'
-            }`}
-          >
-            {isCurrentlyReplacing ? (
-              <span className="flex items-center justify-center gap-2">
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                Sostituendo ricetta...
-              </span>
-            ) : (
-              '🔄 Sostituisci con Ricetta Fitness'
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
+  }
 
   return (
-    <section id="preview-section" className="max-w-6xl mx-auto px-4 py-20">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4" style={{color: '#8FBC8F'}}>
-          🏋️‍♂️ Il Tuo Piano Fitness Personalizzato
+    <section id="preview-section" className="max-w-6xl mx-auto px-4 py-12">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{color: '#8FBC8F'}}>
+          🎉 Il Tuo Piano è Pronto!
         </h2>
-        <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-          Ecco il tuo piano meal prep ottimizzato per il fitness con ricette selezionate, immagini e score fitness.
+        <p className="text-lg text-gray-300 mb-6">
+          Anteprima veloce del tuo piano personalizzato
         </p>
-      </div>
-
-      {/* 📊 STATS GENERALI */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-green-400">
-            {parsedPlan.days.length}
-          </div>
-          <div className="text-sm text-gray-400">Giorni</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-blue-400">
-            {parsedPlan.days.reduce((total: number, day: any) => 
-              total + Object.keys(day.meals).length, 0
-            )}
-          </div>
-          <div className="text-sm text-gray-400">Ricette</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-purple-400">
-            {Math.round(parsedPlan.days.reduce((total: number, day: any) => 
-              total + Object.values(day.meals).reduce((dayTotal: number, meal: any) => 
-                dayTotal + (meal?.fitnessScore || 0), 0
-              ) / Object.keys(day.meals).length, 0
-            ) / parsedPlan.days.length)}
-          </div>
-          <div className="text-sm text-gray-400">Fitness Score Medio</div>
-        </div>
-        <div className="bg-gray-800 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-yellow-400">
-            {Math.round(parsedPlan.days.reduce((total: number, day: any) => 
-              total + Object.values(day.meals).reduce((dayTotal: number, meal: any) => 
-                dayTotal + (meal?.calorie || 0), 0
-              ), 0
-            ) / parsedPlan.days.length)}
-          </div>
-          <div className="text-sm text-gray-400">Cal/Giorno</div>
-        </div>
-      </div>
-
-      {/* 📅 GIORNI E RICETTE */}
-      <div className="space-y-8">
-        {parsedPlan.days.map((day: any, dayIndex: number) => (
-          <div key={dayIndex} className="bg-gray-800 rounded-2xl p-8">
-            <h3 className="text-2xl font-bold mb-6 text-center" style={{color: '#8FBC8F'}}>
-              📅 {day.day}
-            </h3>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => (
-                <div key={mealType}>
-                  <h4 className="text-lg font-semibold mb-3 text-center capitalize" style={{color: '#8FBC8F'}}>
-                    {mealType.replace('spuntino1', 'Spuntino 1').replace('spuntino2', 'Spuntino 2').replace('spuntino3', 'Spuntino 3')}
-                  </h4>
-                  {renderMealCard(meal, mealType, dayIndex)}
-                </div>
-              ))}
+        <div className="bg-gray-800 rounded-xl p-4 inline-block">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-green-400">
+                {parsedPlan.days?.length || 0}
+              </div>
+              <div className="text-sm text-gray-400">Giorni</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-400">
+                {parsedPlan.days?.reduce((total: number, day: any) => {
+                  return total + Object.keys(day.meals || {}).length;
+                }, 0) || 0}
+              </div>
+              <div className="text-sm text-gray-400">Ricette</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-400">
+                {Math.round(parsedPlan.days?.reduce((total: number, day: any) => {
+                  const dayTotals = calculateDayTotals(day);
+                  return total + dayTotals.totalCalories;
+                }, 0) / (parsedPlan.days?.length || 1)) || 0}
+              </div>
+              <div className="text-sm text-gray-400">kcal/giorno</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-orange-400">
+                {Math.round(parsedPlan.days?.reduce((total: number, day: any) => {
+                  const dayTotals = calculateDayTotals(day);
+                  return total + dayTotals.totalProtein;
+                }, 0) / (parsedPlan.days?.length || 1)) || 0}g
+              </div>
+              <div className="text-sm text-gray-400">proteine/giorno</div>
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* 🎯 AZIONI FINALI */}
-      <div className="flex flex-wrap gap-4 justify-center mt-12">
+      {/* Days Grid */}
+      <div className="space-y-8">
+        {parsedPlan.days.map((day: any, dayIndex: number) => {
+          const dayTotals = calculateDayTotals(day);
+          
+          return (
+            <div key={dayIndex} className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+              {/* Day Header */}
+              <div className="bg-gradient-to-r from-green-600 to-green-700 p-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl md:text-2xl font-bold text-white">
+                    📅 {day.day}
+                  </h3>
+                  <div className="flex gap-4 text-white text-sm">
+                    <span className="bg-white/20 px-3 py-1 rounded-full">
+                      {Math.round(dayTotals.totalCalories)} kcal
+                    </span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full">
+                      {Math.round(dayTotals.totalProtein)}g proteine
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meals Grid */}
+              <div className="p-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(day.meals || {}).map(([mealType, meal]: [string, any]) => (
+                    <div key={mealType} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-650 transition-colors">
+                      {/* Meal Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{getMealTypeIcon(mealType)}</span>
+                          <h4 className="font-semibold text-green-400">
+                            {getMealTypeName(mealType)}
+                          </h4>
+                        </div>
+                        {isReplacing === `${day.day}-${mealType}` && (
+                          <div className="text-green-400 text-sm animate-pulse">
+                            🔄 Sostituendo...
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Meal Info */}
+                      <div className="space-y-3">
+                        <div>
+                          <h5 className="font-bold text-white text-lg mb-1">
+                            {meal.nome || 'Ricetta senza nome'}
+                          </h5>
+                          <div className="flex gap-3 text-sm text-gray-300">
+                            <span className="bg-blue-600/20 px-2 py-1 rounded">
+                              {meal.calorie || 0} kcal
+                            </span>
+                            <span className="bg-green-600/20 px-2 py-1 rounded">
+                              P: {meal.proteine || 0}g
+                            </span>
+                            <span className="bg-orange-600/20 px-2 py-1 rounded">
+                              C: {meal.carboidrati || 0}g
+                            </span>
+                            <span className="bg-purple-600/20 px-2 py-1 rounded">
+                              F: {meal.grassi || 0}g
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Ingredienti */}
+                        {meal.ingredienti && meal.ingredienti.length > 0 && (
+                          <div>
+                            <h6 className="text-sm font-medium text-gray-400 mb-2">
+                              🥘 Ingredienti:
+                            </h6>
+                            <div className="space-y-1">
+                              {meal.ingredienti.map((ingredient: string, ingredientIndex: number) => (
+                                <div 
+                                  key={ingredientIndex}
+                                  className="flex items-center justify-between text-sm text-gray-300 hover:bg-gray-600 p-1 rounded transition-colors"
+                                >
+                                  <span>• {ingredient}</span>
+                                  <button
+                                    onClick={() => handleIngredientSubstitution(ingredient, dayIndex, mealType, ingredientIndex)}
+                                    className="text-blue-400 hover:text-blue-300 text-xs px-2 py-1 hover:bg-blue-400/10 rounded transition-colors"
+                                    title="Sostituisci ingrediente"
+                                  >
+                                    🔄
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => handleReplacement(mealType, day.day)}
+                            disabled={isReplacing === `${day.day}-${mealType}`}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            {isReplacing === `${day.day}-${mealType}` ? '⏳' : '🔄'} Sostituisci Ricetta
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col md:flex-row gap-4 justify-center mt-12">
         <button
           onClick={confirmPlan}
-          className="px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-full font-semibold text-lg transition-all transform hover:scale-105"
+          className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 shadow-lg"
         >
-          ✅ Conferma Piano Fitness
+          ✅ Conferma Piano Completo
         </button>
         
         <button
           onClick={onGenerateNewPlan}
-          className="px-8 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-full font-semibold text-lg transition-all transform hover:scale-105"
+          className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all shadow-lg"
         >
           🔄 Genera Nuovo Piano
         </button>
+      </div>
+
+      {/* Info Box */}
+      <div className="mt-8 bg-gradient-to-r from-blue-600/20 to-green-600/20 rounded-xl p-6 text-center">
+        <h4 className="text-lg font-bold mb-2 text-green-400">
+          🚀 Anteprima Veloce
+        </h4>
+        <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+          Questa è un'anteprima semplificata del tuo piano. 
+          Dopo la conferma, avrai accesso alla <strong>dashboard completa</strong> con foto delle ricette, 
+          preparazioni dettagliate, lista della spesa e molto altro!
+        </p>
       </div>
     </section>
   );
