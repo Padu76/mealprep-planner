@@ -155,48 +155,73 @@ export default function UserDashboard() {
     setRecentPlans([]);
   };
 
+  // 💾 FUNZIONE CORRETTA PER CARICARE DATI UTENTE - FIX AIRTABLE API
   const loadUserData = async (userEmail: string) => {
     setIsLoading(true);
     try {
       console.log('📊 Loading user data for:', userEmail);
       
-      // Carica dati dal localStorage come fallback
-      const formData = localStorage.getItem('mealPrepFormData');
-      if (formData) {
-        const parsed = JSON.parse(formData);
-        setUserData(parsed);
-      }
-      
-      // Prova a caricare da Airtable
+      // 🔧 CARICA DATI UTENTE DA AIRTABLE - CHIAMATA API CORRETTA
       try {
-        const response = await fetch('/api/airtable?action=getRequests');
-        const data = await response.json();
+        console.log('🔍 Calling getUserMealRequests API...');
+        const response = await fetch('/api/airtable', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'getUserMealRequests',
+            data: { email: userEmail }
+          })
+        });
         
-        if (data.success && data.data) {
-          console.log('✅ Loaded', data.data.length, 'records from Airtable');
+        console.log('📡 API response status:', response.status);
+        const data = await response.json();
+        console.log('📊 API response data:', data);
+        
+        if (data.success && data.records) {
+          console.log('✅ Loaded', data.records.length, 'records from Airtable for user:', userEmail);
           
-          // Filtra i piani per email o nome utente
-          const userPlans = data.data.filter((record: any) => {
-            console.log('🔍 Checking record:', record.nome, 'email:', record.email, 'vs user:', userEmail);
-            
-            // 1. Match esatto per email
-            if (record.email === userEmail) return true;
-            
-            // 2. Match per nome utente nel profilo localStorage
-            if (userData?.nome && record.nome && 
-                record.nome.toLowerCase() === userData.nome.toLowerCase()) return true;
-            
-            // 3. Match parziale email vs nome (es: "andrea" da "andrea.padoan@gmail.com")
-            const emailName = userEmail.split('@')[0].toLowerCase();
-            if (record.nome && record.nome.toLowerCase().includes(emailName)) return true;
-            
-            return false;
-          });
+          // 🔧 MAPPA I RECORD AIRTABLE AL FORMATO DASHBOARD
+          const userPlans = data.records.map((record: any) => ({
+            id: record.id,
+            nome: record.fields?.Nome || 'Utente',
+            email: record.fields?.Email || userEmail,
+            goal: record.fields?.Goal || 'N/A',
+            duration: record.fields?.Duration || 0,
+            meals_per_day: record.fields?.Meals_Per_Day || 3,
+            weight: record.fields?.Weight || 0,
+            height: record.fields?.Height || 0,
+            age: record.fields?.Age || 0,
+            gender: record.fields?.Gender || 'N/A',
+            activity_level: record.fields?.Activity_Level || 'N/A',
+            created_at: record.fields?.Created_At ? new Date(record.fields.Created_At).toLocaleDateString('it-IT') : '',
+            status: record.fields?.Status || 'In attesa',
+            createdTime: record.createdTime || '',
+            exclusions: record.fields?.Exclusions || '',
+            foods_at_home: record.fields?.Foods_At_Home || ''
+          }));
           
-          console.log('👤 Found', userPlans.length, 'plans for user');
+          console.log('👤 Mapped user plans:', userPlans);
           setRecentPlans(userPlans);
           
-          // Calcola statistiche
+          // 🔧 IMPOSTA DATI UTENTE DAL PRIMO RECORD
+          if (userPlans.length > 0) {
+            const firstPlan = userPlans[0];
+            setUserData({
+              nome: firstPlan.nome,
+              email: firstPlan.email,
+              eta: firstPlan.age,
+              peso: firstPlan.weight,
+              altezza: firstPlan.height,
+              sesso: firstPlan.gender,
+              obiettivo: firstPlan.goal,
+              attivita: firstPlan.activity_level,
+              pasti: firstPlan.meals_per_day,
+              allergie: firstPlan.exclusions ? firstPlan.exclusions.split(', ') : [],
+              preferenze: firstPlan.foods_at_home ? firstPlan.foods_at_home.split(', ') : []
+            });
+          }
+          
+          // 🔧 CALCOLA STATISTICHE CORRETTE
           setUserStats({
             plansCreated: userPlans.length,
             currentPlan: 'Free',
@@ -205,12 +230,15 @@ export default function UserDashboard() {
             favoriteRecipes: userPlans.length * 3,
             weightProgress: 0
           });
+          
         } else {
-          console.log('❌ Failed to load from Airtable, using localStorage');
+          console.log('❌ Failed to load user data from Airtable:', data.error);
+          console.log('🔄 Fallback to localStorage...');
           loadFromLocalStorage();
         }
       } catch (airtableError) {
-        console.error('❌ Airtable error:', airtableError);
+        console.error('❌ Airtable API error:', airtableError);
+        console.log('🔄 Fallback to localStorage...');
         loadFromLocalStorage();
       }
     } catch (error) {
@@ -222,9 +250,24 @@ export default function UserDashboard() {
   };
 
   const loadFromLocalStorage = () => {
-    // Fallback: carica dai localStorage
+    console.log('💾 Loading from localStorage fallback...');
+    
+    // Carica dati dal localStorage come fallback
+    const formData = localStorage.getItem('mealPrepFormData');
+    if (formData) {
+      try {
+        const parsed = JSON.parse(formData);
+        setUserData(parsed);
+        console.log('✅ Loaded form data from localStorage:', parsed);
+      } catch (e) {
+        console.error('❌ Error parsing localStorage formData:', e);
+      }
+    }
+    
+    // Carica piani dal localStorage
     const plans = JSON.parse(localStorage.getItem('userPlans') || '[]');
     setRecentPlans(plans);
+    console.log('📋 Loaded', plans.length, 'plans from localStorage');
     
     setUserStats({
       plansCreated: plans.length,
@@ -274,15 +317,23 @@ export default function UserDashboard() {
 
   const testAirtableConnection = async () => {
     try {
-      const response = await fetch('/api/airtable');
+      console.log('🧪 Testing Airtable connection...');
+      const response = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: 'testConnection'})
+      });
+      
       const data = await response.json();
+      console.log('🔍 Test result:', data);
       
       if (data.success) {
-        alert('✅ Connessione Airtable attiva!\n\nRecords: ' + data.recordsCount);
+        alert('✅ Connessione Airtable attiva!\n\nStatus: ' + data.status + '\nRecords trovati: ' + (data.recordsFound || 0));
       } else {
-        alert('❌ Errore connessione: ' + data.error);
+        alert('❌ Errore connessione: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
+      console.error('❌ Test error:', error);
       alert('❌ Errore di rete: ' + error);
     }
   };
@@ -570,6 +621,10 @@ export default function UserDashboard() {
                       <span className="text-purple-400">⚖️</span>
                       <span>{plan.weight || plan.peso || 'N/A'} kg</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-yellow-400">📊</span>
+                      <span className="text-xs px-2 py-1 bg-gray-700 rounded">{plan.status || 'Attivo'}</span>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 md:gap-3">
@@ -629,23 +684,23 @@ export default function UserDashboard() {
                   <div className="space-y-2 md:space-y-3 text-sm md:text-base text-gray-300">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Nome:</span>
-                      <span className="text-white font-medium">{userData.nome}</span>
+                      <span className="text-white font-medium">{userData.nome || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Età:</span>
-                      <span className="text-white font-medium">{userData.eta} anni</span>
+                      <span className="text-white font-medium">{userData.eta || 'N/A'} anni</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Sesso:</span>
-                      <span className="text-white font-medium">{userData.sesso}</span>
+                      <span className="text-white font-medium">{userData.sesso || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Peso:</span>
-                      <span className="text-white font-medium">{userData.peso} kg</span>
+                      <span className="text-white font-medium">{userData.peso || 'N/A'} kg</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Altezza:</span>
-                      <span className="text-white font-medium">{userData.altezza} cm</span>
+                      <span className="text-white font-medium">{userData.altezza || 'N/A'} cm</span>
                     </div>
                   </div>
                 </div>
@@ -657,15 +712,15 @@ export default function UserDashboard() {
                   <div className="space-y-2 md:space-y-3 text-sm md:text-base text-gray-300">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Obiettivo:</span>
-                      <span className="text-white font-medium">{userData.obiettivo}</span>
+                      <span className="text-white font-medium">{userData.obiettivo || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Attività:</span>
-                      <span className="text-white font-medium">{userData.attivita}</span>
+                      <span className="text-white font-medium">{userData.attivita || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Pasti/giorno:</span>
-                      <span className="text-white font-medium">{userData.pasti}</span>
+                      <span className="text-white font-medium">{userData.pasti || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
