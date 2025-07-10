@@ -66,6 +66,26 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'recipes' | 'shopping'>('overview');
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
+  // 🧹 FUNZIONE PER PULIRE INFO PASTO
+  const renderCleanMealInfo = (meal: any) => {
+    const cleanRating = meal.rating && meal.rating > 0 ? meal.rating : null;
+    const cleanDifficulty = meal.difficolta && meal.difficolta !== 'unknown' && 
+                           ['facile', 'medio', 'difficile'].includes(meal.difficolta.toLowerCase()) 
+                           ? meal.difficolta : null;
+
+    return (
+      <div className="text-xs text-gray-300 mb-2">
+        🔥 {meal.calorie} kcal | ⏱️ {meal.tempo} | 👥 {meal.porzioni} porz.
+        {cleanRating && (
+          <span> | ⭐ {cleanRating.toFixed(1)}</span>
+        )}
+        {cleanDifficulty && (
+          <span> | 😊 {cleanDifficulty}</span>
+        )}
+      </div>
+    );
+  };
+
   // Funzione per ottenere tutti i pasti in ordine
   const getAllMealsInOrder = (dayMeals: DayMeals) => {
     const meals = [];
@@ -312,9 +332,8 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                         
                         <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
                         
-                        <div className="text-xs text-gray-300 mb-2">
-                          🔥 {meal.calorie} kcal | ⏱️ {meal.tempo} | 👥 {meal.porzioni} porz.
-                        </div>
+                        {/* Info pulite senza tag debug */}
+                        {renderCleanMealInfo(meal)}
                         
                         <div className="text-xs text-gray-300">
                           P: {meal.proteine}g | C: {meal.carboidrati}g | G: {meal.grassi}g
@@ -388,7 +407,9 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                         
                         <div>
                           <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
-                          <p className="text-gray-300 leading-relaxed">{recipe!.preparazione}</p>
+                          <p className="text-gray-300 leading-relaxed">
+                            {recipe!.preparazione?.replace(/⚠️ NOTA:.*$/g, '').trim()}
+                          </p>
                           
                           <div className="mt-4 p-4 bg-gray-600 rounded-lg">
                             <h6 className="font-semibold text-white mb-2">📊 Valori Nutrizionali:</h6>
