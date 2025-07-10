@@ -57,7 +57,7 @@ export default function AdminDashboard() {
     try {
       console.log('📊 Loading Airtable data...');
       
-      // Carica richieste utenti
+      // Carica richieste utenti - FIX: usa getMealRequests
       const usersResponse = await fetch('/api/airtable?action=getMealRequests');
       const usersData = await usersResponse.json();
       
@@ -65,17 +65,42 @@ export default function AdminDashboard() {
       const metricsResponse = await fetch('/api/airtable?action=getDashboardMetrics');
       const metricsData = await metricsResponse.json();
       
+      console.log('🔍 Raw usersData:', usersData);
+      console.log('🔍 Raw metricsData:', metricsData);
+      
       if (usersData.success && metricsData.success) {
-        console.log('✅ Airtable data loaded:', usersData.data.length, 'users');
-        console.log('🔍 Users data:', usersData.data);
+        // FIX: usa records invece di data
+        console.log('✅ Airtable data loaded:', usersData.records?.length || 0, 'users');
+        console.log('🔍 Users records:', usersData.records);
         console.log('🔍 Metrics data:', metricsData.data);
         
-        setAllUsers(usersData.data);
+        // FIX: Mappa i campi Airtable al formato atteso dalla dashboard
+        const mappedUsers = (usersData.records || []).map((record: any) => ({
+          nome: record.fields?.Nome || '',
+          age: record.fields?.Age || 0,
+          weight: record.fields?.Weight || 0,
+          height: record.fields?.Height || 0,
+          gender: record.fields?.Gender || '',
+          goal: record.fields?.Goal || '',
+          activity_level: record.fields?.Activity_Level || '',
+          duration: record.fields?.Duration || 0,
+          meals_per_day: record.fields?.Meals_Per_Day || 3,
+          exclusions: record.fields?.Exclusions || '',
+          foods_at_home: record.fields?.Foods_At_Home || '',
+          status: record.fields?.Status || 'In attesa',
+          created_at: record.fields?.Created_At || '',
+          calories: record.fields?.Calculated_Calories || 0,
+          bmr: record.fields?.BMR || 0,
+          source: record.fields?.Source || 'Manual'
+        }));
+        
+        console.log('🔍 Mapped users:', mappedUsers);
+        setAllUsers(mappedUsers);
         
         // Calcola statistiche business
-        const totalUsers = usersData.data.length;
-        const freeUsers = usersData.data.filter((u: any) => !u.planType || u.planType === 'free').length;
-        const paidUsers = usersData.data.filter((u: any) => u.planType === 'paid').length;
+        const totalUsers = mappedUsers.length;
+        const freeUsers = mappedUsers.filter((u: any) => !u.planType || u.planType === 'free').length;
+        const paidUsers = mappedUsers.filter((u: any) => u.planType === 'paid').length;
         const conversionRate = totalUsers > 0 ? Math.round((paidUsers / totalUsers) * 100) : 0;
         const monthlyRevenue = paidUsers * 9.99;
         
@@ -83,17 +108,18 @@ export default function AdminDashboard() {
           totalUsers,
           freeUsers,
           paidUsers,
-          totalPlansGenerated: metricsData.data.totalRequests || totalUsers,
+          totalPlansGenerated: metricsData.data?.totalRequests || totalUsers,
           conversionRate,
           monthlyRevenue,
-          todayRequests: metricsData.data.todayRequests || 0,
-          completedRequests: metricsData.data.completedRequests || 0,
-          processingRequests: metricsData.data.processingRequests || 0
+          todayRequests: metricsData.data?.todayRequests || 0,
+          completedRequests: metricsData.data?.completedRequests || 0,
+          processingRequests: metricsData.data?.processingRequests || 0
         });
         
         setLastRefresh(new Date().toLocaleTimeString('it-IT'));
       } else {
         console.error('❌ Failed to load Airtable data');
+        console.error('usersData.success:', usersData.success, 'metricsData.success:', metricsData.success);
         alert('❌ Errore nel caricamento dati. Controlla la connessione Airtable.');
       }
     } catch (error) {
@@ -106,15 +132,25 @@ export default function AdminDashboard() {
 
   const testAirtableConnection = async () => {
     try {
-      const response = await fetch('/api/airtable');
+      console.log('🧪 Testing Airtable connection...');
+      
+      // Test con POST method come l'API si aspetta
+      const response = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'testConnection' })
+      });
+      
       const data = await response.json();
+      console.log('🔍 Test result:', data);
       
       if (data.success) {
-        alert('✅ Connessione Airtable attiva!\n\nRecords: ' + data.recordsCount);
+        alert('✅ Connessione Airtable attiva!\n\nStatus: ' + data.status + '\nTable: ' + data.tableName);
       } else {
         alert('❌ Errore connessione: ' + data.error);
       }
     } catch (error) {
+      console.error('❌ Test connection error:', error);
       alert('❌ Errore di rete: ' + error);
     }
   };
