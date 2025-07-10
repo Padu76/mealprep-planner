@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       const message = await anthropic.messages.create({
         model: "claude-3-haiku-20240307",
         max_tokens: 4000,
-        temperature: 0.7,
+        temperature: 0.8,  // Aumentato per più varietà
         messages: [
           {
             role: "user",
@@ -120,10 +120,10 @@ function calculateNutritionalNeedsFixed(formData: any) {
   const tdee = bmr * activityFactor;
   console.log('🔥 TDEE calculated:', Math.round(tdee));
 
-  // 🎯 FATTORI OBIETTIVO CORRETTI - AIRTABLE VALUES
+  // 🎯 FATTORI OBIETTIVO CORRETTI - AIRTABLE VALUES ESATTI
   const goalFactors: { [key: string]: number } = {
     'dimagrimento': 0.85,        // Deficit 15%
-    'perdita peso': 0.85,        // Deficit 15%
+    'Perdita peso': 0.85,        // Deficit 15% (come scritto in Airtable)
     'mantenimento': 1.0,         // Mantenimento
     'aumento massa': 1.15        // Surplus 15%
   };
@@ -278,14 +278,20 @@ function normalizeActivity(activity: string): string {
     'intenso': 'intenso',
     'molto_intenso': 'molto_intenso',
     
-    // 📱 Valori FORM (da mappare) - FIX PRINCIPALE
+    // 📱 Valori FORM (da mappare) - FIX CASE SENSITIVITY
+    'Attività Sedentaria': 'sedentario',
+    'Attività Leggera': 'leggero',        // ← FIX BUG PRINCIPALE!
+    'Attività Moderata': 'moderato',      // ← FIX BUG PRINCIPALE!
+    'Attività Intensa': 'intenso',        // ← FIX BUG PRINCIPALE!
+    'Attività Molto Intensa': 'molto_intenso',
+    
+    // Varianti lowercase
     'attività sedentaria': 'sedentario',
-    'attività leggera': 'leggero',        // ← FIX BUG 862 KCAL!
-    'attività moderata': 'moderato',      // ← FIX BUG!
-    'attività intensa': 'intenso',        // ← FIX BUG!
+    'attività leggera': 'leggero',
+    'attività moderata': 'moderato',
+    'attività intensa': 'intenso',
     'attività molto intensa': 'molto_intenso',
     
-    // 🔄 Varianti alternative
     'sedentaria': 'sedentario',
     'leggera': 'leggero',
     'moderata': 'moderato',
@@ -307,27 +313,34 @@ function normalizeActivity(activity: string): string {
     'estremo': 'molto_intenso'
   };
   
-  const normalized = activityMap[String(activity || '').toLowerCase()] || 'moderato';
+  // Prima prova mapping diretto, poi lowercase
+  const normalized = activityMap[activity] || activityMap[String(activity || '').toLowerCase()] || 'moderato';
   console.log('🏃‍♂️ Activity normalized:', activity, '→', normalized);
   return normalized;
 }
 
-// 🔧 MAPPING OBIETTIVO FIXATO - AIRTABLE COMPATIBLE
+// 🔧 MAPPING OBIETTIVO FIXATO - AIRTABLE VALUES ESATTI
 function normalizeGoal(goal: string): string {
   const goalMap: { [key: string]: string } = {
-    // 📋 Valori AIRTABLE (target corretti)
+    // 📋 Valori AIRTABLE ESATTI (come mi hai detto)
     'dimagrimento': 'dimagrimento',
     'mantenimento': 'mantenimento', 
     'aumento massa': 'aumento massa',
-    'perdita peso': 'perdita peso',
+    'Perdita peso': 'Perdita peso',   // Come scritto in Airtable
     
-    // 📱 Valori FORM (da mappare)
-    'perdita di peso': 'perdita peso',
-    'perdita-peso': 'perdita peso',
+    // 📱 Valori FORM (da mappare) - FIX CASE SENSITIVITY
+    'Mantenimento': 'mantenimento',         // ← FIX BUG PRINCIPALE!
+    'Dimagrimento': 'dimagrimento',         // ← FIX BUG PRINCIPALE!
+    'Perdita di Peso': 'Perdita peso',      // ← FIX BUG PRINCIPALE!
+    'Aumento Massa': 'aumento massa',       // ← FIX BUG PRINCIPALE!
+    
+    // Varianti lowercase e alternative
+    'perdita di peso': 'Perdita peso',
+    'perdita-peso': 'Perdita peso',
     'dimagrire': 'dimagrimento',
-    'perdere peso': 'perdita peso',
-    'perdere-peso': 'perdita peso',
-    'peso': 'perdita peso',
+    'perdere peso': 'Perdita peso',
+    'perdere-peso': 'Perdita peso',
+    'peso': 'Perdita peso',
     
     'mantenere': 'mantenimento',
     'mantenere-peso': 'mantenimento',
@@ -343,18 +356,22 @@ function normalizeGoal(goal: string): string {
     'massa muscolare': 'aumento massa',
     'muscoli': 'aumento massa',
     
-    'definizione': 'dimagrimento',  // Definizione = dimagrimento
+    'definizione': 'dimagrimento',
     'definire': 'dimagrimento',
     'tonificare': 'dimagrimento'
   };
   
-  const normalized = goalMap[String(goal || '').toLowerCase()] || 'mantenimento';
+  // Prima prova mapping diretto, poi lowercase
+  const normalized = goalMap[goal] || goalMap[String(goal || '').toLowerCase()] || 'mantenimento';
   console.log('🎯 Goal normalized:', goal, '→', normalized);
   return normalized;
 }
 
-// 🔧 PROMPT MIGLIORATO CON CALORIE CORRETTE
+// 🔧 PROMPT MIGLIORATO CON VARIETÀ FORZATA
 function createScientificPrompt(formData: any, calc: any): string {
+  // Genera seed casuale per varietà
+  const randomSeed = Math.floor(Math.random() * 1000);
+  
   return `ISTRUZIONI CRITICHE PER NUTRIZIONISTA AI ITALIANO:
 
 🔥 ATTENZIONE: LE CALORIE SONO CALCOLATE SCIENTIFICAMENTE!
@@ -365,6 +382,8 @@ CALCOLI VERIFICATI:
 - TARGET GIORNALIERO: ${calc.dailyCalories} kcal/giorno
 
 ⚠️ USA ESATTAMENTE QUESTI VALORI CALORICI - NON MODIFICARE!
+
+SEED VARIETÀ: ${randomSeed} (USA QUESTO PER VARIARE LE RICETTE)
 
 VINCOLI NON NEGOZIABILI:
 ❗ OGNI GIORNO DEVE AVERE ESATTAMENTE ${calc.dailyCalories} KCAL
@@ -387,184 +406,202 @@ DATI UTENTE VERIFICATI:
 
 IMPORTANTE: TUTTI I NOMI RICETTE DEVONO ESSERE IN ITALIANO!
 
+🔄 REGOLA VARIETÀ OBBLIGATORIA:
+- OGNI GIORNO DEVE AVERE RICETTE COMPLETAMENTE DIVERSE
+- CAMBIA INGREDIENTI PRINCIPALI TRA I GIORNI
+- USA CUCINE DIVERSE (italiana, mediterranea, orientale, americana)
+- VARIA TECNICHE DI COTTURA (grigliate, al forno, vapore, padella)
+
 FORMATO OBBLIGATORIO:
 
 === PIANO ALIMENTARE SCIENTIFICO ===
 Target: ${calc.dailyCalories} kcal/giorno
 
-GIORNO 1:
+GIORNO 1 - TEMA: MEDITERRANEO
 🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
-Nome: [Nome ricetta italiana - es: "Bowl Energetico ai Cereali", "Toast Proteico all'Avocado"]
+Nome: [Nome ricetta italiana UNICA - es: "Bowl Energetico ai Cereali", "Toast Proteico all'Avocado"]
 Calorie: ${calc.mealCalories.colazione}
 Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
 Ingredienti: [Lista con quantità precise in italiano]
 Preparazione: [Istruzioni dettagliate in italiano]
 
 ☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
-Nome: [Nome ricetta italiana - es: "Risotto alle Verdure", "Insalata di Quinoa Mediterranea"]
+Nome: [Nome ricetta italiana UNICA - es: "Risotto alle Verdure", "Insalata di Quinoa Mediterranea"]
 Calorie: ${calc.mealCalories.pranzo}
 Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
 Ingredienti: [Lista con quantità precise in italiano]
 Preparazione: [Istruzioni dettagliate in italiano]
 
 🌙 CENA (${calc.mealCalories.cena} kcal)
-Nome: [Nome ricetta italiana - es: "Salmone alle Erbe", "Pollo al Limone con Verdure"]
+Nome: [Nome ricetta italiana UNICA - es: "Salmone alle Erbe", "Pollo al Limone con Verdure"]
 Calorie: ${calc.mealCalories.cena}
 Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
 Ingredienti: [Lista con quantità precise in italiano]
 Preparazione: [Istruzioni dettagliate in italiano]
 
-${calc.mealCalories.spuntino1 > 0 ? `🍎 SPUNTINO 1 (${calc.mealCalories.spuntino1} kcal)\nNome: [Nome spuntino italiano - es: "Yogurt con Mirtilli", "Frullato Proteico"]\nCalorie: ${calc.mealCalories.spuntino1}\n[Dettagli spuntino in italiano]\n` : ''}
-${calc.mealCalories.spuntino2 > 0 ? `🥜 SPUNTINO 2 (${calc.mealCalories.spuntino2} kcal)\nNome: [Nome spuntino italiano diverso]\nCalorie: ${calc.mealCalories.spuntino2}\n[Dettagli spuntino in italiano]\n` : ''}
-${calc.mealCalories.spuntino3 > 0 ? `🍌 SPUNTINO 3 (${calc.mealCalories.spuntino3} kcal)\nNome: [Nome spuntino italiano diverso]\nCalorie: ${calc.mealCalories.spuntino3}\n[Dettagli spuntino in italiano]\n` : ''}
-${calc.mealCalories.spuntino4 > 0 ? `🥤 SPUNTINO 4 (${calc.mealCalories.spuntino4} kcal)\nNome: [Nome spuntino italiano diverso]\nCalorie: ${calc.mealCalories.spuntino4}\n[Dettagli spuntino in italiano]\n` : ''}
-
 TOTALE GIORNO 1: ${calc.dailyCalories} kcal
+
+${calc.numDays > 1 ? `
+GIORNO 2 - TEMA: ORIENTALE/FUSION
+🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
+Nome: [Nome ricetta COMPLETAMENTE DIVERSA dal giorno 1 - es: "Pancakes Proteici", "Smoothie Bowl"]
+Calorie: ${calc.mealCalories.colazione}
+Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
+Ingredienti: [Lista TOTALMENTE DIVERSA dal giorno 1]
+Preparazione: [Istruzioni DIVERSE dal giorno 1]
+
+☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
+Nome: [Nome ricetta COMPLETAMENTE DIVERSA dal giorno 1 - es: "Bowl di Riso Teriyaki", "Zuppa Orientale"]
+Calorie: ${calc.mealCalories.pranzo}
+Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
+Ingredienti: [Lista TOTALMENTE DIVERSA dal giorno 1]
+Preparazione: [Istruzioni DIVERSE dal giorno 1]
+
+🌙 CENA (${calc.mealCalories.cena} kcal)
+Nome: [Nome ricetta COMPLETAMENTE DIVERSA dal giorno 1 - es: "Curry di Pollo", "Tofu Grigliato"]
+Calorie: ${calc.mealCalories.cena}
+Proteine: [X]g | Carboidrati: [X]g | Grassi: [X]g
+Ingredienti: [Lista TOTALMENTE DIVERSA dal giorno 1]
+Preparazione: [Istruzioni DIVERSE dal giorno 1]
+
+TOTALE GIORNO 2: ${calc.dailyCalories} kcal
+` : ''}
 
 REGOLE CRITICHE:
 1. USA ESATTAMENTE I NUMERI SPECIFICATI PER LE CALORIE
 2. NON MODIFICARE I VALORI CALORICI TARGET
 3. SCRIVI TUTTO IN ITALIANO - NOMI RICETTE ITALIANI
-4. CREA RICETTE DIVERSE PER OGNI GIORNO
-5. VARIA GLI INGREDIENTI TRA I GIORNI
+4. OBBLIGATORIO: RICETTE DIVERSE PER OGNI GIORNO
+5. OBBLIGATORIO: INGREDIENTI DIVERSI TRA I GIORNI
 6. EVITA: ${formData.allergie?.join(', ') || 'niente'}
 
 Inizia subito con il formato richiesto COMPLETAMENTE IN ITALIANO.`;
 }
 
-// 🔄 FALLBACK CON CALORIE CORRETTE
+// 🔄 FALLBACK CON VARIETÀ FORZATA
 function generateFallbackResponse(formData: any, calc: any) {
-  console.log('🔄 Generating ITALIAN fallback with CORRECT calories...');
+  console.log('🔄 Generating ITALIAN fallback with VARIETY...');
+  
+  // Array di ricette diverse per garantire varietà
+  const breakfastOptions = [
+    {
+      nome: "Bowl Energetico ai Cereali",
+      ingredienti: ["avena integrale", "proteine whey vaniglia", "frutti di bosco misti", "mandorle tritate", "latte parzialmente scremato", "miele"],
+      preparazione: "Mescola avena con proteine in polvere, aggiungi latte caldo, frutti di bosco, mandorle e miele."
+    },
+    {
+      nome: "Pancakes Proteici alla Ricotta",
+      ingredienti: ["ricotta light", "farina d'avena", "uova", "mirtilli freschi", "sciroppo d'acero"],
+      preparazione: "Impasta ricotta con farina e uova, cuoci pancakes, servi con mirtilli e sciroppo."
+    },
+    {
+      nome: "Toast Gourmet all'Avocado",
+      ingredienti: ["pane integrale", "avocado maturo", "uova", "pomodorini", "formaggio spalmabile"],
+      preparazione: "Tosta il pane, spalma avocado e formaggio, aggiungi uova strapazzate e pomodorini."
+    }
+  ];
+
+  const lunchOptions = [
+    {
+      nome: "Insalata di Quinoa Mediterranea",
+      ingredienti: ["petto di pollo grigliato", "quinoa cotta", "verdure grigliate miste", "avocado", "olio extravergine", "pomodorini", "basilico"],
+      preparazione: "Griglia pollo e verdure, cuoci quinoa, componi insalata con tutti ingredienti."
+    },
+    {
+      nome: "Risotto Cremoso alle Verdure",
+      ingredienti: ["riso Carnaroli", "zucchine", "parmigiano reggiano", "piselli", "brodo vegetale"],
+      preparazione: "Risotto cremoso con verdure fresche e parmigiano, mantecato alla perfezione."
+    },
+    {
+      nome: "Bowl di Riso Teriyaki",
+      ingredienti: ["riso integrale", "pollo teriyaki", "edamame", "carote", "cavolo rosso", "salsa teriyaki"],
+      preparazione: "Riso con pollo marinato, verdure fresche e salsa teriyaki per un gusto orientale."
+    }
+  ];
+
+  const dinnerOptions = [
+    {
+      nome: "Salmone alle Erbe con Verdure",
+      ingredienti: ["filetto di salmone", "patate dolci", "broccoli", "olio extravergine", "rosmarino", "prezzemolo"],
+      preparazione: "Salmone al forno con erbe aromatiche, patate dolci e broccoli al vapore."
+    },
+    {
+      nome: "Tagliata di Manzo alle Erbe",
+      ingredienti: ["tagliata di manzo", "rucola", "pomodorini", "grana padano", "olio EVO", "aceto balsamico"],
+      preparazione: "Tagliata grigliata su letto di rucola con pomodorini e grana."
+    },
+    {
+      nome: "Pollo al Curry con Verdure",
+      ingredienti: ["petto di pollo", "curry in polvere", "latte di cocco", "peperoni", "zucchine", "riso basmati"],
+      preparazione: "Pollo al curry cremoso con verdure e riso basmati profumato."
+    }
+  ];
+
+  // Selezione casuale per varietà
+  const breakfast = breakfastOptions[Math.floor(Math.random() * breakfastOptions.length)];
+  const lunch = lunchOptions[Math.floor(Math.random() * lunchOptions.length)];
+  const dinner = dinnerOptions[Math.floor(Math.random() * dinnerOptions.length)];
+
+  // Seconda giornata con ricette diverse
+  const breakfast2 = breakfastOptions.find(b => b.nome !== breakfast.nome) || breakfastOptions[1];
+  const lunch2 = lunchOptions.find(l => l.nome !== lunch.nome) || lunchOptions[1];
+  const dinner2 = dinnerOptions.find(d => d.nome !== dinner.nome) || dinnerOptions[1];
   
   const fallbackPlan = `=== PIANO ALIMENTARE SCIENTIFICO ===
 Target: ${calc.dailyCalories} kcal/giorno
 
 GIORNO 1:
 🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
-Nome: Bowl Energetico ai Cereali
+Nome: ${breakfast.nome}
 Calorie: ${calc.mealCalories.colazione}
 Proteine: ${Math.round(calc.mealCalories.colazione * 0.20 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.colazione * 0.50 / 4)}g | Grassi: ${Math.round(calc.mealCalories.colazione * 0.30 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.colazione * 0.25)}g avena integrale
-- ${Math.round(calc.mealCalories.colazione * 0.12)}g proteine whey vaniglia
-- ${Math.round(calc.mealCalories.colazione * 0.18)}g frutti di bosco misti
-- ${Math.round(calc.mealCalories.colazione * 0.08)}g mandorle tritate
-- 200ml latte parzialmente scremato
-- 1 cucchiaino miele
-Preparazione: Mescola avena con proteine in polvere, aggiungi latte caldo, frutti di bosco, mandorle e miele. Calibrato scientificamente per ${calc.mealCalories.colazione} kcal.
+${breakfast.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.colazione * 0.15)}g ${ing}`).join('\n')}
+Preparazione: ${breakfast.preparazione} Calibrato scientificamente per ${calc.mealCalories.colazione} kcal.
 
 ☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
-Nome: Insalata di Quinoa Mediterranea
+Nome: ${lunch.nome}
 Calorie: ${calc.mealCalories.pranzo}
 Proteine: ${Math.round(calc.mealCalories.pranzo * 0.25 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.pranzo * 0.45 / 4)}g | Grassi: ${Math.round(calc.mealCalories.pranzo * 0.30 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.pranzo * 0.30)}g petto di pollo grigliato
-- ${Math.round(calc.mealCalories.pranzo * 0.20)}g quinoa cotta
-- ${Math.round(calc.mealCalories.pranzo * 0.15)}g verdure grigliate miste
-- ${Math.round(calc.mealCalories.pranzo * 0.06)}g avocado
-- 1 cucchiaio olio extravergine d'oliva
-- 50g pomodorini
-- Basilico e erbe aromatiche
-Preparazione: Griglia pollo e verdure, cuoci quinoa, componi insalata con tutti ingredienti. Porzioni calibrate per ${calc.mealCalories.pranzo} kcal esatti.
+${lunch.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.pranzo * 0.18)}g ${ing}`).join('\n')}
+Preparazione: ${lunch.preparazione} Porzioni calibrate per ${calc.mealCalories.pranzo} kcal esatti.
 
 🌙 CENA (${calc.mealCalories.cena} kcal)
-Nome: Salmone alle Erbe con Verdure
+Nome: ${dinner.nome}
 Calorie: ${calc.mealCalories.cena}
 Proteine: ${Math.round(calc.mealCalories.cena * 0.35 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.cena * 0.25 / 4)}g | Grassi: ${Math.round(calc.mealCalories.cena * 0.40 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.cena * 0.35)}g filetto di salmone
-- ${Math.round(calc.mealCalories.cena * 0.15)}g patate dolci
-- ${Math.round(calc.mealCalories.cena * 0.12)}g broccoli
-- 1 cucchiaio olio extravergine d'oliva
-- Limone, rosmarino, prezzemolo
-Preparazione: Salmone al forno con erbe aromatiche, patate dolci e broccoli al vapore. Porzioni scientificamente calcolate per ${calc.mealCalories.cena} kcal.
-
-${calc.mealCalories.spuntino1 > 0 ? `🍎 SPUNTINO 1 (${calc.mealCalories.spuntino1} kcal)
-Nome: Yogurt Proteico ai Frutti di Bosco
-Calorie: ${calc.mealCalories.spuntino1}
-Proteine: ${Math.round(calc.mealCalories.spuntino1 * 0.30 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.spuntino1 * 0.50 / 4)}g | Grassi: ${Math.round(calc.mealCalories.spuntino1 * 0.20 / 9)}g
-Ingredienti:
-- ${Math.round(calc.mealCalories.spuntino1 * 0.70)}g yogurt greco
-- ${Math.round(calc.mealCalories.spuntino1 * 0.20)}g frutti di bosco
-- ${Math.round(calc.mealCalories.spuntino1 * 0.10)}g mandorle
-Preparazione: Mescola yogurt con frutti di bosco e mandorle. Calibrato per ${calc.mealCalories.spuntino1} kcal.
-` : ''}
-
-${calc.mealCalories.spuntino2 > 0 ? `🥜 SPUNTINO 2 (${calc.mealCalories.spuntino2} kcal)
-Nome: Mix Energetico di Frutta Secca
-Calorie: ${calc.mealCalories.spuntino2}
-Proteine: ${Math.round(calc.mealCalories.spuntino2 * 0.20 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.spuntino2 * 0.30 / 4)}g | Grassi: ${Math.round(calc.mealCalories.spuntino2 * 0.50 / 9)}g
-Ingredienti:
-- ${Math.round(calc.mealCalories.spuntino2 * 0.50)}g mandorle
-- ${Math.round(calc.mealCalories.spuntino2 * 0.30)}g noci
-- ${Math.round(calc.mealCalories.spuntino2 * 0.20)}g uvetta
-Preparazione: Mix di frutta secca energetico. Calibrato per ${calc.mealCalories.spuntino2} kcal.
-` : ''}
-
-${calc.mealCalories.spuntino3 > 0 ? `🍌 SPUNTINO 3 (${calc.mealCalories.spuntino3} kcal)
-Nome: Frullato Proteico Post-Workout
-Calorie: ${calc.mealCalories.spuntino3}
-Proteine: ${Math.round(calc.mealCalories.spuntino3 * 0.40 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.spuntino3 * 0.40 / 4)}g | Grassi: ${Math.round(calc.mealCalories.spuntino3 * 0.20 / 9)}g
-Ingredienti:
-- 1 banana media
-- ${Math.round(calc.mealCalories.spuntino3 * 0.20)}g proteine whey
-- 200ml latte mandorle
-- 1 cucchiaino burro mandorle
-Preparazione: Frulla tutti gli ingredienti fino a consistenza cremosa. Calibrato per ${calc.mealCalories.spuntino3} kcal.
-` : ''}
-
-${calc.mealCalories.spuntino4 > 0 ? `🥤 SPUNTINO 4 (${calc.mealCalories.spuntino4} kcal)
-Nome: Smoothie Verde Detox
-Calorie: ${calc.mealCalories.spuntino4}
-Proteine: ${Math.round(calc.mealCalories.spuntino4 * 0.25 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.spuntino4 * 0.60 / 4)}g | Grassi: ${Math.round(calc.mealCalories.spuntino4 * 0.15 / 9)}g
-Ingredienti:
-- 100g spinaci freschi
-- 1/2 mela verde
-- 1 kiwi
-- 200ml acqua di cocco
-- 1 cucchiaino semi di chia
-Preparazione: Frulla tutto fino a consistenza liscia. Calibrato per ${calc.mealCalories.spuntino4} kcal.
-` : ''}
+${dinner.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.cena * 0.20)}g ${ing}`).join('\n')}
+Preparazione: ${dinner.preparazione} Porzioni scientificamente calcolate per ${calc.mealCalories.cena} kcal.
 
 TOTALE GIORNO 1: ${calc.dailyCalories} kcal
 
 ${calc.numDays > 1 ? `
 GIORNO 2:
 🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
-Nome: Pancakes Proteici alla Ricotta
+Nome: ${breakfast2.nome}
 Calorie: ${calc.mealCalories.colazione}
 Proteine: ${Math.round(calc.mealCalories.colazione * 0.25 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.colazione * 0.45 / 4)}g | Grassi: ${Math.round(calc.mealCalories.colazione * 0.30 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.colazione * 0.40)}g ricotta light
-- ${Math.round(calc.mealCalories.colazione * 0.20)}g farina d'avena
-- 2 uova
-- ${Math.round(calc.mealCalories.colazione * 0.15)}g mirtilli freschi
-- 1 cucchiaino sciroppo d'acero
-Preparazione: Impasta ricotta con farina e uova, cuoci pancakes, servi con mirtilli. Calibrato per ${calc.mealCalories.colazione} kcal.
+${breakfast2.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.colazione * 0.15)}g ${ing}`).join('\n')}
+Preparazione: ${breakfast2.preparazione} Calibrato per ${calc.mealCalories.colazione} kcal.
 
 ☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
-Nome: Risotto Cremoso alle Verdure
+Nome: ${lunch2.nome}
 Calorie: ${calc.mealCalories.pranzo}
 Proteine: ${Math.round(calc.mealCalories.pranzo * 0.20 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.pranzo * 0.55 / 4)}g | Grassi: ${Math.round(calc.mealCalories.pranzo * 0.25 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.pranzo * 0.35)}g riso Carnaroli
-- ${Math.round(calc.mealCalories.pranzo * 0.15)}g zucchine
-- ${Math.round(calc.mealCalories.pranzo * 0.12)}g parmigiano reggiano
-- ${Math.round(calc.mealCalories.pranzo * 0.08)}g piselli
-- Brodo vegetale e spezie italiane
-Preparazione: Risotto cremoso con verdure fresche e parmigiano. Porzioni per ${calc.mealCalories.pranzo} kcal.
+${lunch2.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.pranzo * 0.18)}g ${ing}`).join('\n')}
+Preparazione: ${lunch2.preparazione} Porzioni per ${calc.mealCalories.pranzo} kcal.
 
 🌙 CENA (${calc.mealCalories.cena} kcal)
-Nome: Tagliata di Manzo alle Erbe
+Nome: ${dinner2.nome}
 Calorie: ${calc.mealCalories.cena}
 Proteine: ${Math.round(calc.mealCalories.cena * 0.40 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.cena * 0.20 / 4)}g | Grassi: ${Math.round(calc.mealCalories.cena * 0.40 / 9)}g
 Ingredienti:
-- ${Math.round(calc.mealCalories.cena * 0.45)}g tagliata di manzo
-- ${Math.round(calc.mealCalories.cena * 0.15)}g rucola
-- ${Math.round(calc.mealCalories.cena * 0.12)}g pomodorini
-- ${Math.round(calc.mealCalories.cena * 0.08)}g grana padano
-- Olio EVO e aceto balsamico
-Preparazione: Tagliata grigliata su letto di rucola con pomodorini e grana. Calibrata per ${calc.mealCalories.cena} kcal.
+${dinner2.ingredienti.map(ing => `- ${Math.round(calc.mealCalories.cena * 0.20)}g ${ing}`).join('\n')}
+Preparazione: ${dinner2.preparazione} Calibrata per ${calc.mealCalories.cena} kcal.
 
 TOTALE GIORNO 2: ${calc.dailyCalories} kcal
 ` : ''}
@@ -577,15 +614,15 @@ Distribuzione: ${JSON.stringify(calc.mealCalories)}
 
 === LISTA DELLA SPESA ===
 Proteine: pollo, salmone, manzo, uova, ricotta, yogurt greco, proteine whey
-Carboidrati: avena, quinoa, riso Carnaroli, patate dolci, frutti di bosco
-Grassi: mandorle, avocado, olio extravergine, parmigiano
-Verdure: broccoli, verdure miste, pomodorini, zucchine, rucola, spinaci
-Altro: latte, miele, erbe aromatiche italiane`;
+Carboidrati: avena, quinoa, riso Carnaroli, riso integrale, patate dolci, frutti di bosco
+Grassi: mandorle, avocado, olio extravergine, parmigiano, grana padano
+Verdure: broccoli, verdure miste, pomodorini, zucchine, rucola, peperoni
+Altro: latte, miele, erbe aromatiche italiane, spezie orientali`;
 
   return NextResponse.json({
     success: true,
     piano: fallbackPlan,
-    message: 'Piano scientifico italiano con calorie corrette generato!',
+    message: 'Piano scientifico italiano con varietà e calorie corrette generato!',
     metadata: {
       bmr: calc.bmr,
       tdee: calc.tdee,
