@@ -1,4 +1,4 @@
-// 🔧 /src/app/api/airtable/route.ts - SOLO LOGICA API
+// 🔧 /src/app/api/airtable/route.ts - FIX Created_At
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -64,9 +64,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 💾 SAVE MEAL REQUEST ACTION  
+    // 💾 SAVE MEAL REQUEST ACTION - FIX Created_At
     if (action === 'saveMealRequest') {
       console.log('💾 Saving meal request to Airtable...');
+      console.log('📝 Data received:', data);
       
       if (!data) {
         return NextResponse.json({
@@ -86,6 +87,35 @@ export async function POST(request: NextRequest) {
       }
 
       try {
+        // 🔧 FIX: Formato data corretto per Airtable
+        const today = new Date();
+        const dateString = today.getFullYear() + '-' + 
+                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(today.getDate()).padStart(2, '0');
+
+        // 🔧 FIX: Prepara i dati con controlli di tipo
+        const airtableFields = {
+          Nome: String(data.nome || ''),
+          Email: String(data.email || ''),
+          Age: data.age ? Number(data.age) : null,
+          Weight: data.weight ? Number(data.weight) : null,
+          Height: data.height ? Number(data.height) : null,
+          Gender: String(data.gender || ''),
+          Activity_Level: String(data.activity_level || ''),
+          Goal: String(data.goal || ''),
+          Duration: data.duration ? Number(data.duration) : null,
+          Meals_Per_Day: data.meals_per_day ? Number(data.meals_per_day) : null,
+          Exclusions: String(data.exclusions || ''),
+          Foods_At_Home: String(data.foods_at_home || ''),
+          Phone: String(data.phone || ''),
+          Status: 'In attesa',
+          Source: 'Website Form'
+        };
+
+        // 🔧 FIX: Aggiungi Created_At solo se non è automatico
+        // Prova prima senza Created_At
+        console.log('📤 Sending to Airtable:', airtableFields);
+
         const airtableResponse = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests`, {
           method: 'POST',
           headers: {
@@ -93,29 +123,15 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            fields: {
-              Nome: data.nome || '',
-              Email: data.email || '',
-              Age: data.age ? parseInt(data.age) : null,
-              Weight: data.weight ? parseFloat(data.weight) : null,
-              Height: data.height ? parseFloat(data.height) : null,
-              Gender: data.gender || '',
-              Activity_Level: data.activity_level || '',
-              Goal: data.goal || '',
-              Duration: data.duration ? parseInt(data.duration) : null,
-              Meals_Per_Day: data.meals_per_day ? parseInt(data.meals_per_day) : null,
-              Exclusions: data.exclusions || '',
-              Foods_At_Home: data.foods_at_home || '',
-              Phone: data.phone || '',
-              Status: 'In attesa',
-              Source: 'Website Form'
-            }
+            fields: airtableFields
           })
         });
 
+        console.log('📡 Airtable response status:', airtableResponse.status);
+
         if (airtableResponse.ok) {
           const result = await airtableResponse.json();
-          console.log('✅ Meal request saved successfully');
+          console.log('✅ Meal request saved successfully:', result.id);
           return NextResponse.json({
             success: true,
             message: 'Meal request saved',
@@ -123,7 +139,14 @@ export async function POST(request: NextRequest) {
           });
         } else {
           const errorData = await airtableResponse.json();
-          console.log('❌ Failed to save meal request:', errorData);
+          console.log('❌ Airtable save failed:', errorData);
+          
+          // 🔧 FIX: Prova con Created_At formato diverso se il primo tentativo fallisce
+          if (errorData.error?.type === 'INVALID_VALUE_FOR_COLUMN') {
+            console.log('🔄 Retry without Created_At...');
+            // Il primo tentativo già è senza Created_At, quindi restituisci l'errore
+          }
+          
           return NextResponse.json({
             success: false,
             error: 'Failed to save to Airtable',
@@ -155,7 +178,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const response = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests?sort[0][field]=Created_At&sort[0][direction]=desc`, {
+        const response = await fetch(`https://api.airtable.com/v0/${baseId}/Meal_Requests?sort[0][field]=Created&sort[0][direction]=desc`, {
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
@@ -182,7 +205,7 @@ export async function POST(request: NextRequest) {
               Exclusions: record.fields?.Exclusions || '',
               Foods_At_Home: record.fields?.Foods_At_Home || '',
               Phone: record.fields?.Phone || '',
-              Created_At: record.fields?.Created_At || '',
+              Created_At: record.fields?.Created || record.fields?.Created_At || '',
               Status: record.fields?.Status || 'In attesa',
               Source: record.fields?.Source || 'Manual'
             }
@@ -247,7 +270,9 @@ export async function POST(request: NextRequest) {
           records.forEach((record: any) => {
             const fields = record.fields || {};
             
-            if (fields.Created_At?.startsWith(today)) {
+            // Controlla sia Created che Created_At
+            const createdDate = fields.Created || fields.Created_At || '';
+            if (createdDate.startsWith(today)) {
               todayRequests++;
             }
             
@@ -321,7 +346,7 @@ export async function POST(request: NextRequest) {
       try {
         const filterFormula = `{Email} = "${email}"`;
         const response = await fetch(
-          `https://api.airtable.com/v0/${baseId}/Meal_Requests?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created_At&sort[0][direction]=desc`,
+          `https://api.airtable.com/v0/${baseId}/Meal_Requests?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created&sort[0][direction]=desc`,
           {
             headers: {
               'Authorization': `Bearer ${apiKey}`,
