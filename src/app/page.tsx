@@ -35,6 +35,23 @@ export default function HomePage() {
   // Usa il hook useFormData
   const { formData, hasSavedData, handleInputChange, handleArrayChange, clearSavedData, resetFormData } = useFormData();
 
+  // Test connessione API all'avvio
+  useEffect(() => {
+    const testAPI = async () => {
+      try {
+        const response = await fetch('/api/test-connection');
+        if (response.ok) {
+          setApiStatus('connected');
+        } else {
+          setApiStatus('error');
+        }
+      } catch (error) {
+        setApiStatus('error');
+      }
+    };
+    testAPI();
+  }, []);
+
   // Funzione per richiedere sostituzione ingrediente AI
   const handleIngredientSubstitution = async (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => {
     setSelectedIngredient({ ingredient, dayIndex, mealType, ingredientIndex });
@@ -105,23 +122,6 @@ export default function HomePage() {
     setSubstitutes([]);
   };
 
-  // Test connessione API all'avvio
-  useEffect(() => {
-    const testAPI = async () => {
-      try {
-        const response = await fetch('/api/test-connection');
-        if (response.ok) {
-          setApiStatus('connected');
-        } else {
-          setApiStatus('error');
-        }
-      } catch (error) {
-        setApiStatus('error');
-      }
-    };
-    testAPI();
-  }, []);
-
   // 🔄 SOSTITUZIONE RICETTA CON CLAUDE AI
   const handleReplacement = async (mealType: string, dayNumber: string) => {
     console.log('🔄 REPLACEMENT STARTED (Claude AI):', { mealType, dayNumber });
@@ -129,7 +129,6 @@ export default function HomePage() {
     
     try {
       const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
-      const currentMeal = parsedPlan.days[dayIndex].meals[mealType];
       
       // 🤖 STEP 1: Chiama la tua API Claude AI esistente
       const response = await fetch('/api/replace-meal', {
@@ -150,22 +149,6 @@ export default function HomePage() {
           // 🎯 Usa la ricetta generata da Claude AI
           const newMeal = result.newMeal;
           
-          // 🖼️ Genera immagine per la nuova ricetta
-          let imageUrl = '';
-          try {
-            const imageResponse = await fetch('/api/generate-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                prompt: `Professional food photography of ${newMeal.nome}, healthy fitness meal, appetizing`
-              })
-            });
-            const imageResult = await imageResponse.json();
-            imageUrl = imageResult.imageUrl || '';
-          } catch (imageError) {
-            console.log('⚠️ Image generation failed:', imageError);
-          }
-          
           // 🏋️‍♂️ Calcola fitness score per la nuova ricetta
           let fitnessScore = 75; // Score base
           const proteinRatio = newMeal.proteine / newMeal.calorie * 4;
@@ -182,7 +165,7 @@ export default function HomePage() {
             fitnessScore += 10;
           }
           
-          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI - SENZA TAG DEBUG
+          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI
           const updatedParsedPlan = { ...parsedPlan };
           updatedParsedPlan.days[dayIndex].meals[mealType] = {
             nome: newMeal.nome,
@@ -194,7 +177,6 @@ export default function HomePage() {
             porzioni: newMeal.porzioni,
             ingredienti: newMeal.ingredienti,
             preparazione: newMeal.preparazione,
-            imageUrl: imageUrl,
             fitnessScore: Math.min(100, fitnessScore),
             fitnessReasons: [
               `Fitness Score: ${Math.min(100, fitnessScore)}/100`,
@@ -223,76 +205,7 @@ export default function HomePage() {
       }
       
     } catch (error) {
-      console.error('❌ Claude AI replacement failed, trying database fallback:', error);
-      
-      // 🔄 FALLBACK: Usa il sistema database esistente
-      try {
-        const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
-        const mealPlanner = MealPlannerIntegration.getInstance();
-        
-        const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
-        const currentMealPlan = {
-          days: parsedPlan.days.map((day: any) => ({
-            day: day.day,
-            meals: day.meals
-          })),
-          totalCalories: 0,
-          totalProtein: 0,
-          totalCarbs: 0,
-          totalFat: 0,
-          userPreferences: formData
-        };
-        
-        const updatedPlan = mealPlanner.replaceRecipeInPlan(currentMealPlan, dayIndex, mealType);
-        const newMeal = (updatedPlan.days[dayIndex].meals as any)[mealType];
-        
-        if (newMeal) {
-          // 🖼️ Genera immagine
-          let imageUrl = '';
-          try {
-            const imageResponse = await fetch('/api/generate-image', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                prompt: `Professional food photography of ${newMeal.nome}, healthy fitness meal`
-              })
-            });
-            const imageResult = await imageResponse.json();
-            imageUrl = imageResult.imageUrl || '';
-          } catch (imageError) {
-            console.log('⚠️ Fallback image generation failed:', imageError);
-          }
-          
-          const updatedParsedPlan = { ...parsedPlan };
-          updatedParsedPlan.days[dayIndex].meals[mealType] = {
-            nome: newMeal.nome,
-            calorie: newMeal.calorie,
-            proteine: newMeal.proteine,
-            carboidrati: newMeal.carboidrati,
-            grassi: newMeal.grassi,
-            tempo: `${newMeal.tempoPreparazione} min`,
-            porzioni: newMeal.porzioni,
-            ingredienti: newMeal.ingredienti,
-            preparazione: newMeal.preparazione,
-            recipeId: newMeal.id,
-            rating: newMeal.rating,
-            categoria: newMeal.categoria,
-            tipoCucina: newMeal.tipoCucina,
-            difficolta: newMeal.difficolta,
-            fitnessScore: 70,
-            fitnessReasons: ['Ricetta bilanciata', 'Ingredienti fitness'],
-            imageUrl: imageUrl
-          };
-          
-          setParsedPlan(updatedParsedPlan);
-          const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
-          setGeneratedPlan(completeDocument);
-          
-          console.log('✅ Fallback replacement successful:', newMeal.nome);
-        }
-      } catch (fallbackError) {
-        console.error('❌ Complete replacement failure:', fallbackError);
-      }
+      console.error('❌ Claude AI replacement failed:', error);
     } finally {
       setIsReplacing(null);
     }
@@ -312,363 +225,6 @@ export default function HomePage() {
     setGeneratedPlan(null);
     setParsedPlan(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // 🤖 Funzione per arricchire piano AI con database + FITNESS PRIORITY
-  const enrichAIPlanWithDatabase = async (aiPlan: string, formData: any, mealPlanner: any) => {
-    console.log('🔄 Enriching AI plan with database + FITNESS PRIORITY...');
-    
-    const numDays = parseInt(formData.durata) || 2;
-    const numPasti = parseInt(formData.pasti) || 4;
-    
-    const enrichedDays = [];
-    
-    // 🏋️‍♂️ IMPORTA FITNESS ENHANCER
-    const { aiRecipeEnhancer } = await import('../utils/aiRecipeEnhancer');
-    
-    for (let i = 0; i < numDays; i++) {
-      const day = {
-        day: `Giorno ${i + 1}`,
-        meals: {} as any
-      };
-      
-      // Per ogni pasto, cerca ricetta simile nel database con priorità FITNESS
-      const meals = ['colazione', 'pranzo', 'cena'];
-      
-      for (const mealType of meals) {
-        const dbRecipe = await findSimilarRecipeInDatabase(mealType, formData, mealPlanner);
-        if (dbRecipe) {
-          // 🏋️‍♂️ CALCOLA FITNESS SCORE E MIGLIORA RICETTA
-          const fitnessScore = aiRecipeEnhancer.calculateFitnessScore(dbRecipe, formData.obiettivo);
-          const enhancedPreparation = await aiRecipeEnhancer.enhanceRecipeForFitness(dbRecipe, formData.obiettivo);
-          const imageUrl = await aiRecipeEnhancer.generateRecipeImage(dbRecipe);
-          
-          day.meals[mealType] = {
-            nome: dbRecipe.nome,
-            calorie: dbRecipe.calorie,
-            proteine: dbRecipe.proteine,
-            carboidrati: dbRecipe.carboidrati,
-            grassi: dbRecipe.grassi,
-            tempo: `${dbRecipe.tempoPreparazione} min`,
-            porzioni: dbRecipe.porzioni,
-            ingredienti: dbRecipe.ingredienti,
-            preparazione: enhancedPreparation,
-            recipeId: dbRecipe.id,
-            rating: dbRecipe.rating,
-            categoria: dbRecipe.categoria,
-            tipoCucina: dbRecipe.tipoCucina,
-            difficolta: dbRecipe.difficolta,
-            fitnessScore: fitnessScore.score,
-            fitnessReasons: fitnessScore.reasons,
-            imageUrl: imageUrl
-          };
-        } else {
-          day.meals[mealType] = createGenericMeal(mealType, i);
-        }
-      }
-      
-      // Aggiungi spuntini con FOCUS FITNESS
-      if (numPasti >= 4) {
-        const spuntino1 = await findSimilarRecipeInDatabase('spuntino', formData, mealPlanner);
-        if (spuntino1) {
-          const fitnessScore = aiRecipeEnhancer.calculateFitnessScore(spuntino1, formData.obiettivo);
-          const imageUrl = await aiRecipeEnhancer.generateRecipeImage(spuntino1);
-          
-          day.meals.spuntino1 = {
-            nome: spuntino1.nome,
-            calorie: spuntino1.calorie,
-            proteine: spuntino1.proteine,
-            carboidrati: spuntino1.carboidrati,
-            grassi: spuntino1.grassi,
-            tempo: `${spuntino1.tempoPreparazione} min`,
-            porzioni: spuntino1.porzioni,
-            ingredienti: spuntino1.ingredienti,
-            preparazione: spuntino1.preparazione,
-            recipeId: spuntino1.id,
-            fitnessScore: fitnessScore.score,
-            imageUrl: imageUrl
-          };
-        } else {
-          day.meals.spuntino1 = {
-            nome: `Spuntino Fitness ${i + 1}`,
-            calorie: 180,
-            proteine: 15,
-            carboidrati: 12,
-            grassi: 8,
-            tempo: '5 min',
-            porzioni: 1,
-            ingredienti: ['Yogurt greco', 'Frutti di bosco', 'Mandorle'],
-            preparazione: 'Mescola yogurt greco con frutti di bosco e mandorle per uno spuntino ricco di proteine',
-            fitnessScore: 85
-          };
-        }
-      }
-      
-      if (numPasti >= 5) {
-        day.meals.spuntino2 = {
-          nome: `Shake Proteico ${i + 1}`,
-          calorie: 250,
-          proteine: 25,
-          carboidrati: 20,
-          grassi: 8,
-          tempo: '3 min',
-          porzioni: 1,
-          ingredienti: ['Proteine in polvere', 'Banana', 'Latte mandorle', 'Avena'],
-          preparazione: 'Frulla tutti gli ingredienti per uno shake post-workout completo',
-          fitnessScore: 90
-        };
-      }
-      
-      if (numPasti >= 6) {
-        day.meals.spuntino3 = {
-          nome: `Spuntino Serale Fit ${i + 1}`,
-          calorie: 150,
-          proteine: 12,
-          carboidrati: 8,
-          grassi: 6,
-          tempo: '2 min',
-          porzioni: 1,
-          ingredienti: ['Ricotta light', 'Noci', 'Cannella'],
-          preparazione: 'Ricotta con noci e cannella per il recovery notturno',
-          fitnessScore: 80
-        };
-      }
-      
-      enrichedDays.push(day);
-    }
-    
-    return { days: enrichedDays };
-  };
-
-  // 🔍 Trova ricetta simile nel database con PRIORITÀ FITNESS
-  const findSimilarRecipeInDatabase = async (mealType: string, formData: any, mealPlanner: any) => {
-    try {
-      // 🏋️‍♂️ IMPORTA FITNESS ENHANCER PER SUGGERIMENTI
-      const { aiRecipeEnhancer } = await import('../utils/aiRecipeEnhancer');
-      const fitnessGuidelines = aiRecipeEnhancer.suggestFitnessRecipesByGoal(formData.obiettivo);
-      
-      const filters = {
-        categoria: mealType === 'spuntino' ? 'spuntino' : mealType as any,
-        allergie: parseAllergies(formData.allergie),
-        maxTempo: getMaxTime(mealType),
-        maxCalorie: fitnessGuidelines.maxCalories,
-        minProtein: fitnessGuidelines.minProtein
-      };
-      
-      let candidates = mealPlanner.recipeDB.searchRecipes(filters);
-      
-      if (candidates.length > 0) {
-        // 🏋️‍♂️ ORDINA PER FITNESS SCORE
-        const rankedCandidates = await Promise.all(
-          candidates.map(async (recipe: any) => {
-            const fitnessScore = aiRecipeEnhancer.calculateFitnessScore(recipe, formData.obiettivo);
-            return { ...recipe, fitnessScore: fitnessScore.score };
-          })
-        );
-        
-        // Ordina: prima fitness score, poi rating
-        rankedCandidates.sort((a, b) => {
-          if (b.fitnessScore !== a.fitnessScore) {
-            return b.fitnessScore - a.fitnessScore;
-          }
-          return (b.rating || 0) - (a.rating || 0);
-        });
-        
-        return rankedCandidates[0];
-      }
-      
-      return null;
-    } catch (error) {
-      console.log('Error finding fitness recipe in database:', error);
-      return null;
-    }
-  };
-
-  // 🍽️ Crea pasto generico FITNESS-OTTIMIZZATO
-  const createGenericMeal = (mealType: string, dayIndex: number) => {
-    const fitnessGoal = formData.obiettivo || 'mantenimento';
-    
-    const fitnessOptimizedMeals = {
-      'dimagrimento': {
-        colazione: {
-          nome: `Colazione Energetica ${dayIndex + 1}`,
-          calorie: 350,
-          proteine: 25,
-          carboidrati: 30,
-          grassi: 12,
-          tempo: '10 min',
-          porzioni: 1,
-          ingredienti: ['2 uova', '1 fetta pane integrale', '1/2 avocado', 'Spinaci freschi'],
-          preparazione: 'Uova strapazzate con spinaci, servite con avocado su pane integrale per una colazione bilanciata',
-          fitnessScore: 85,
-          tipoCucina: 'italiana',
-          difficolta: 'facile',
-          rating: 4.2
-        },
-        pranzo: {
-          nome: `Pranzo Proteico ${dayIndex + 1}`,
-          calorie: 400,
-          proteine: 35,
-          carboidrati: 25,
-          grassi: 15,
-          tempo: '20 min',
-          porzioni: 1,
-          ingredienti: ['120g pollo grigliato', '80g quinoa', '100g broccoli', '1 cucchiaio olio EVO'],
-          preparazione: 'Pollo grigliato con quinoa e broccoli al vapore, conditi con olio extravergine',
-          fitnessScore: 90,
-          tipoCucina: 'mediterranea',
-          difficolta: 'facile',
-          rating: 4.5
-        },
-        cena: {
-          nome: `Cena Bilanciata ${dayIndex + 1}`,
-          calorie: 320,
-          proteine: 30,
-          carboidrati: 15,
-          grassi: 12,
-          tempo: '25 min',
-          porzioni: 1,
-          ingredienti: ['130g salmone', '80g verdure miste', 'Limone', 'Erbe aromatiche'],
-          preparazione: 'Salmone al limone con verdure grigliate, ricco di omega-3 per il recupero',
-          fitnessScore: 88,
-          tipoCucina: 'mediterranea',
-          difficolta: 'medio',
-          rating: 4.3
-        }
-      },
-      'aumento-massa': {
-        colazione: {
-          nome: `Colazione Power ${dayIndex + 1}`,
-          calorie: 550,
-          proteine: 30,
-          carboidrati: 60,
-          grassi: 18,
-          tempo: '15 min',
-          porzioni: 1,
-          ingredienti: ['60g avena', '30g proteine whey', '1 banana', '20g mandorle', '250ml latte'],
-          preparazione: 'Porridge proteico con banana e mandorle per massimizzare l\'energia',
-          fitnessScore: 92,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.6
-        },
-        pranzo: {
-          nome: `Pranzo Anabolico ${dayIndex + 1}`,
-          calorie: 650,
-          proteine: 40,
-          carboidrati: 55,
-          grassi: 22,
-          tempo: '25 min',
-          porzioni: 1,
-          ingredienti: ['100g riso integrale', '140g pollo', '100g verdure', '1/2 avocado', 'Olio EVO'],
-          preparazione: 'Bowl completo con riso, pollo e verdure per supportare la crescita muscolare',
-          fitnessScore: 88,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.4
-        },
-        cena: {
-          nome: `Cena Muscolare ${dayIndex + 1}`,
-          calorie: 580,
-          proteine: 45,
-          carboidrati: 35,
-          grassi: 20,
-          tempo: '30 min',
-          porzioni: 1,
-          ingredienti: ['150g manzo magro', '100g patate dolci', '80g spinaci'],
-          preparazione: 'Manzo con patate dolci e spinaci per il recovery notturno e la sintesi proteica',
-          fitnessScore: 85,
-          tipoCucina: 'americana',
-          difficolta: 'medio',
-          rating: 4.2
-        }
-      }
-    };
-    
-    const selectedMeals = fitnessOptimizedMeals[fitnessGoal as keyof typeof fitnessOptimizedMeals] || 
-                         fitnessOptimizedMeals['dimagrimento'];
-    
-    return (selectedMeals as any)[mealType] || selectedMeals.colazione;
-  };
-
-  // 🔄 Parse piano AI semplificato con FITNESS FOCUS
-  const parseAIPlan = async (aiResponse: string, formData: any) => {
-    console.log('🔄 Parsing AI plan with FITNESS focus...');
-    
-    const numDays = parseInt(formData.durata) || 2;
-    const numPasti = parseInt(formData.pasti) || 4;
-    
-    const days = [];
-    
-    for (let i = 0; i < numDays; i++) {
-      const day = {
-        day: `Giorno ${i + 1}`,
-        meals: {
-          colazione: createGenericMeal('colazione', i),
-          pranzo: createGenericMeal('pranzo', i),
-          cena: createGenericMeal('cena', i)
-        } as any
-      };
-      
-      // Aggiungi spuntini FITNESS
-      if (numPasti >= 4) {
-        day.meals.spuntino1 = {
-          nome: `Spuntino Pre-Workout ${i + 1}`,
-          calorie: 180,
-          proteine: 15,
-          carboidrati: 20,
-          grassi: 5,
-          tempo: '5 min',
-          porzioni: 1,
-          ingredienti: ['Yogurt greco', 'Miele', 'Avena'],
-          preparazione: 'Yogurt greco con miele e avena per energia pre-allenamento',
-          fitnessScore: 82,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.1
-        };
-      }
-      
-      if (numPasti >= 5) {
-        day.meals.spuntino2 = {
-          nome: `Snack Post-Workout ${i + 1}`,
-          calorie: 220,
-          proteine: 20,
-          carboidrati: 25,
-          grassi: 6,
-          tempo: '3 min',
-          porzioni: 1,
-          ingredienti: ['Shake proteico', 'Banana'],
-          preparazione: 'Shake proteico con banana per il recovery post-allenamento',
-          fitnessScore: 90,
-          tipoCucina: 'fitness',
-          difficolta: 'facile',
-          rating: 4.4
-        };
-      }
-      
-      if (numPasti >= 6) {
-        day.meals.spuntino3 = {
-          nome: `Spuntino Serale ${i + 1}`,
-          calorie: 150,
-          proteine: 12,
-          carboidrati: 8,
-          grassi: 8,
-          tempo: '2 min',
-          porzioni: 1,
-          ingredienti: ['Ricotta', 'Noci'],
-          preparazione: 'Ricotta con noci per proteine a lento rilascio',
-          fitnessScore: 75,
-          tipoCucina: 'italiana',
-          difficolta: 'facile',
-          rating: 4.0
-        };
-      }
-      
-      days.push(day);
-    }
-    
-    return { days };
   };
 
   // 🔄 Piano fallback FITNESS-OTTIMIZZATO CON VARIETÀ
@@ -866,50 +422,6 @@ export default function HomePage() {
     return { days };
   };
 
-  // 🔧 Utility functions
-  const parseAllergies = (allergie: string[]): string[] => {
-    if (!allergie || !Array.isArray(allergie)) return [];
-    
-    const allergieMap: { [key: string]: string } = {
-      'glutine': 'glutine',
-      'lattosio': 'latte',
-      'latte': 'latte',
-      'uova': 'uova',
-      'pesce': 'pesce',
-      'frutti_mare': 'pesce',
-      'noci': 'frutta_secca',
-      'arachidi': 'frutta_secca',
-      'soia': 'soia',
-      'sesamo': 'sesamo',
-      'sedano': 'sedano',
-      'senape': 'senape',
-      'lupini': 'lupini',
-      'solfiti': 'solfiti'
-    };
-    
-    const result: string[] = [];
-    allergie.forEach(allergia => {
-      const mapped = allergieMap[allergia];
-      if (mapped && !result.includes(mapped)) {
-        result.push(mapped);
-      }
-    });
-    
-    console.log('⚠️ Parsed allergies:', result);
-    return result;
-  };
-
-  const getMaxTime = (mealType: string): number => {
-    const timeMap: { [key: string]: number } = {
-      'colazione': 20,
-      'pranzo': 40,
-      'cena': 45,
-      'spuntino': 10
-    };
-    
-    return timeMap[mealType] || 30;
-  };
-
   // 💾 SALVA IN AIRTABLE - FUNZIONE CORRETTA CON MAPPING
   const saveToAirtable = async (plan: any, formData: any) => {
     console.log('💾 Attempting to save to Airtable...');
@@ -995,18 +507,11 @@ export default function HomePage() {
     try {
       // 🤖 STEP 1: Genera ricette con AI FITNESS-OTTIMIZZATO
       console.log('🧠 Generating FITNESS-OPTIMIZED meal plan with AI...');
-      
-      // 🏋️‍♂️ IMPORTA FITNESS ENHANCER PER PROMPT OTTIMIZZATO
-      const { aiRecipeEnhancer } = await import('../utils/aiRecipeEnhancer');
-      const fitnessPrompt = aiRecipeEnhancer.createFitnessOptimizedPrompt(formData);
 
       const response = await fetch('/api/generate-meal-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          prompt: fitnessPrompt
-        })
+        body: JSON.stringify(formData)
       });
       
       const result = await response.json();
@@ -1015,19 +520,8 @@ export default function HomePage() {
         console.log('✅ AI generated FITNESS plan successfully');
         console.log('🔥 Backend calculated calories:', result.metadata?.dailyTarget);
         
-        // 🔄 STEP 2: Arricchisci con database con PRIORITÀ FITNESS
-        let enrichedPlan;
-        try {
-          const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
-          const mealPlanner = MealPlannerIntegration.getInstance();
-          
-          // Arricchisci il piano AI con dettagli dal database + FITNESS PRIORITY
-          enrichedPlan = await enrichAIPlanWithDatabase(result.piano, formData, mealPlanner);
-          console.log('✅ Plan enriched with database + FITNESS details');
-        } catch (dbError) {
-          console.log('⚠️ Database enrichment failed, using FITNESS AI plan:', dbError);
-          enrichedPlan = await parseAIPlan(result.piano, formData);
-        }
+        // 🔄 STEP 2: Usa il piano fallback con varietà
+        let enrichedPlan = createFallbackPlan(formData);
         
         // 🔥 FIX CALORIE: FORZA LE CALORIE DAL BACKEND - VERSIONE CORRETTA
         if (result.metadata?.dailyTarget && enrichedPlan?.days) {
@@ -1304,4 +798,66 @@ export default function HomePage() {
                   setShowPreview(false);
                   resetFormData();
                   window.scrollTo({ top: 0, behavior: 'smooth' });
-                
+                }}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                🔄 Nuovo Piano Fitness
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* FAQ Section */}
+      {!generatedPlan && !showPreview && !showComplete && (
+      <section className="bg-gray-800 py-20">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
+            Domande Frequenti - Sistema Fitness
+          </h2>
+          
+          <div className="space-y-6">
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🏋️‍♂️ Come funziona la priorità fitness?</h3>
+              <p className="text-gray-300">Il sistema calcola un fitness score (0-100) per ogni ricetta basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
+            </div>
+            
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">📊 Che cosa include il fitness score?</h3>
+              <p className="text-gray-300">Il sistema analizza: rapporto proteine/calorie, ingredienti fitness-friendly (avena, pollo, quinoa), tempo preparazione, categoria pasto e compatibilità con il tuo obiettivo.</p>
+            </div>
+            
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🎯 Le ricette cambiano per obiettivo?</h3>
+              <p className="text-gray-300">Sì! Per perdita peso: ricette sotto 400 cal, alto contenuto proteico. Per massa: ricette 500+ cal, surplus calorico. Per mantenimento: bilanciate.</p>
+            </div>
+
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🖼️ Come vengono generate le immagini?</h3>
+              <p className="text-gray-300">Il sistema genera immagini food photography professionali per ogni ricetta, ottimizzate per mostrare ingredienti fitness e presentazione appetitosa.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-gray-900 py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex justify-center items-center gap-3 mb-6">
+            <img src="/images/icon-192x192.png" alt="Meal Prep Logo" className="w-10 h-10 rounded-full" />
+            <h3 className="text-2xl font-bold">Meal Prep Planner 💪</h3>
+          </div>
+          <p className="text-gray-400 mb-6">
+            Semplificare la tua alimentazione con programmazione fitness-ottimizzata e ricette personalizzate per i tuoi obiettivi.
+          </p>
+          <div className="flex justify-center gap-6">
+            <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
+            <Link href="/terms" className="text-gray-400 hover:text-green-400">Termini</Link>
+            <Link href="/contact" className="text-gray-400 hover:text-green-400">Contatti</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
