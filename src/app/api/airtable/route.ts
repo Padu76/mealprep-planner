@@ -89,15 +89,9 @@ export async function POST(request: NextRequest) {
       try {
         // 🔧 MAPPING CORRETTO GOAL E ACTIVITY
         const goalMapping: { [key: string]: string } = {
-          'perdita-peso': 'perdita peso',
           'dimagrimento': 'dimagrimento',
-          'aumento-massa': 'aumento massa',
           'mantenimento': 'mantenimento',
-          'definizione': 'definizione',
-          
-          // Mapping per valori già corretti
-          'perdita peso': 'perdita peso',
-          'aumento massa': 'aumento massa'
+          'aumento-massa': 'aumento-massa'
         };
 
         const activityMapping: { [key: string]: string } = {
@@ -134,8 +128,8 @@ export async function POST(request: NextRequest) {
           Foods_At_Home: String(data.foods_at_home || (Array.isArray(data.preferenze) ? data.preferenze.join(', ') : data.preferenze) || ''),
           Phone: String(data.phone || data.telefono || ''),
           Status: 'In attesa',
-          Source: 'Website Form',
-          Variety: String(data.varieta || 'diversi')
+          Source: 'Website Form'
+          // 🔧 RIMOZIONE VARIETY - CAMPO NON ESISTENTE IN AIRTABLE
         };
 
         // 🔧 NON AGGIUNGIAMO Created_At - Airtable lo gestisce automaticamente
@@ -232,8 +226,8 @@ export async function POST(request: NextRequest) {
               Phone: record.fields?.Phone || '',
               Created_At: record.fields?.Created_At || record.createdTime || '',
               Status: record.fields?.Status || 'In attesa',
-              Source: record.fields?.Source || 'Manual',
-              Variety: record.fields?.Variety || 'diversi'
+              Source: record.fields?.Source || 'Manual'
+              // 🔧 RIMOZIONE VARIETY - CAMPO NON ESISTENTE
             },
             createdTime: record.createdTime || ''
           })) || [];
@@ -446,8 +440,8 @@ export async function POST(request: NextRequest) {
               Phone: record.fields?.Phone || '',
               Created_At: record.fields?.Created_At || record.createdTime || '',
               Status: record.fields?.Status || 'In attesa',
-              Source: record.fields?.Source || 'Manual',
-              Variety: record.fields?.Variety || 'diversi'
+              Source: record.fields?.Source || 'Manual'
+              // 🔧 RIMOZIONE VARIETY - CAMPO NON ESISTENTE
             },
             createdTime: record.createdTime || ''
           })) || [];
