@@ -489,7 +489,7 @@ export default function HomePage() {
     const fitnessGoal = formData.obiettivo || 'mantenimento';
     
     const fitnessOptimizedMeals = {
-      'perdita-peso': {
+      'dimagrimento': {
         colazione: {
           nome: `Colazione Energetica ${dayIndex + 1}`,
           calorie: 350,
@@ -586,7 +586,7 @@ export default function HomePage() {
     };
     
     const selectedMeals = fitnessOptimizedMeals[fitnessGoal as keyof typeof fitnessOptimizedMeals] || 
-                         fitnessOptimizedMeals['perdita-peso'];
+                         fitnessOptimizedMeals['dimagrimento'];
     
     return (selectedMeals as any)[mealType] || selectedMeals.colazione;
   };
@@ -877,7 +877,6 @@ export default function HomePage() {
     try {
       // 🔧 MAPPING CORRETTO PER CAMPI SELECT
       const goalMapping: { [key: string]: string } = {
-        'perdita-peso': 'Perdita peso',
         'dimagrimento': 'Dimagrimento', 
         'aumento-massa': 'Aumento massa',
         'mantenimento': 'Mantenimento',
@@ -973,6 +972,7 @@ export default function HomePage() {
       
       if (result.success) {
         console.log('✅ AI generated FITNESS plan successfully');
+        console.log('🔥 Backend calculated calories:', result.metadata?.dailyTarget);
         
         // 🔄 STEP 2: Arricchisci con database con PRIORITÀ FITNESS
         let enrichedPlan;
@@ -986,6 +986,35 @@ export default function HomePage() {
         } catch (dbError) {
           console.log('⚠️ Database enrichment failed, using FITNESS AI plan:', dbError);
           enrichedPlan = await parseAIPlan(result.piano, formData);
+        }
+        
+        // 🔥 FIX CALORIE: FORZA LE CALORIE DAL BACKEND
+        if (result.metadata?.dailyTarget && enrichedPlan?.days) {
+          const targetCalories = result.metadata.dailyTarget;
+          console.log('🔧 FORCING frontend calories to match backend:', targetCalories);
+          
+          enrichedPlan.days.forEach((day: any) => {
+            // Calcola il totale attuale
+            let currentTotal = 0;
+            Object.values(day.meals).forEach((meal: any) => {
+              currentTotal += meal.calorie || 0;
+            });
+            
+            // Se il totale è troppo basso (come 120), scaliamo proporzionalmente
+            if (currentTotal < targetCalories * 0.5) {
+              const scaleFactor = targetCalories / Math.max(currentTotal, 1);
+              console.log(`🔧 Scaling day ${day.day} calories by factor:`, scaleFactor);
+              
+              Object.values(day.meals).forEach((meal: any) => {
+                if (meal) {
+                  meal.calorie = Math.round(meal.calorie * scaleFactor);
+                  meal.proteine = Math.round(meal.proteine * scaleFactor);
+                  meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
+                  meal.grassi = Math.round(meal.grassi * scaleFactor);
+                }
+              });
+            }
+          });
         }
         
         setParsedPlan(enrichedPlan);
