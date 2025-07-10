@@ -52,6 +52,126 @@ export default function HomePage() {
     testAPI();
   }, []);
 
+  // 💾 SALVATAGGIO AUTOMATICO PIANO GENERATO
+  const saveGeneratedPlan = (plan: any, formData: any) => {
+    try {
+      const savedPlan = {
+        id: `plan-${Date.now()}`,
+        nome: formData.nome || 'Utente',
+        createdAt: new Date().toISOString().split('T')[0],
+        obiettivo: getDisplayObjective(formData.obiettivo),
+        durata: formData.durata || '2',
+        pasti: formData.pasti || '3',
+        calorie: calculateDailyCalories(plan),
+        totalCalories: calculateTotalCalories(plan),
+        totalProteins: calculateTotalProteins(plan),
+        allergie: formData.allergie || [],
+        preferenze: formData.preferenze || [],
+        formData: formData,
+        days: plan.days,
+        generatedPlan: generatedPlan // Testo completo del piano
+      };
+
+      // Carica piani esistenti
+      const existingPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
+      
+      // Aggiungi nuovo piano
+      existingPlans.unshift(savedPlan);
+      
+      // Mantieni solo ultimi 50 piani
+      if (existingPlans.length > 50) {
+        existingPlans.splice(50);
+      }
+      
+      // Salva in localStorage
+      localStorage.setItem('mealPrepSavedPlans', JSON.stringify(existingPlans));
+      
+      // Salva anche in sessionStorage per backup
+      sessionStorage.setItem('lastGeneratedPlan', JSON.stringify(savedPlan));
+      
+      console.log('💾 Piano salvato automaticamente:', savedPlan.id);
+      
+      // Mostra notifica di salvataggio
+      showSaveNotification();
+      
+    } catch (error) {
+      console.error('❌ Errore salvataggio piano:', error);
+    }
+  };
+
+  // 🔔 NOTIFICA SALVATAGGIO
+  const showSaveNotification = () => {
+    // Crea elemento notifica
+    const notification = document.createElement('div');
+    notification.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10B981;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9999;
+        font-family: Inter, sans-serif;
+        font-weight: 500;
+      ">
+        ✅ Piano salvato nella Dashboard!
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Rimuovi dopo 3 secondi
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  };
+
+  // 🧮 FUNZIONI DI CALCOLO
+  const calculateDailyCalories = (plan: any) => {
+    if (!plan?.days?.[0]?.meals) return 0;
+    
+    const firstDay = plan.days[0].meals;
+    return Object.values(firstDay).reduce((total: number, meal: any) => {
+      return total + (meal?.calorie || 0);
+    }, 0);
+  };
+
+  const calculateTotalCalories = (plan: any) => {
+    if (!plan?.days) return 0;
+    
+    return plan.days.reduce((total: number, day: any) => {
+      const dayCalories = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
+        return dayTotal + (meal?.calorie || 0);
+      }, 0);
+      return total + dayCalories;
+    }, 0);
+  };
+
+  const calculateTotalProteins = (plan: any) => {
+    if (!plan?.days) return 0;
+    
+    return plan.days.reduce((total: number, day: any) => {
+      const dayProteins = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
+        return dayTotal + (meal?.proteine || 0);
+      }, 0);
+      return total + dayProteins;
+    }, 0);
+  };
+
+  const getDisplayObjective = (obiettivo: string) => {
+    const map: { [key: string]: string } = {
+      'dimagrimento': 'Perdita peso',
+      'mantenimento': 'Mantenimento', 
+      'aumento-massa': 'Aumento massa'
+    };
+    return map[obiettivo] || obiettivo;
+  };
+
   // Funzione per richiedere sostituzione ingrediente AI
   const handleIngredientSubstitution = async (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => {
     setSelectedIngredient({ ingredient, dayIndex, mealType, ingredientIndex });
@@ -569,6 +689,10 @@ export default function HomePage() {
         
         const completeDocument = generateCompleteDocument(enrichedPlan, formData);
         setGeneratedPlan(completeDocument);
+
+        // 💾 SALVATAGGIO AUTOMATICO - AGGIUNTO QUI!
+        saveGeneratedPlan(enrichedPlan, formData);
+        
         setShowPreview(true);
         
         // 🔧 STEP 3: SALVA IN AIRTABLE CON MAPPING CORRETTO
@@ -602,6 +726,10 @@ export default function HomePage() {
       
       const completeDocument = generateCompleteDocument(fallbackPlan, formData);
       setGeneratedPlan(completeDocument);
+
+      // 💾 SALVATAGGIO AUTOMATICO ANCHE PER FALLBACK
+      saveGeneratedPlan(fallbackPlan, formData);
+      
       setShowPreview(true);
       
       // 🔧 SALVA ANCHE IL FALLBACK
