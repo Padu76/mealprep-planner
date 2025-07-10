@@ -8,6 +8,7 @@ import MealForm from '../components/MealForm';
 import MealPreview from '../components/MealPreview';
 import MealPlanComplete from '../components/MealPlanComplete';
 import AISubstituteModal from '../components/AiSubstituteModal';
+import HowItWorksSection from '../components/HowItWorksSection';
 import { generateCompleteDocument } from '../utils/documentGenerator';
 import { useFormData } from '../hooks/useFormData';
 
@@ -181,7 +182,7 @@ export default function HomePage() {
             fitnessScore += 10;
           }
           
-          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI
+          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI - SENZA TAG DEBUG
           const updatedParsedPlan = { ...parsedPlan };
           updatedParsedPlan.days[dayIndex].meals[mealType] = {
             nome: newMeal.nome,
@@ -198,11 +199,11 @@ export default function HomePage() {
             fitnessReasons: [
               `Fitness Score: ${Math.min(100, fitnessScore)}/100`,
               `Proteine: ${newMeal.proteine}g (${(proteinRatio * 100).toFixed(1)}%)`,
-              `Calorie ottimizzate per ${formData.obiettivo}`,
-              `Generato da Claude AI`
+              `Calorie ottimizzate per ${formData.obiettivo}`
+              // ❌ RIMOSSO: `Generato da Claude AI`
             ],
-            source: result.isAI ? 'claude-ai' : 'fallback',
-            recipeId: `ai-${Date.now()}`,
+            // ❌ RIMOSSO: source: result.isAI ? 'claude-ai' : 'fallback',
+            recipeId: `recipe-${Date.now()}`,
             rating: 4.5,
             categoria: mealType,
             tipoCucina: 'italiana',
@@ -226,7 +227,7 @@ export default function HomePage() {
     } catch (error) {
       console.error('❌ Claude AI replacement failed, trying database fallback:', error);
       
-      // 🔄 FALLBACK: Usa il sistema database esistente
+      // 🔄 FALLBACK: Usa il sistema database esistente - SENZA TAG DEBUG
       try {
         const { MealPlannerIntegration } = await import('./utils/mealPlannerIntegration');
         const mealPlanner = MealPlannerIntegration.getInstance();
@@ -281,9 +282,9 @@ export default function HomePage() {
             tipoCucina: newMeal.tipoCucina,
             difficolta: newMeal.difficolta,
             fitnessScore: 70,
-            fitnessReasons: ['Ricetta dal database', 'Fallback system'],
-            imageUrl: imageUrl,
-            source: 'database-fallback'
+            fitnessReasons: ['Ricetta bilanciata', 'Ingredienti fitness'],
+            imageUrl: imageUrl
+            // ❌ RIMOSSO: source: 'database-fallback'
           };
           
           setParsedPlan(updatedParsedPlan);
@@ -316,7 +317,7 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🤖 Funzione per arricchire piano AI con database + FITNESS PRIORITY
+  // 🤖 Funzione per arricchire piano AI con database + FITNESS PRIORITY - SENZA TAG DEBUG
   const enrichAIPlanWithDatabase = async (aiPlan: string, formData: any, mealPlanner: any) => {
     console.log('🔄 Enriching AI plan with database + FITNESS PRIORITY...');
     
@@ -362,15 +363,15 @@ export default function HomePage() {
             difficolta: dbRecipe.difficolta,
             fitnessScore: fitnessScore.score,
             fitnessReasons: fitnessScore.reasons,
-            imageUrl: imageUrl,
-            source: 'database-fitness-enhanced'
+            imageUrl: imageUrl
+            // ❌ RIMOSSO: source: 'database-fitness-enhanced'
           };
         } else {
           day.meals[mealType] = createGenericMeal(mealType, i);
         }
       }
       
-      // Aggiungi spuntini con FOCUS FITNESS
+      // Aggiungi spuntini con FOCUS FITNESS - SENZA TAG DEBUG
       if (numPasti >= 4) {
         const spuntino1 = await findSimilarRecipeInDatabase('spuntino', formData, mealPlanner);
         if (spuntino1) {
@@ -389,8 +390,8 @@ export default function HomePage() {
             preparazione: spuntino1.preparazione,
             recipeId: spuntino1.id,
             fitnessScore: fitnessScore.score,
-            imageUrl: imageUrl,
-            source: 'database-fitness'
+            imageUrl: imageUrl
+            // ❌ RIMOSSO: source: 'database-fitness'
           };
         } else {
           day.meals.spuntino1 = {
@@ -403,8 +404,8 @@ export default function HomePage() {
             porzioni: 1,
             ingredienti: ['Yogurt greco', 'Frutti di bosco', 'Mandorle'],
             preparazione: 'Mescola yogurt greco con frutti di bosco e mandorle per uno spuntino ricco di proteine',
-            fitnessScore: 85,
-            source: 'ai-fitness-optimized'
+            fitnessScore: 85
+            // ❌ RIMOSSO: source: 'ai-fitness-optimized'
           };
         }
       }
@@ -420,8 +421,8 @@ export default function HomePage() {
           porzioni: 1,
           ingredienti: ['Proteine in polvere', 'Banana', 'Latte mandorle', 'Avena'],
           preparazione: 'Frulla tutti gli ingredienti per uno shake post-workout completo',
-          fitnessScore: 90,
-          source: 'ai-fitness-optimized'
+          fitnessScore: 90
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         };
       }
       
@@ -436,8 +437,8 @@ export default function HomePage() {
           porzioni: 1,
           ingredienti: ['Ricotta light', 'Noci', 'Cannella'],
           preparazione: 'Ricotta con noci e cannella per il recovery notturno',
-          fitnessScore: 80,
-          source: 'ai-fitness-optimized'
+          fitnessScore: 80
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         };
       }
       
@@ -458,8 +459,8 @@ export default function HomePage() {
         categoria: mealType === 'spuntino' ? 'spuntino' : mealType as any,
         allergie: parseAllergies(formData.allergie),
         maxTempo: getMaxTime(mealType),
-        maxCalorie: fitnessGuidelines.maxCalories, // Limite calorico per obiettivo
-        minProtein: fitnessGuidelines.minProtein   // Proteine minime per obiettivo
+        maxCalorie: fitnessGuidelines.maxCalories,
+        minProtein: fitnessGuidelines.minProtein
       };
       
       let candidates = mealPlanner.recipeDB.searchRecipes(filters);
@@ -491,91 +492,109 @@ export default function HomePage() {
     }
   };
 
-  // 🍽️ Crea pasto generico FITNESS-OTTIMIZZATO
+  // 🍽️ Crea pasto generico FITNESS-OTTIMIZZATO - SENZA TAG DEBUG
   const createGenericMeal = (mealType: string, dayIndex: number) => {
     const fitnessGoal = formData.obiettivo || 'mantenimento';
     
     const fitnessOptimizedMeals = {
       'perdita-peso': {
         colazione: {
-          nome: `Colazione Proteica ${dayIndex + 1}`,
+          nome: `Colazione Energetica ${dayIndex + 1}`,
           calorie: 350,
           proteine: 25,
           carboidrati: 30,
           grassi: 12,
           tempo: '10 min',
           porzioni: 1,
-          ingredienti: ['Uova', 'Spinaci', 'Avocado', 'Pane integrale'],
-          preparazione: 'Uova strapazzate con spinaci, servite con avocado su pane integrale',
+          ingredienti: ['2 uova', '1 fetta pane integrale', '1/2 avocado', 'Spinaci freschi'],
+          preparazione: 'Uova strapazzate con spinaci, servite con avocado su pane integrale per una colazione bilanciata',
           fitnessScore: 85,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'italiana',
+          difficolta: 'facile',
+          rating: 4.2
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         pranzo: {
-          nome: `Pranzo Lean ${dayIndex + 1}`,
+          nome: `Pranzo Proteico ${dayIndex + 1}`,
           calorie: 400,
           proteine: 35,
           carboidrati: 25,
           grassi: 15,
           tempo: '20 min',
           porzioni: 1,
-          ingredienti: ['Pollo', 'Quinoa', 'Broccoli', 'Olio oliva'],
-          preparazione: 'Pollo grigliato con quinoa e broccoli al vapore',
+          ingredienti: ['120g pollo grigliato', '80g quinoa', '100g broccoli', '1 cucchiaio olio EVO'],
+          preparazione: 'Pollo grigliato con quinoa e broccoli al vapore, conditi con olio extravergine',
           fitnessScore: 90,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'mediterranea',
+          difficolta: 'facile',
+          rating: 4.5
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         cena: {
-          nome: `Cena Light ${dayIndex + 1}`,
+          nome: `Cena Bilanciata ${dayIndex + 1}`,
           calorie: 320,
           proteine: 30,
           carboidrati: 15,
           grassi: 12,
           tempo: '25 min',
           porzioni: 1,
-          ingredienti: ['Salmone', 'Verdure miste', 'Limone'],
-          preparazione: 'Salmone al limone con verdure grigliate',
+          ingredienti: ['130g salmone', '80g verdure miste', 'Limone', 'Erbe aromatiche'],
+          preparazione: 'Salmone al limone con verdure grigliate, ricco di omega-3 per il recupero',
           fitnessScore: 88,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'mediterranea',
+          difficolta: 'medio',
+          rating: 4.3
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         }
       },
       'aumento-massa': {
         colazione: {
-          nome: `Colazione Bulk ${dayIndex + 1}`,
+          nome: `Colazione Power ${dayIndex + 1}`,
           calorie: 550,
           proteine: 30,
           carboidrati: 60,
           grassi: 18,
           tempo: '15 min',
           porzioni: 1,
-          ingredienti: ['Avena', 'Proteine whey', 'Banana', 'Mandorle', 'Latte'],
-          preparazione: 'Porridge proteico con banana e mandorle',
+          ingredienti: ['60g avena', '30g proteine whey', '1 banana', '20g mandorle', '250ml latte'],
+          preparazione: 'Porridge proteico con banana e mandorle per massimizzare l\'energia',
           fitnessScore: 92,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.6
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         pranzo: {
-          nome: `Pranzo Mass Gain ${dayIndex + 1}`,
+          nome: `Pranzo Anabolico ${dayIndex + 1}`,
           calorie: 650,
           proteine: 40,
           carboidrati: 55,
           grassi: 22,
           tempo: '25 min',
           porzioni: 1,
-          ingredienti: ['Riso integrale', 'Pollo', 'Verdure', 'Olio oliva', 'Avocado'],
-          preparazione: 'Bowl completo con riso, pollo e verdure',
+          ingredienti: ['100g riso integrale', '140g pollo', '100g verdure', '1/2 avocado', 'Olio EVO'],
+          preparazione: 'Bowl completo con riso, pollo e verdure per supportare la crescita muscolare',
           fitnessScore: 88,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.4
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         },
         cena: {
-          nome: `Cena Anabolica ${dayIndex + 1}`,
+          nome: `Cena Muscolare ${dayIndex + 1}`,
           calorie: 580,
           proteine: 45,
           carboidrati: 35,
           grassi: 20,
           tempo: '30 min',
           porzioni: 1,
-          ingredienti: ['Manzo magro', 'Patate dolci', 'Spinaci'],
-          preparazione: 'Manzo con patate dolci e spinaci per il recovery',
+          ingredienti: ['150g manzo magro', '100g patate dolci', '80g spinaci'],
+          preparazione: 'Manzo con patate dolci e spinaci per il recovery notturno e la sintesi proteica',
           fitnessScore: 85,
-          source: 'ai-fitness-optimized'
+          tipoCucina: 'americana',
+          difficolta: 'medio',
+          rating: 4.2
+          // ❌ RIMOSSO: source: 'ai-fitness-optimized'
         }
       }
     };
@@ -586,7 +605,7 @@ export default function HomePage() {
     return (selectedMeals as any)[mealType] || selectedMeals.colazione;
   };
 
-  // 🔄 Parse piano AI semplificato con FITNESS FOCUS
+  // 🔄 Parse piano AI semplificato con FITNESS FOCUS - SENZA TAG DEBUG
   const parseAIPlan = async (aiResponse: string, formData: any) => {
     console.log('🔄 Parsing AI plan with FITNESS focus...');
     
@@ -605,7 +624,7 @@ export default function HomePage() {
         } as any
       };
       
-      // Aggiungi spuntini FITNESS
+      // Aggiungi spuntini FITNESS - SENZA TAG DEBUG
       if (numPasti >= 4) {
         day.meals.spuntino1 = {
           nome: `Spuntino Pre-Workout ${i + 1}`,
@@ -618,7 +637,10 @@ export default function HomePage() {
           ingredienti: ['Yogurt greco', 'Miele', 'Avena'],
           preparazione: 'Yogurt greco con miele e avena per energia pre-allenamento',
           fitnessScore: 82,
-          source: 'ai-fitness'
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.1
+          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -634,7 +656,10 @@ export default function HomePage() {
           ingredienti: ['Shake proteico', 'Banana'],
           preparazione: 'Shake proteico con banana per il recovery post-allenamento',
           fitnessScore: 90,
-          source: 'ai-fitness'
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.4
+          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -650,7 +675,10 @@ export default function HomePage() {
           ingredienti: ['Ricotta', 'Noci'],
           preparazione: 'Ricotta con noci per proteine a lento rilascio',
           fitnessScore: 75,
-          source: 'ai-fitness'
+          tipoCucina: 'italiana',
+          difficolta: 'facile',
+          rating: 4.0
+          // ❌ RIMOSSO: source: 'ai-fitness'
         };
       }
       
@@ -660,56 +688,100 @@ export default function HomePage() {
     return { days };
   };
 
-  // 🔄 Piano fallback FITNESS-OTTIMIZZATO
+  // 🔄 Piano fallback FITNESS-OTTIMIZZATO - SENZA TAG DEBUG
   const createFallbackPlan = (formData: any) => {
     const numDays = parseInt(formData.durata) || 2;
     const numPasti = parseInt(formData.pasti) || 4;
     
     const days = [];
     
+    // Template varietà per giorni diversi
+    const varietyThemes = [
+      { theme: 'italiana', cuisine: 'italiana' },
+      { theme: 'mediterranea', cuisine: 'mediterranea' },
+      { theme: 'fitness', cuisine: 'fitness' },
+      { theme: 'asiatica', cuisine: 'asiatica' }
+    ];
+    
     for (let i = 0; i < numDays; i++) {
+      const dayTheme = varietyThemes[i % varietyThemes.length];
+      
       const day = {
         day: `Giorno ${i + 1}`,
         meals: {
           colazione: {
-            nome: 'Power Breakfast Bowl',
+            nome: i === 0 ? 'Power Breakfast Bowl' : i === 1 ? 'Pancakes Proteici' : 'Overnight Oats Fitness',
             calorie: 420,
             proteine: 25,
             carboidrati: 35,
             grassi: 18,
             tempo: '15 min',
             porzioni: 1,
-            ingredienti: ['Avena', 'Proteine whey', 'Frutti di bosco', 'Mandorle'],
-            preparazione: 'Bowl proteico con avena, proteine e frutti di bosco',
-            fitnessScore: 88
+            ingredienti: i === 0 
+              ? ['60g avena', '25g proteine whey', '100g frutti di bosco', '15g mandorle']
+              : i === 1 
+              ? ['150g ricotta', '40g farina avena', '2 uova', '80g mirtilli']
+              : ['50g avena', '30g proteine', '1 mela', '10g burro mandorle'],
+            preparazione: i === 0 
+              ? 'Bowl proteico con avena, proteine e frutti di bosco per energia duratura'
+              : i === 1 
+              ? 'Pancakes con ricotta e mirtilli, ricchi di proteine e gusto'
+              : 'Overnight oats con mela e burro di mandorle, preparati la sera prima',
+            fitnessScore: 88,
+            tipoCucina: dayTheme.cuisine,
+            difficolta: 'facile',
+            rating: 4.5
           },
           pranzo: {
-            nome: 'Chicken Power Bowl',
+            nome: i === 0 ? 'Chicken Power Bowl' : i === 1 ? 'Risotto Fitness' : 'Salmone Teriyaki',
             calorie: 480,
             proteine: 40,
             carboidrati: 35,
             grassi: 18,
             tempo: '20 min',
             porzioni: 1,
-            ingredienti: ['Pollo', 'Quinoa', 'Verdure miste', 'Avocado'],
-            preparazione: 'Bowl completo con pollo grigliato e quinoa',
-            fitnessScore: 92
+            ingredienti: i === 0 
+              ? ['120g pollo', '80g quinoa', '100g verdure miste', '1/2 avocado']
+              : i === 1 
+              ? ['90g riso integrale', '100g pollo', '80g zucchine', '30g parmigiano']
+              : ['130g salmone', '100g riso venere', '80g edamame', 'Salsa teriyaki'],
+            preparazione: i === 0 
+              ? 'Bowl completo con pollo grigliato, quinoa e verdure fresche'
+              : i === 1 
+              ? 'Risotto cremoso con pollo e zucchine, versione fitness'
+              : 'Salmone teriyaki con riso venere ed edamame, sapori orientali',
+            fitnessScore: 92,
+            tipoCucina: dayTheme.cuisine,
+            difficolta: 'medio',
+            rating: 4.7
           },
           cena: {
-            nome: 'Lean Salmon Plate',
+            nome: i === 0 ? 'Lean Salmon Plate' : i === 1 ? 'Tagliata Fitness' : 'Tofu Curry',
             calorie: 420,
             proteine: 35,
             carboidrati: 20,
             grassi: 20,
             tempo: '25 min',
             porzioni: 1,
-            ingredienti: ['Salmone', 'Broccoli', 'Patate dolci'],
-            preparazione: 'Salmone con verdure e carboidrati complessi',
-            fitnessScore: 85
+            ingredienti: i === 0 
+              ? ['130g salmone', '100g broccoli', '80g patate dolci']
+              : i === 1 
+              ? ['120g tagliata manzo', '80g rucola', '60g pomodorini', '20g grana']
+              : ['140g tofu', '80g verdure curry', '60g riso basmati', 'Latte cocco'],
+            preparazione: i === 0 
+              ? 'Salmone con verdure e carboidrati complessi per il recovery'
+              : i === 1 
+              ? 'Tagliata su letto di rucola con pomodorini e grana'
+              : 'Curry vegetariano con tofu e verdure, ricco di proteine vegetali',
+            fitnessScore: 85,
+            tipoCucina: dayTheme.cuisine,
+            difficolta: 'medio',
+            rating: 4.3
           }
         } as any
       };
       
+      // Aggiungi spuntini FITNESS puliti
       if (numPasti >= 4) {
         day.meals.spuntino1 = {
           nome: 'Protein Greek Yogurt',
@@ -719,9 +791,12 @@ export default function HomePage() {
           grassi: 3,
           tempo: '5 min',
           porzioni: 1,
-          ingredienti: ['Yogurt greco', 'Frutti di bosco', 'Granola proteica'],
-          preparazione: 'Yogurt greco con frutti di bosco e granola',
-          fitnessScore: 85
+          ingredienti: ['150g yogurt greco', '80g frutti di bosco', '15g granola proteica'],
+          preparazione: 'Yogurt greco con frutti di bosco e granola per uno spuntino proteico',
+          fitnessScore: 85,
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.1
         };
       }
       
@@ -734,24 +809,30 @@ export default function HomePage() {
           grassi: 8,
           tempo: '2 min',
           porzioni: 1,
-          ingredienti: ['Proteine whey', 'Banana', 'Burro mandorle'],
-          preparazione: 'Shake proteico post-workout completo',
-          fitnessScore: 90
+          ingredienti: ['30g proteine whey', '1 banana', '15g burro mandorle', '200ml acqua'],
+          preparazione: 'Shake proteico post-workout completo per il recovery',
+          fitnessScore: 90,
+          tipoCucina: 'fitness',
+          difficolta: 'facile',
+          rating: 4.4
         };
       }
       
       if (numPasti >= 6) {
         day.meals.spuntino3 = {
-          nome: 'Casein Night Snack',
+          nome: 'Night Protein Snack',
           calorie: 160,
           proteine: 15,
           carboidrati: 8,
           grassi: 6,
           tempo: '5 min',
           porzioni: 1,
-          ingredienti: ['Ricotta light', 'Noci', 'Cannella'],
-          preparazione: 'Ricotta con noci per proteine notturne',
-          fitnessScore: 78
+          ingredienti: ['100g ricotta light', '10g noci', 'Cannella'],
+          preparazione: 'Ricotta con noci per proteine a lento rilascio durante la notte',
+          fitnessScore: 78,
+          tipoCucina: 'italiana',
+          difficolta: 'facile',
+          rating: 4.0
         };
       }
       
@@ -765,7 +846,6 @@ export default function HomePage() {
   const parseAllergies = (allergie: string[]): string[] => {
     if (!allergie || !Array.isArray(allergie)) return [];
     
-    // Le allergie sono già standardizzate dalle checkbox
     const allergieMap: { [key: string]: string } = {
       'glutine': 'glutine',
       'lattosio': 'latte',
@@ -946,7 +1026,7 @@ export default function HomePage() {
           Rivoluziona la Tua Alimentazione con<br />Meal Prep Planner
         </h1>
         <p className="text-lg text-gray-800 mb-6 max-w-2xl mx-auto">
-          Generazione meal prep FITNESS-OTTIMIZZATA con AI, Lista della Spesa Intelligente e Ricette con Priorità Fitness.
+          Generazione meal prep FITNESS-OTTIMIZZATA, Lista della Spesa Intelligente e Ricette con Priorità Fitness.
         </p>
         <button 
           onClick={() => document.getElementById('meal-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -959,40 +1039,8 @@ export default function HomePage() {
       {/* Features Component */}
       <Features />
 
-      {/* How it Works */}
-      <section className="bg-gray-800 py-20">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
-            Come Funziona il Sistema Fitness
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>1</div>
-              <h3 className="text-xl font-bold mb-3">📊 Profilo Fitness</h3>
-              <p className="text-gray-300">Inserisci obiettivi, allergie e preferenze. L'AI ottimizza per il tuo goal fitness.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>2</div>
-              <h3 className="text-xl font-bold mb-3">🏋️‍♂️ AI Fitness-Aware</h3>
-              <p className="text-gray-300">L'AI genera ricette con priorità fitness, calcola score e ottimizza macronutrienti.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>3</div>
-              <h3 className="text-xl font-bold mb-3">💪 Database Enhancement</h3>
-              <p className="text-gray-300">Database arricchisce con ricette fitness, immagini AI e preparazioni ottimizzate.</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold" style={{backgroundColor: '#8FBC8F', color: 'black'}}>4</div>
-              <h3 className="text-xl font-bold mb-3">🎯 Piano Personalizzato</h3>
-              <p className="text-gray-300">Ricevi piano con score fitness, sostituzioni intelligenti e progressi verso il goal.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* How it Works - SOSTITUITO CON COMPONENTE PULITO */}
+      <HowItWorksSection />
 
       {/* MealForm Component */}
       <MealForm 
@@ -1153,7 +1201,7 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="bg-gray-700 rounded-lg p-6">
               <h3 className="text-xl font-bold mb-3">🏋️‍♂️ Come funziona la priorità fitness?</h3>
-              <p className="text-gray-300">L'AI calcola un fitness score (0-100) per ogni ricetta basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
+              <p className="text-gray-300">Il sistema calcola un fitness score (0-100) per ogni ricetta basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
             </div>
             
             <div className="bg-gray-700 rounded-lg p-6">
@@ -1167,8 +1215,8 @@ export default function HomePage() {
             </div>
 
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🖼️ Le immagini sono reali?</h3>
-              <p className="text-gray-300">L'AI genera immagini food photography professionali per ogni ricetta, ottimizzate per mostrare ingredienti fitness e presentazione appetitosa.</p>
+              <h3 className="text-xl font-bold mb-3">🖼️ Come vengono generate le immagini?</h3>
+              <p className="text-gray-300">Il sistema genera immagini food photography professionali per ogni ricetta, ottimizzate per mostrare ingredienti fitness e presentazione appetitosa.</p>
             </div>
           </div>
         </div>
@@ -1183,7 +1231,7 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold">Meal Prep Planner 💪</h3>
           </div>
           <p className="text-gray-400 mb-6">
-            Semplificare la tua alimentazione con programmazione AI fitness-ottimizzata e ricette personalizzate per i tuoi obiettivi.
+            Semplificare la tua alimentazione con programmazione fitness-ottimizzata e ricette personalizzate per i tuoi obiettivi.
           </p>
           <div className="flex justify-center gap-6">
             <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
