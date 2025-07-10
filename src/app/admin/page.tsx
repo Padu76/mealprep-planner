@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       console.log('📊 Loading Airtable data...');
       
       // Carica richieste utenti
-      const usersResponse = await fetch('/api/airtable?action=getRequests');
+      const usersResponse = await fetch('/api/airtable?action=getMealRequests');
       const usersData = await usersResponse.json();
       
       // Carica metriche dashboard
