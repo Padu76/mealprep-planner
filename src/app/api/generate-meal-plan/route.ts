@@ -10,9 +10,16 @@ export async function POST(request: NextRequest) {
     const formData = await request.json();
     console.log('🤖 Generating meal plan with form data:', formData);
 
-    // 🔧 CALCOLO CALORIE COMPLETAMENTE FIXATO
+    // 🔧 CALCOLO CALORIE COMPLETAMENTE FIXATO CON DEBUG TOTALE
+    console.log('🚀 ===== INIZIO CALCOLO CALORIE DEBUG =====');
+    console.log('📝 RAW FORM DATA RICEVUTO:', JSON.stringify(formData, null, 2));
+    
     const calc = calculateNutritionalNeedsFixed(formData);
+    
+    console.log('📊 ===== RISULTATO CALCOLO FINALE =====');
     console.log('📊 Fixed nutritional calculations:', calc);
+    console.log('🔥 CALORIE FINALI CALCOLATE:', calc.dailyCalories);
+    console.log('🚀 ===== FINE CALCOLO CALORIE DEBUG =====');
 
     // 🚨 VERIFICA SICUREZZA CALORIE
     if (!calc.isSafe) {
@@ -96,27 +103,53 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 🔧 FUNZIONE CALCOLO CALORIE COMPLETAMENTE FIXATA
+// 🔧 FUNZIONE CALCOLO CALORIE COMPLETAMENTE FIXATA CON DEBUG TOTALE
 function calculateNutritionalNeedsFixed(formData: any) {
-  console.log('🔍 DEBUG - Raw form data:', formData);
+  console.log('🔍 ===== INIZIO FUNZIONE CALCOLO =====');
+  console.log('🔍 DEBUG - Raw form data RICEVUTO:', JSON.stringify(formData, null, 2));
 
   // 🔧 NORMALIZZAZIONE DATI
+  console.log('🔧 ===== FASE 1: NORMALIZZAZIONE DATI =====');
   const normalizedData = normalizeFormData(formData);
-  console.log('📊 Normalized data:', normalizedData);
+  console.log('📊 Normalized data RISULTATO:', JSON.stringify(normalizedData, null, 2));
 
   const { age, weight, height, gender, activity, goal, numDays, numMeals } = normalizedData;
+  
+  console.log('📋 DATI ESTRATTI PER CALCOLO:');
+  console.log('- Età:', age);
+  console.log('- Peso:', weight);
+  console.log('- Altezza:', height);
+  console.log('- Sesso:', gender);
+  console.log('- Attività:', activity);
+  console.log('- Obiettivo:', goal);
 
   // 🧮 CALCOLO BMR - Harris-Benedict
+  console.log('🧮 ===== FASE 2: CALCOLO BMR =====');
   let bmr;
   if (gender === 'maschio') {
-    bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+    console.log('👨 Usando formula MASCHIO: 88.362 + (13.397 × peso) + (4.799 × altezza) - (5.677 × età)');
+    console.log(`👨 Calcolo: 88.362 + (13.397 × ${weight}) + (4.799 × ${height}) - (5.677 × ${age})`);
+    const part1 = 88.362;
+    const part2 = 13.397 * weight;
+    const part3 = 4.799 * height;
+    const part4 = 5.677 * age;
+    console.log(`👨 Step by step: ${part1} + ${part2} + ${part3} - ${part4}`);
+    bmr = part1 + part2 + part3 - part4;
   } else {
-    bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+    console.log('👩 Usando formula FEMMINA: 447.593 + (9.247 × peso) + (3.098 × altezza) - (4.330 × età)');
+    console.log(`👩 Calcolo: 447.593 + (9.247 × ${weight}) + (3.098 × ${height}) - (4.330 × ${age})`);
+    const part1 = 447.593;
+    const part2 = 9.247 * weight;
+    const part3 = 3.098 * height;
+    const part4 = 4.330 * age;
+    console.log(`👩 Step by step: ${part1} + ${part2} + ${part3} - ${part4}`);
+    bmr = part1 + part2 + part3 - part4;
   }
 
-  console.log('💓 BMR calculated:', Math.round(bmr));
+  console.log('💓 BMR CALCOLATO:', bmr);
 
   // 🏃‍♂️ FATTORI ATTIVITÀ - MAPPING CORRETTO E COMPLETO
+  console.log('🏃‍♂️ ===== FASE 3: FATTORE ATTIVITÀ =====');
   const activityFactors: { [key: string]: number } = {
     'sedentario': 1.2,
     'leggero': 1.375,
@@ -125,24 +158,45 @@ function calculateNutritionalNeedsFixed(formData: any) {
     'molto_intenso': 1.9
   };
 
+  console.log('🏃‍♂️ Activity factors disponibili:', activityFactors);
+  console.log('🏃‍♂️ Activity ricevuto:', activity);
+  
   const activityFactor = activityFactors[activity] || 1.375; // Default leggero
-  console.log('🏃‍♂️ Activity factor:', activityFactor, 'for activity:', activity);
+  console.log('🏃‍♂️ Activity factor SCELTO:', activityFactor, 'per activity:', activity);
+  
+  if (!activityFactors[activity]) {
+    console.warn('⚠️ ATTENZIONE: Activity non trovato, usando default 1.375');
+  }
 
   const tdee = bmr * activityFactor;
-  console.log('🔥 TDEE calculated:', Math.round(tdee));
+  console.log(`🔥 TDEE CALCULATION: ${bmr} × ${activityFactor} = ${tdee}`);
 
   // 🎯 FATTORI OBIETTIVO - I TUOI 3 PARAMETRI
+  console.log('🎯 ===== FASE 4: FATTORE OBIETTIVO =====');
   const goalFactors: { [key: string]: number } = {
     'dimagrimento': 0.85,        // ← Toglie calorie
     'mantenimento': 1.0,         // ← Tiene calcolo
     'aumento-massa': 1.15        // ← Aumenta calorie
   };
 
+  console.log('🎯 Goal factors disponibili:', goalFactors);
+  console.log('🎯 Goal ricevuto:', goal);
+  
   const goalFactor = goalFactors[goal] || 1.0; // Default mantenimento
-  console.log('🎯 Goal factor:', goalFactor, 'for goal:', goal);
+  console.log('🎯 Goal factor SCELTO:', goalFactor, 'per goal:', goal);
+  
+  if (!goalFactors[goal]) {
+    console.warn('⚠️ ATTENZIONE: Goal non trovato, usando default 1.0 (mantenimento)');
+  }
 
   const dailyCalories = Math.round(tdee * goalFactor);
-  console.log('✅ FINAL DAILY CALORIES:', dailyCalories);
+  console.log(`✅ CALCOLO FINALE: ${tdee} × ${goalFactor} = ${dailyCalories} kcal`);
+  
+  console.log('🔥 ===== RIEPILOGO CALCOLO COMPLETO =====');
+  console.log(`🔥 BMR: ${Math.round(bmr)} kcal`);
+  console.log(`🔥 TDEE: ${Math.round(tdee)} kcal (BMR × ${activityFactor})`);
+  console.log(`🔥 DAILY CALORIES: ${dailyCalories} kcal (TDEE × ${goalFactor})`);
+  console.log('🔥 ===== FINE RIEPILOGO =====');
 
   // 🍽️ DISTRIBUZIONE PASTI
   const mealDistributions: { [key: number]: { [key: string]: number } } = {
@@ -189,19 +243,37 @@ function calculateNutritionalNeedsFixed(formData: any) {
 }
 
 function normalizeFormData(formData: any) {
+  console.log('🔧 ===== NORMALIZZAZIONE DATI - DEBUG COMPLETO =====');
+  console.log('📥 FormData INPUT:', JSON.stringify(formData, null, 2));
+  
   const age = parseInt(String(formData.eta || '30')) || 30;
+  console.log('👶 Età normalizzata:', formData.eta, '→', age);
+  
   const weightStr = String(formData.peso || '70').replace(',', '.');
   const weight = parseFloat(weightStr) || 70;
+  console.log('⚖️ Peso normalizzato:', formData.peso, '→', weightStr, '→', weight);
+  
   const heightStr = String(formData.altezza || '170').replace(',', '.');
   const height = parseFloat(heightStr) || 170;
+  console.log('📏 Altezza normalizzata:', formData.altezza, '→', heightStr, '→', height);
+  
   const genderRaw = String(formData.sesso || 'maschio').toLowerCase();
   const gender = (genderRaw.includes('uomo') || genderRaw.includes('maschio')) ? 'maschio' : 'femmina';
+  console.log('👫 Sesso normalizzato:', formData.sesso, '→', genderRaw, '→', gender);
+  
   const activity = normalizeActivity(formData.attivita);
+  console.log('🏃‍♂️ Attività normalizzata:', formData.attivita, '→', activity);
+  
   const goal = normalizeGoal(formData.obiettivo);
+  console.log('🎯 Obiettivo normalizzato:', formData.obiettivo, '→', goal);
+  
   const numDays = parseInt(String(formData.durata || '3')) || 3;
+  console.log('📅 Giorni normalizzati:', formData.durata, '→', numDays);
+  
   const numMeals = parseInt(String(formData.pasti || '3')) || 3;
+  console.log('🍽️ Pasti normalizzati:', formData.pasti, '→', numMeals);
 
-  return {
+  const result = {
     age: Math.max(15, Math.min(100, age)),
     weight: Math.max(40, Math.min(200, weight)),
     height: Math.max(140, Math.min(220, height)),
@@ -211,6 +283,11 @@ function normalizeFormData(formData: any) {
     numDays: Math.max(1, Math.min(14, numDays)),
     numMeals: Math.max(2, Math.min(7, numMeals))
   };
+  
+  console.log('📤 DATI NORMALIZZATI FINALI:', JSON.stringify(result, null, 2));
+  console.log('🔧 ===== FINE NORMALIZZAZIONE =====');
+  
+  return result;
 }
 
 // 🔧 MAPPING ATTIVITÀ COMPLETAMENTE FIXATO
