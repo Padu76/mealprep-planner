@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Users, Flame, ShoppingCart } from 'lucide-react';
+import { Clock, Users, Flame, ShoppingCart, ChefHat, Calendar, Download, Share2 } from 'lucide-react';
 
 interface Meal {
   nome: string;
@@ -11,6 +11,7 @@ interface Meal {
   porzioni: number;
   ingredienti: string[];
   preparazione: string;
+  imageUrl?: string;
 }
 
 interface DayMeals {
@@ -37,8 +38,8 @@ interface FormData {
   altezza: string;
   attivita: string;
   obiettivo: string;
-  allergie: string;
-  preferenze: string;
+  allergie: string[];
+  preferenze: string[];
   pasti: string;
   durata: string;
   varieta: string;
@@ -66,26 +67,6 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'recipes' | 'shopping'>('overview');
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
-  // 🧹 FUNZIONE PER PULIRE INFO PASTO
-  const renderCleanMealInfo = (meal: any) => {
-    const cleanRating = meal.rating && meal.rating > 0 ? meal.rating : null;
-    const cleanDifficulty = meal.difficolta && meal.difficolta !== 'unknown' && 
-                           ['facile', 'medio', 'difficile'].includes(meal.difficolta.toLowerCase()) 
-                           ? meal.difficolta : null;
-
-    return (
-      <div className="text-xs text-gray-300 mb-2">
-        🔥 {meal.calorie} kcal | ⏱️ {meal.tempo} | 👥 {meal.porzioni} porz.
-        {cleanRating && (
-          <span> | ⭐ {cleanRating.toFixed(1)}</span>
-        )}
-        {cleanDifficulty && (
-          <span> | 😊 {cleanDifficulty}</span>
-        )}
-      </div>
-    );
-  };
-
   // Funzione per ottenere tutti i pasti in ordine
   const getAllMealsInOrder = (dayMeals: DayMeals) => {
     const meals = [];
@@ -104,7 +85,33 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
   const totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
 
-  // Genera lista spesa consolidata con normalizzazione ingredienti
+  // Genera immagine per ricetta usando Unsplash
+  const generateRecipeImage = (recipeName: string): string => {
+    const cleanName = recipeName.toLowerCase()
+      .replace(/[^\w\s]/gi, '')
+      .replace(/\s+/g, '-');
+    
+    // Mappa ricette a query Unsplash specifiche
+    const imageMap: { [key: string]: string } = {
+      'power-breakfast-bowl': 'breakfast-bowl-healthy',
+      'pancakes-proteici': 'protein-pancakes-healthy',
+      'overnight-oats': 'overnight-oats-breakfast',
+      'smoothie-energetico': 'green-smoothie-healthy',
+      'chicken-power-bowl': 'chicken-bowl-healthy',
+      'risotto-fitness': 'risotto-healthy',
+      'salmone-teriyaki': 'salmon-teriyaki',
+      'buddha-bowl': 'buddha-bowl-healthy',
+      'lean-salmon-plate': 'grilled-salmon-vegetables',
+      'tagliata-fitness': 'grilled-beef-salad',
+      'curry-pollo': 'chicken-curry-healthy',
+      'orata-mediterranean': 'grilled-fish-mediterranean'
+    };
+    
+    const query = imageMap[cleanName] || 'healthy-food-meal';
+    return `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format&q=80&crop=center&${query}`;
+  };
+
+  // Genera lista spesa consolidata
   const generateShoppingList = () => {
     const ingredients: { [key: string]: { count: number; category: string; baseQuantity: string; originalNames: string[] } } = {};
     
@@ -137,46 +144,17 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const normalizeIngredientName = (ingredient: string): string => {
     const lower = ingredient.toLowerCase();
     
-    // Normalizza uova
-    if (lower.includes('uovo') || lower.includes('uova')) {
-      return '1 uovo fresco biologico';
-    }
+    if (lower.includes('uovo') || lower.includes('uova')) return '1 uovo fresco biologico';
+    if (lower.includes('aglio') || lower.includes('spicchio')) return '1/2 spicchio aglio';
+    if (lower.includes('olio') && lower.includes('extravergine')) return '1 cucchiaio olio extravergine';
+    if (lower.includes('prezzemolo')) return 'Prezzemolo fresco (3g)';
+    if (lower.includes('sale') && lower.includes('pepe')) return 'Sale e pepe q.b.';
+    if (lower.includes('brodo')) return '200ml brodo vegetale';
     
-    // Normalizza aglio
-    if (lower.includes('aglio') || lower.includes('spicchio')) {
-      return '1/2 spicchio aglio';
-    }
-    
-    // Normalizza olio
-    if (lower.includes('olio') && lower.includes('extravergine')) {
-      return '1 cucchiaio olio extravergine';
-    }
-    
-    // Normalizza prezzemolo
-    if (lower.includes('prezzemolo')) {
-      return 'Prezzemolo fresco (3g)';
-    }
-    
-    // Normalizza sale e pepe
-    if (lower.includes('sale') && lower.includes('pepe')) {
-      return 'Sale e pepe q.b.';
-    }
-    
-    // Normalizza brodo
-    if (lower.includes('brodo')) {
-      return '200ml brodo vegetale';
-    }
-    
-    // Normalizza rosmarino
-    if (lower.includes('rosmarino')) {
-      return 'Rosmarino fresco';
-    }
-    
-    // Restituisce ingrediente originale se non normalizzato
     return ingredient;
   };
 
-  // Estrae quantità dall'ingrediente per calcolare totale
+  // Estrae quantità dall'ingrediente
   const extractQuantity = (ingredient: string) => {
     const match = ingredient.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l|cucchiai|cucchiaini|fette|pz|pezzi)/i);
     return match ? `${match[1]}${match[2]}` : '';
@@ -193,7 +171,6 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     const unit = match[2];
     const total = quantity * multiplier;
     
-    // Converti in unità più grandi se necessario
     if (unit.toLowerCase() === 'g' && total >= 1000) {
       return `${(total / 1000).toFixed(1)}kg`;
     }
@@ -207,19 +184,27 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const categorizeIngredient = (ingredient: string): string => {
     const lower = ingredient.toLowerCase();
     if (lower.includes('pomodoro') || lower.includes('sedano') || lower.includes('carota') || 
-        lower.includes('cipolla') || lower.includes('aglio') || lower.includes('funghi')) {
+        lower.includes('cipolla') || lower.includes('aglio') || lower.includes('funghi') ||
+        lower.includes('verdure') || lower.includes('broccoli') || lower.includes('spinaci')) {
       return '🥬 VERDURE E ORTAGGI';
     }
-    if (lower.includes('manzo') || lower.includes('pollo') || lower.includes('pesce')) {
+    if (lower.includes('manzo') || lower.includes('pollo') || lower.includes('pesce') ||
+        lower.includes('salmone') || lower.includes('tonno') || lower.includes('carne')) {
       return '🍖 CARNE E PESCE';
     }
-    if (lower.includes('uovo') || lower.includes('parmigiano') || lower.includes('yogurt')) {
+    if (lower.includes('uovo') || lower.includes('parmigiano') || lower.includes('yogurt') ||
+        lower.includes('ricotta') || lower.includes('latte') || lower.includes('formaggi')) {
       return '🥛 LATTICINI E UOVA';
     }
-    if (lower.includes('pane') || lower.includes('pasta') || lower.includes('fagioli')) {
+    if (lower.includes('pane') || lower.includes('pasta') || lower.includes('fagioli') ||
+        lower.includes('avena') || lower.includes('quinoa') || lower.includes('riso')) {
       return '🌾 CEREALI E LEGUMI';
     }
-    return '🥑 FRUTTA E ALTRO';
+    if (lower.includes('banana') || lower.includes('mela') || lower.includes('frutti') ||
+        lower.includes('mandorle') || lower.includes('noci')) {
+      return '🥑 FRUTTA E FRUTTA SECCA';
+    }
+    return '🧄 CONDIMENTI E SPEZIE';
   };
 
   const shoppingList = generateShoppingList();
@@ -229,19 +214,26 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     return acc;
   }, {} as { [key: string]: Array<{ ingredient: string; count: number; baseQuantity: string; originalNames: string[] }> });
 
-  // Get unique recipes
+  // Ottieni ricette uniche
   const allRecipes = Array.from(new Set(
     parsedPlan.days.flatMap(dayData => 
       getAllMealsInOrder(dayData.meals).map(({ meal }) => meal.nome)
     )
-  )).map(recipeName => 
-    parsedPlan.days.flatMap(dayData => 
+  )).map(recipeName => {
+    const recipe = parsedPlan.days.flatMap(dayData => 
       getAllMealsInOrder(dayData.meals)
-    ).find(({ meal }) => meal.nome === recipeName)?.meal
-  ).filter(Boolean);
+    ).find(({ meal }) => meal.nome === recipeName)?.meal;
+    
+    // Aggiungi immagine se non presente
+    if (recipe && !recipe.imageUrl) {
+      recipe.imageUrl = generateRecipeImage(recipe.nome);
+    }
+    
+    return recipe;
+  }).filter(Boolean);
 
   return (
-    <section id="results-section" className="max-w-6xl mx-auto px-4 py-20">
+    <section id="complete-section" className="max-w-6xl mx-auto px-4 py-20">
       <div className="mb-8 text-center">
         <h2 className="text-4xl font-bold mb-4" style={{color: '#8FBC8F'}}>
           🎉 Piano Alimentare Completo!
@@ -276,7 +268,7 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
             }`}
             style={{backgroundColor: activeTab === 'recipes' ? '#8FBC8F' : 'transparent'}}
           >
-            🍳 Ricette
+            🍳 Ricette Complete
           </button>
           <button
             onClick={() => setActiveTab('shopping')}
@@ -316,6 +308,18 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dayMeals.map(({ key, meal, emoji, nome }) => (
                       <div key={key} className="bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors">
+                        {/* Immagine ricetta */}
+                        {meal.imageUrl && (
+                          <img 
+                            src={meal.imageUrl}
+                            alt={meal.nome}
+                            className="w-full h-24 object-cover rounded-lg mb-3"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = generateRecipeImage(meal.nome);
+                            }}
+                          />
+                        )}
+                        
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">{emoji}</span>
@@ -332,8 +336,9 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                         
                         <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
                         
-                        {/* Info pulite senza tag debug */}
-                        {renderCleanMealInfo(meal)}
+                        <div className="text-xs text-gray-300 mb-2">
+                          🔥 {meal.calorie} kcal | ⏱️ {meal.tempo} | 👥 {meal.porzioni} porz.
+                        </div>
                         
                         <div className="text-xs text-gray-300">
                           P: {meal.proteine}g | C: {meal.carboidrati}g | G: {meal.grassi}g
@@ -350,80 +355,77 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
         {activeTab === 'recipes' && (
           <div>
             <h3 className="text-2xl font-bold mb-6 text-center" style={{color: '#8FBC8F'}}>
-              🍳 Ricette Dettagliate
+              🍳 Ricette Complete con Foto
             </h3>
             
-            <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {allRecipes.map((recipe, index) => (
                 <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedRecipe(expandedRecipe === recipe!.nome ? null : recipe!.nome)}
-                    className="w-full p-6 text-left hover:bg-gray-600 transition-colors"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="text-xl font-bold text-white mb-2">{recipe!.nome}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-300">
-                          <span className="flex items-center gap-1">
-                            <Flame size={16} className="text-orange-500" />
-                            {recipe!.calorie} kcal
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={16} className="text-blue-400" />
-                            {recipe!.tempo}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users size={16} className="text-green-400" />
-                            {recipe!.porzioni} porz.
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-2xl text-gray-400">
-                        {expandedRecipe === recipe!.nome ? '▼' : '▶'}
+                  {/* Immagine ricetta */}
+                  <img 
+                    src={recipe!.imageUrl || generateRecipeImage(recipe!.nome)}
+                    alt={recipe!.nome}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = generateRecipeImage(recipe!.nome);
+                    }}
+                  />
+                  
+                  <div className="p-6">
+                    <h4 className="text-xl font-bold text-white mb-3">{recipe!.nome}</h4>
+                    
+                    <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
+                      <span className="flex items-center gap-1">
+                        <Flame size={16} className="text-orange-500" />
+                        {recipe!.calorie} kcal
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={16} className="text-blue-400" />
+                        {recipe!.tempo}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users size={16} className="text-green-400" />
+                        {recipe!.porzioni} porz.
                       </span>
                     </div>
-                  </button>
-                  
-                  {expandedRecipe === recipe!.nome && (
-                    <div className="px-6 pb-6">
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
-                          <div className="space-y-2">
-                            {recipe!.ingredienti.map((ingrediente, idx) => (
-                              <div 
-                                key={idx}
-                                className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
-                                onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
-                              >
-                                <span className="text-gray-300">• {ingrediente}</span>
-                                <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
-                                  🔀 Sostituisci
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
-                          <p className="text-gray-300 leading-relaxed">
-                            {recipe!.preparazione?.replace(/⚠️ NOTA:.*$/g, '').trim()}
-                          </p>
-                          
-                          <div className="mt-4 p-4 bg-gray-600 rounded-lg">
-                            <h6 className="font-semibold text-white mb-2">📊 Valori Nutrizionali:</h6>
-                            <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
-                              <span>Proteine: {recipe!.proteine}g</span>
-                              <span>Carboidrati: {recipe!.carboidrati}g</span>
-                              <span>Grassi: {recipe!.grassi}g</span>
-                              <span>Calorie: {recipe!.calorie} kcal</span>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
+                        <div className="space-y-1">
+                          {recipe!.ingredienti.map((ingrediente, idx) => (
+                            <div 
+                              key={idx}
+                              className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
+                              onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
+                            >
+                              <span className="text-gray-300 text-sm">• {ingrediente}</span>
+                              <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
+                                🔀
+                              </span>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                          {recipe!.preparazione}
+                        </p>
+                        
+                        <div className="mt-4 p-3 bg-gray-600 rounded-lg">
+                          <h6 className="font-semibold text-white mb-2 text-sm">📊 Valori Nutrizionali:</h6>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                            <span>Proteine: {recipe!.proteine}g</span>
+                            <span>Carboidrati: {recipe!.carboidrati}g</span>
+                            <span>Grassi: {recipe!.grassi}g</span>
+                            <span>Calorie: {recipe!.calorie} kcal</span>
                           </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
