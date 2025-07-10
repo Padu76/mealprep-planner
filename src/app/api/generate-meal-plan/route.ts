@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.json();
     console.log('🤖 Generating meal plan with form data:', formData);
 
-    // 🔧 CALCOLO CALORIE FIXATO
+    // 🔧 CALCOLO CALORIE COMPLETAMENTE FIXATO
     const calc = calculateNutritionalNeedsFixed(formData);
     console.log('📊 Fixed nutritional calculations:', calc);
 
@@ -23,6 +23,17 @@ export async function POST(request: NextRequest) {
         debug: calc
       }, { status: 400 });
     }
+
+    // 🎯 LOG DETTAGLIATO PER DEBUG
+    console.log('🔍 DETAILED CALCULATION DEBUG:');
+    console.log('- Raw obiettivo from form:', formData.obiettivo);
+    console.log('- Raw attivita from form:', formData.attivita);
+    console.log('- Normalized goal:', calc.goal);
+    console.log('- Normalized activity:', calc.activity);
+    console.log('- Goal factor used:', calc.debugInfo.goalFactor);
+    console.log('- Activity factor used:', calc.debugInfo.activityFactor);
+    console.log('- BMR × Activity × Goal:', calc.bmr, '×', calc.debugInfo.activityFactor, '×', calc.debugInfo.goalFactor, '=', calc.dailyCalories);
+    console.log('- Expected for Andrea (1692 × 1.375 × 0.85):', Math.round(1692 * 1.375 * 0.85));
 
     // 🤖 PROVA CLAUDE AI - CON FALLBACK SICURO
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -105,7 +116,7 @@ function calculateNutritionalNeedsFixed(formData: any) {
 
   console.log('💓 BMR calculated:', Math.round(bmr));
 
-  // 🏃‍♂️ FATTORI ATTIVITÀ - MAPPING CORRETTO
+  // 🏃‍♂️ FATTORI ATTIVITÀ - MAPPING CORRETTO E COMPLETO
   const activityFactors: { [key: string]: number } = {
     'sedentario': 1.2,
     'leggero': 1.375,
@@ -114,21 +125,24 @@ function calculateNutritionalNeedsFixed(formData: any) {
     'molto_intenso': 1.9
   };
 
-  const activityFactor = activityFactors[activity] || 1.55;
+  const activityFactor = activityFactors[activity] || 1.375; // Default leggero
   console.log('🏃‍♂️ Activity factor:', activityFactor, 'for activity:', activity);
 
   const tdee = bmr * activityFactor;
   console.log('🔥 TDEE calculated:', Math.round(tdee));
 
-  // 🎯 FATTORI OBIETTIVO - MAPPING CORRETTO
+  // 🎯 FATTORI OBIETTIVO - MAPPING CORRETTO E COMPLETO
   const goalFactors: { [key: string]: number } = {
     'dimagrimento': 0.85,
+    'perdita-peso': 0.85,
     'perdita peso': 0.85,
     'mantenimento': 1.0,
-    'aumento massa': 1.15
+    'aumento-massa': 1.15,
+    'aumento massa': 1.15,
+    'massa': 1.15
   };
 
-  const goalFactor = goalFactors[goal] || 1.0;
+  const goalFactor = goalFactors[goal] || 1.0; // Default mantenimento
   console.log('🎯 Goal factor:', goalFactor, 'for goal:', goal);
 
   const dailyCalories = Math.round(tdee * goalFactor);
@@ -172,7 +186,8 @@ function calculateNutritionalNeedsFixed(formData: any) {
       bmrFormula: gender === 'maschio' ? 'Harris-Benedict Male' : 'Harris-Benedict Female',
       activityFactor,
       goalFactor,
-      finalMultiplier: activityFactor * goalFactor
+      finalMultiplier: activityFactor * goalFactor,
+      expectedAndrea: Math.round(1692 * 1.375 * 0.85)
     }
   };
 }
@@ -202,54 +217,78 @@ function normalizeFormData(formData: any) {
   };
 }
 
-// 🔧 MAPPING ATTIVITÀ FIXATO
+// 🔧 MAPPING ATTIVITÀ COMPLETAMENTE FIXATO
 function normalizeActivity(activity: string): string {
   const activityMap: { [key: string]: string } = {
+    // Valori diretti dal form
     'sedentario': 'sedentario',
-    'leggero': 'leggero',
+    'leggero': 'leggero',              // ← FIX PRINCIPALE!
     'moderato': 'moderato',
     'intenso': 'intenso',
     'molto_intenso': 'molto_intenso',
     
-    // FIX CASE SENSITIVITY
+    // Varianti con maiuscole
+    'Sedentario': 'sedentario',
+    'Leggero': 'leggero',
+    'Moderato': 'moderato',
+    'Intenso': 'intenso',
+    
+    // Varianti complete
     'Attività Sedentaria': 'sedentario',
     'Attività Leggera': 'leggero',        // ← FIX PRINCIPALE!
     'Attività Moderata': 'moderato',
     'Attività Intensa': 'intenso',
     'Attività Molto Intensa': 'molto_intenso',
     
+    // Varianti minuscole
     'attività sedentaria': 'sedentario',
     'attività leggera': 'leggero',
     'attività moderata': 'moderato',
     'attività intensa': 'intenso',
-    'attività molto intensa': 'molto_intenso'
+    'attività molto intensa': 'molto_intenso',
+    
+    // Varianti alternative
+    'bassa': 'sedentario',
+    'media': 'moderato',
+    'alta': 'intenso'
   };
   
-  const normalized = activityMap[activity] || activityMap[String(activity || '').toLowerCase()] || 'moderato';
+  const normalized = activityMap[activity] || activityMap[String(activity || '').toLowerCase()] || 'leggero';
   console.log('🏃‍♂️ Activity normalized:', activity, '→', normalized);
   return normalized;
 }
 
-// 🔧 MAPPING OBIETTIVO FIXATO
+// 🔧 MAPPING OBIETTIVO COMPLETAMENTE FIXATO
 function normalizeGoal(goal: string): string {
   const goalMap: { [key: string]: string } = {
-    'dimagrimento': 'dimagrimento',
-    'mantenimento': 'mantenimento', 
-    'aumento massa': 'aumento massa',
-    'perdita peso': 'perdita peso',
+    // Valori diretti dal form
+    'perdita-peso': 'perdita-peso',
+    'mantenimento': 'mantenimento',
+    'aumento-massa': 'aumento-massa',
     
-    // FIX CASE SENSITIVITY
-    'Mantenimento': 'mantenimento',         // ← FIX PRINCIPALE!
-    'Dimagrimento': 'dimagrimento',
-    'Perdita di Peso': 'perdita peso',
-    'Aumento Massa': 'aumento massa',
+    // Varianti con maiuscole
+    'Perdita-peso': 'perdita-peso',
+    'Mantenimento': 'mantenimento',          // ← FIX PRINCIPALE!
+    'Aumento-massa': 'aumento-massa',
     
-    'perdita di peso': 'perdita peso',
-    'perdita-peso': 'perdita peso',
-    'dimagrire': 'dimagrimento',
-    'perdere peso': 'perdita peso',
+    // Varianti complete
+    'Perdita di Peso': 'perdita-peso',
+    'Aumento Massa Muscolare': 'aumento-massa',
+    
+    // Varianti alternative
+    'dimagrimento': 'perdita-peso',
+    'perdita peso': 'perdita-peso',
+    'perdita di peso': 'perdita-peso',
+    'perdere peso': 'perdita-peso',
+    'dimagrire': 'perdita-peso',
+    
     'mantenere': 'mantenimento',
-    'massa': 'aumento massa'
+    'maintain': 'mantenimento',
+    
+    'aumento massa': 'aumento-massa',
+    'massa': 'aumento-massa',
+    'bulk': 'aumento-massa',
+    'crescita': 'aumento-massa'
   };
   
   const normalized = goalMap[goal] || goalMap[String(goal || '').toLowerCase()] || 'mantenimento';
@@ -257,64 +296,143 @@ function normalizeGoal(goal: string): string {
   return normalized;
 }
 
-// PROMPT E FALLBACK (mantieni gli originali o uso quelli semplificati)
+// 🔧 PROMPT SCIENTIFICO OTTIMIZZATO
 function createScientificPrompt(formData: any, calc: any): string {
-  return `NUTRIZIONISTA AI ITALIANO - PIANO SCIENTIFICO
+  const allergieText = formData.allergie && formData.allergie.length > 0 ? 
+    `\n⚠️ ALLERGIE: ${formData.allergie.join(', ')}` : '';
+  
+  const preferenzeText = formData.preferenze && formData.preferenze.length > 0 ? 
+    `\n🥗 PREFERENZE: ${formData.preferenze.join(', ')}` : '';
 
-Target calorie: ${calc.dailyCalories} kcal/giorno
-Distribuzione: Colazione ${calc.mealCalories.colazione}kcal, Pranzo ${calc.mealCalories.pranzo}kcal, Cena ${calc.mealCalories.cena}kcal
+  return `🍽️ NUTRIZIONISTA AI ITALIANO - PIANO SCIENTIFICO
 
-Crea piano alimentare italiano per ${formData.nome}, ${calc.debugInfo.input.age} anni, obiettivo ${calc.debugInfo.input.goal}.
+👤 DATI UTENTE:
+Nome: ${formData.nome}
+Età: ${calc.debugInfo.input.age} anni
+Sesso: ${calc.debugInfo.input.gender}
+Peso: ${calc.debugInfo.input.weight} kg
+Altezza: ${calc.debugInfo.input.height} cm
+Attività: ${calc.debugInfo.input.activity}
+Obiettivo: ${calc.debugInfo.input.goal}${allergieText}${preferenzeText}
 
+📊 CALCOLI NUTRIZIONALI:
+BMR: ${calc.bmr} kcal (${calc.debugInfo.bmrFormula})
+TDEE: ${calc.tdee} kcal (BMR × ${calc.debugInfo.activityFactor})
+Target giornaliero: ${calc.dailyCalories} kcal (TDEE × ${calc.debugInfo.goalFactor})
+
+🍽️ DISTRIBUZIONE PASTI:
+${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`).join('\n')}
+
+📋 RICHIESTA:
+Crea un piano alimentare italiano per ${calc.debugInfo.input.numDays} giorni con ${calc.debugInfo.input.numMeals} pasti al giorno.
 Genera ricette diverse per ogni giorno con nomi italiani appetitosi.
 Usa ESATTAMENTE le calorie specificate per ogni pasto.
-Evita: ${formData.allergie?.join(', ') || 'niente'}.
+Includi valori nutrizionali dettagliati per ogni ricetta.
 
-Formato: Nome ricetta, calorie, macro, ingredienti, preparazione.`;
+Formato richiesto:
+GIORNO X:
+🌅 COLAZIONE (XXX kcal): [Nome ricetta]
+- Ingredienti: [lista]
+- Preparazione: [breve]
+- Macro: P/C/G
+
+Continua per tutti i pasti e giorni.`;
 }
 
+// 🔧 FALLBACK RESPONSE MIGLIORATO
 function generateFallbackResponse(formData: any, calc: any) {
   const numDays = parseInt(formData.durata) || 2;
+  const numMeals = parseInt(formData.pasti) || 3;
   
-  const fallbackPlan = `=== PIANO ALIMENTARE SCIENTIFICO ===
+  let fallbackPlan = `🍽️ PIANO ALIMENTARE SCIENTIFICO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 DATI PERSONALI:
+Nome: ${formData.nome}
+Età: ${calc.debugInfo.input.age} anni | Sesso: ${calc.debugInfo.input.gender}
+Peso: ${calc.debugInfo.input.weight} kg | Altezza: ${calc.debugInfo.input.height} cm
+Attività: ${calc.debugInfo.input.activity} | Obiettivo: ${calc.debugInfo.input.goal}
+
+📊 CALCOLI NUTRIZIONALI:
+BMR: ${calc.bmr} kcal/giorno
+TDEE: ${calc.tdee} kcal/giorno
 Target: ${calc.dailyCalories} kcal/giorno
 
-GIORNO 1:
-🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
-Nome: Toast Energetico all'Avocado
-Calorie: ${calc.mealCalories.colazione}
-Proteine: ${Math.round(calc.mealCalories.colazione * 0.20 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.colazione * 0.50 / 4)}g | Grassi: ${Math.round(calc.mealCalories.colazione * 0.30 / 9)}g
+🍽️ DISTRIBUZIONE PASTI:
+${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`).join('\n')}
 
-☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
-Nome: Insalata Mediterranea con Pollo
-Calorie: ${calc.mealCalories.pranzo}
-Proteine: ${Math.round(calc.mealCalories.pranzo * 0.25 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.pranzo * 0.45 / 4)}g | Grassi: ${Math.round(calc.mealCalories.pranzo * 0.30 / 9)}g
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🌙 CENA (${calc.mealCalories.cena} kcal)
-Nome: Salmone alle Erbe con Verdure
-Calorie: ${calc.mealCalories.cena}
-Proteine: ${Math.round(calc.mealCalories.cena * 0.35 / 4)}g | Carboidrati: ${Math.round(calc.mealCalories.cena * 0.25 / 4)}g | Grassi: ${Math.round(calc.mealCalories.cena * 0.40 / 9)}g
+📅 PIANO ALIMENTARE:
 
-TOTALE GIORNO 1: ${calc.dailyCalories} kcal
+`;
 
-${numDays > 1 ? `
-GIORNO 2:
-🌅 COLAZIONE (${calc.mealCalories.colazione} kcal)
-Nome: Yogurt Greco con Frutti di Bosco
-Calorie: ${calc.mealCalories.colazione}
+  // Genera i giorni
+  for (let day = 1; day <= numDays; day++) {
+    fallbackPlan += `🗓️ GIORNO ${day}:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-☀️ PRANZO (${calc.mealCalories.pranzo} kcal)
-Nome: Risotto Cremoso alle Verdure
-Calorie: ${calc.mealCalories.pranzo}
+🌅 COLAZIONE (${calc.mealCalories.colazione} kcal):
+Nome: ${day === 1 ? 'Toast Energetico all\'Avocado' : day === 2 ? 'Yogurt Greco Power Bowl' : 'Pancakes Proteici'}
+Ingredienti: ${day === 1 ? '2 fette pane integrale, 1 avocado, 1 uovo, rucola' : day === 2 ? '200g yogurt greco, 30g granola, 100g frutti di bosco' : '150g ricotta, 2 uova, 40g farina avena'}
+Preparazione: ${day === 1 ? 'Tosta il pane, schiaccia avocado, cuoci uovo in camicia' : day === 2 ? 'Mescola yogurt con granola e frutti di bosco' : 'Mescola ricotta e uova, cuoci come pancakes'}
+Macro: P: ${Math.round(calc.mealCalories.colazione * 0.20 / 4)}g | C: ${Math.round(calc.mealCalories.colazione * 0.50 / 4)}g | G: ${Math.round(calc.mealCalories.colazione * 0.30 / 9)}g
 
-🌙 CENA (${calc.mealCalories.cena} kcal)
-Nome: Pollo al Limone con Verdure
-Calorie: ${calc.mealCalories.cena}
+☀️ PRANZO (${calc.mealCalories.pranzo} kcal):
+Nome: ${day === 1 ? 'Insalata Mediterranea con Pollo' : day === 2 ? 'Risotto Cremoso alle Verdure' : 'Bowl di Quinoa e Salmone'}
+Ingredienti: ${day === 1 ? '120g pollo, 80g quinoa, verdure miste, olio EVO' : day === 2 ? '90g riso, verdure di stagione, parmigiano' : '100g quinoa, 130g salmone, verdure colorate'}
+Preparazione: ${day === 1 ? 'Griglia pollo, cuoci quinoa, assembla con verdure' : day === 2 ? 'Tosta riso, aggiungi verdure e brodo gradualmente' : 'Cuoci quinoa, griglia salmone, componi la bowl'}
+Macro: P: ${Math.round(calc.mealCalories.pranzo * 0.25 / 4)}g | C: ${Math.round(calc.mealCalories.pranzo * 0.45 / 4)}g | G: ${Math.round(calc.mealCalories.pranzo * 0.30 / 9)}g
 
-TOTALE GIORNO 2: ${calc.dailyCalories} kcal
-` : ''}
+🌙 CENA (${calc.mealCalories.cena} kcal):
+Nome: ${day === 1 ? 'Salmone alle Erbe con Verdure' : day === 2 ? 'Pollo al Limone con Verdure' : 'Frittata di Verdure e Legumi'}
+Ingredienti: ${day === 1 ? '130g salmone, broccoli, patate dolci, erbe' : day === 2 ? '120g pollo, zucchine, limone, rosmarino' : '3 uova, verdure miste, 50g legumi'}
+Preparazione: ${day === 1 ? 'Cuoci salmone con erbe, griglia verdure' : day === 2 ? 'Marina pollo al limone, cuoci con verdure' : 'Sbatti uova, aggiungi verdure e legumi, cuoci'}
+Macro: P: ${Math.round(calc.mealCalories.cena * 0.35 / 4)}g | C: ${Math.round(calc.mealCalories.cena * 0.25 / 4)}g | G: ${Math.round(calc.mealCalories.cena * 0.40 / 9)}g
 
-BMR: ${calc.bmr} kcal | TDEE: ${calc.tdee} kcal | Obiettivo: ${calc.goal}`;
+`;
+
+    // Aggiungi spuntini se richiesti
+    if (numMeals >= 4 && calc.mealCalories.spuntino1) {
+      fallbackPlan += `🍎 SPUNTINO 1 (${calc.mealCalories.spuntino1} kcal):
+Nome: ${day === 1 ? 'Yogurt Greco con Noci' : day === 2 ? 'Frutta e Mandorle' : 'Smoothie Proteico'}
+Ingredienti: ${day === 1 ? '150g yogurt greco, 20g noci, miele' : day === 2 ? '1 mela, 15g mandorle' : '1 banana, 200ml latte, proteine'}
+Macro: P: ${Math.round(calc.mealCalories.spuntino1 * 0.25 / 4)}g | C: ${Math.round(calc.mealCalories.spuntino1 * 0.45 / 4)}g | G: ${Math.round(calc.mealCalories.spuntino1 * 0.30 / 9)}g
+
+`;
+    }
+
+    if (numMeals >= 5 && calc.mealCalories.spuntino2) {
+      fallbackPlan += `🥤 SPUNTINO 2 (${calc.mealCalories.spuntino2} kcal):
+Nome: ${day === 1 ? 'Shake Post-Workout' : day === 2 ? 'Ricotta e Frutti di Bosco' : 'Energy Balls'}
+Ingredienti: ${day === 1 ? '30g proteine, 1 banana, latte mandorle' : day === 2 ? '100g ricotta, 80g frutti di bosco' : '3 energy balls fatte in casa'}
+Macro: P: ${Math.round(calc.mealCalories.spuntino2 * 0.30 / 4)}g | C: ${Math.round(calc.mealCalories.spuntino2 * 0.40 / 4)}g | G: ${Math.round(calc.mealCalories.spuntino2 * 0.30 / 9)}g
+
+`;
+    }
+
+    fallbackPlan += `TOTALE GIORNO ${day}: ${calc.dailyCalories} kcal
+
+`;
+  }
+
+  fallbackPlan += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 CONSIGLI NUTRIZIONALI:
+• Bevi almeno 2 litri d'acqua al giorno
+• Rispetta gli orari dei pasti per ottimizzare il metabolismo
+• Varia gli ingredienti per un'alimentazione equilibrata
+• Adatta le porzioni in base alla tua risposta corporea
+• Consulta un nutrizionista per personalizzazioni specifiche
+
+📊 RIEPILOGO NUTRIZIONALE:
+• Calorie totali piano: ${calc.dailyCalories * numDays} kcal
+• Media proteine: ${Math.round(calc.dailyCalories * 0.25 / 4)}g/giorno
+• Media carboidrati: ${Math.round(calc.dailyCalories * 0.45 / 4)}g/giorno
+• Media grassi: ${Math.round(calc.dailyCalories * 0.30 / 9)}g/giorno
+
+✅ Piano generato scientificamente il ${new Date().toLocaleDateString('it-IT')}
+🔬 Basato su formule Harris-Benedict e fattori di attività validati`;
 
   return NextResponse.json({
     success: true,
