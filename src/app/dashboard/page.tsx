@@ -2,1069 +2,698 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Header from '../components/header';
+import { Calendar, Clock, Users, Flame, Filter, Search, Grid, List, Download, Share2, Eye, Trash2 } from 'lucide-react';
 
-export default function EnhancedUserDashboard() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [loginError, setLoginError] = useState('');
-  const [userData, setUserData] = useState<any>(null);
-  const [userStats, setUserStats] = useState({
-    plansCreated: 0,
-    currentPlan: 'Free',
-    daysTracked: 0,
-    favoriteRecipes: 0,
-    weightProgress: 0,
-    streak: 0,
-    totalCalories: 0,
-    achievements: [] as string[]
+interface SavedPlan {
+  id: string;
+  nome: string;
+  createdAt: string;
+  obiettivo: string;
+  durata: string;
+  pasti: string;
+  calorie: number;
+  days: Array<{
+    day: string;
+    meals: any;
+  }>;
+  formData: any;
+  totalCalories: number;
+  totalProteins: number;
+  allergie: string[];
+  preferenze: string[];
+}
+
+export default function DashboardPage() {
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [filteredPlans, setFilteredPlans] = useState<SavedPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filters, setFilters] = useState({
+    search: '',
+    obiettivo: '',
+    periodo: '',
+    sortBy: 'recent'
   });
-  const [recentPlans, setRecentPlans] = useState<any[]>([]);
-  const [showWeightModal, setShowWeightModal] = useState(false);
-  const [newWeight, setNewWeight] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SavedPlan | null>(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [weightHistory, setWeightHistory] = useState<any[]>([]);
-  const [selectedWeek, setSelectedWeek] = useState(0);
-  const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'calendar' | 'achievements'>('overview');
 
-  // 🎯 SISTEMA ACHIEVEMENT
-  const achievements = [
-    { id: 'first_plan', name: 'Primo Piano', desc: 'Hai creato il tuo primo piano!', icon: '🏆', unlocked: false },
-    { id: 'week_streak', name: 'Settimana Perfetta', desc: '7 giorni consecutivi di tracking', icon: '🔥', unlocked: false },
-    { id: 'month_streak', name: 'Mese Dedicato', desc: '30 giorni di utilizzo', icon: '💪', unlocked: false },
-    { id: 'weight_goal', name: 'Obiettivo Peso', desc: 'Hai raggiunto il tuo peso target', icon: '⚖️', unlocked: false },
-    { id: 'five_plans', name: 'Esperto Nutrizionale', desc: '5 piani completati', icon: '🎓', unlocked: false },
-    { id: 'sharing_master', name: 'Condivisione Pro', desc: 'Hai condiviso 10 piani', icon: '📱', unlocked: false }
-  ];
+  // Carica piani salvati
+  useEffect(() => {
+    loadSavedPlans();
+  }, []);
 
-  // 🗓️ CALENDARIO PASTI
-  const weekDays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
-  const mealTypes = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+  // Applica filtri quando cambiano
+  useEffect(() => {
+    applyFilters();
+  }, [savedPlans, filters]);
 
-  const viewPlan = (plan: any) => {
+  const loadSavedPlans = () => {
+    try {
+      // Carica da localStorage
+      const localPlans = localStorage.getItem('mealPrepSavedPlans');
+      let plans: SavedPlan[] = [];
+      
+      if (localPlans) {
+        plans = JSON.parse(localPlans);
+        console.log('📊 Loaded plans from localStorage:', plans.length);
+      }
+
+      // Carica anche da sessionStorage (backup)
+      const sessionPlans = sessionStorage.getItem('lastGeneratedPlan');
+      if (sessionPlans && plans.length === 0) {
+        const sessionPlan = JSON.parse(sessionPlans);
+        plans = [sessionPlan];
+        console.log('📊 Loaded from sessionStorage as fallback');
+      }
+
+      // Se ancora vuoti, crea piani di esempio per test
+      if (plans.length === 0) {
+        plans = createSamplePlans();
+        console.log('📊 Created sample plans for testing');
+      }
+
+      setSavedPlans(plans);
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ Error loading plans:', error);
+      setSavedPlans(createSamplePlans());
+      setLoading(false);
+    }
+  };
+
+  const createSamplePlans = (): SavedPlan[] => {
+    return [
+      {
+        id: 'plan-1',
+        nome: 'andrea',
+        createdAt: '2025-07-10',
+        obiettivo: 'Perdita peso',
+        durata: '2',
+        pasti: '4',
+        calorie: 2000,
+        totalCalories: 4000,
+        totalProteins: 160,
+        allergie: [],
+        preferenze: ['mediterraneo'],
+        formData: { nome: 'andrea', obiettivo: 'dimagrimento' },
+        days: [
+          {
+            day: 'Giorno 1',
+            meals: {
+              colazione: {
+                nome: 'Power Breakfast Bowl',
+                calorie: 420,
+                proteine: 25,
+                carboidrati: 35,
+                grassi: 18,
+                tempo: '15 min',
+                porzioni: 1,
+                ingredienti: ['60g avena', '25g proteine whey', '100g frutti di bosco'],
+                preparazione: 'Bowl proteico con avena e proteine',
+                imageUrl: `https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop`
+              },
+              pranzo: {
+                nome: 'Chicken Power Bowl',
+                calorie: 480,
+                proteine: 40,
+                carboidrati: 35,
+                grassi: 18,
+                tempo: '20 min',
+                porzioni: 1,
+                ingredienti: ['120g pollo', '80g quinoa', '100g verdure'],
+                preparazione: 'Bowl completo con pollo grigliato',
+                imageUrl: `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop`
+              }
+            }
+          }
+        ]
+      },
+      {
+        id: 'plan-2',
+        nome: 'andrea',
+        createdAt: '2025-07-09',
+        obiettivo: 'Aumento massa',
+        durata: '3',
+        pasti: '5',
+        calorie: 2500,
+        totalCalories: 7500,
+        totalProteins: 200,
+        allergie: ['glutine'],
+        preferenze: ['high_protein'],
+        formData: { nome: 'andrea', obiettivo: 'aumento-massa' },
+        days: [
+          {
+            day: 'Giorno 1',
+            meals: {
+              colazione: {
+                nome: 'Pancakes Proteici',
+                calorie: 550,
+                proteine: 30,
+                carboidrati: 45,
+                grassi: 20,
+                tempo: '20 min',
+                porzioni: 1,
+                ingredienti: ['150g ricotta', '2 uova', '40g farina avena'],
+                preparazione: 'Pancakes ricchi di proteine',
+                imageUrl: `https://images.unsplash.com/photo-1506084868230-bb9d95c24759?w=400&h=300&fit=crop`
+              }
+            }
+          }
+        ]
+      }
+    ];
+  };
+
+  const applyFilters = () => {
+    let filtered = [...savedPlans];
+
+    // Filtro ricerca
+    if (filters.search) {
+      filtered = filtered.filter(plan => 
+        plan.nome.toLowerCase().includes(filters.search.toLowerCase()) ||
+        plan.obiettivo.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    // Filtro obiettivo
+    if (filters.obiettivo) {
+      filtered = filtered.filter(plan => 
+        plan.obiettivo.toLowerCase().includes(filters.obiettivo.toLowerCase())
+      );
+    }
+
+    // Filtro periodo
+    if (filters.periodo) {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (filters.periodo) {
+        case 'week':
+          filterDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          filterDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'quarter':
+          filterDate.setMonth(now.getMonth() - 3);
+          break;
+      }
+      
+      if (filters.periodo !== 'all') {
+        filtered = filtered.filter(plan => 
+          new Date(plan.createdAt) >= filterDate
+        );
+      }
+    }
+
+    // Ordinamento
+    switch (filters.sortBy) {
+      case 'recent':
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'name':
+        filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+        break;
+      case 'calories':
+        filtered.sort((a, b) => b.calorie - a.calorie);
+        break;
+    }
+
+    setFilteredPlans(filtered);
+  };
+
+  const deletePlan = (planId: string) => {
+    if (confirm('Sei sicuro di voler eliminare questo piano?')) {
+      const updatedPlans = savedPlans.filter(plan => plan.id !== planId);
+      setSavedPlans(updatedPlans);
+      localStorage.setItem('mealPrepSavedPlans', JSON.stringify(updatedPlans));
+    }
+  };
+
+  const exportPlan = (plan: SavedPlan) => {
+    const exportData = {
+      piano: plan,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `piano-${plan.nome}-${plan.createdAt}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sharePlan = (plan: SavedPlan) => {
+    const shareText = `🍽️ Ho creato un piano alimentare fitness!\n\n` +
+      `👤 ${plan.nome}\n` +
+      `🎯 ${plan.obiettivo}\n` +
+      `📅 ${plan.durata} giorni\n` +
+      `🍽️ ${plan.pasti} pasti/giorno\n` +
+      `🔥 ${plan.calorie} kcal/giorno\n\n` +
+      `Creato con Meal Prep Planner 💪`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Piano Alimentare Fitness',
+        text: shareText
+      });
+    } else {
+      navigator.clipboard.writeText(shareText);
+      alert('Piano copiato negli appunti!');
+    }
+  };
+
+  const openPlanModal = (plan: SavedPlan) => {
     setSelectedPlan(plan);
     setShowPlanModal(true);
   };
 
-  const downloadPDF = (plan: any) => {
-    const planData = plan.mealPlan || {};
-    const completeDocument = planData.generatedPlan || `Piano per ${plan.nome}`;
-    
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Preparazione Pasti - ${plan.nome}</title>
-          <style>
-            body { 
-              font-family: 'Georgia', serif; 
-              line-height: 1.6; 
-              color: #333; 
-              max-width: 800px; 
-              margin: 0 auto; 
-              padding: 20px; 
-            }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 3px solid #8FBC8F; 
-              padding-bottom: 20px; 
-            }
-            h1 { 
-              color: #2F4F4F; 
-              font-size: 28px; 
-              margin-bottom: 10px; 
-            }
-            h2 { 
-              color: #8FBC8F; 
-              font-size: 20px; 
-              margin-top: 25px; 
-              margin-bottom: 15px; 
-            }
-            .info-box { 
-              background: #f8f9fa; 
-              border-left: 4px solid #8FBC8F; 
-              padding: 15px; 
-              margin: 20px 0; 
-            }
-            .recipe-section { 
-              background: #fff; 
-              border: 1px solid #ddd; 
-              border-radius: 8px; 
-              padding: 20px; 
-              margin: 15px 0; 
-              box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-            }
-            .ingredient-list { 
-              background: #f8f9fa; 
-              padding: 15px; 
-              border-radius: 5px; 
-              margin: 10px 0; 
-            }
-            .footer { 
-              text-align: center; 
-              margin-top: 40px; 
-              padding-top: 20px; 
-              border-top: 2px solid #8FBC8F; 
-              color: #666; 
-            }
-            @media print {
-              body { margin: 0; padding: 10px; }
-              .header { page-break-after: avoid; }
-              .recipe-section { page-break-inside: avoid; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>📋 Preparazione Pasti - Meal Prep Guide</h1>
-            <p><strong>Generato per:</strong> ${plan.nome} | <strong>Data:</strong> ${new Date().toLocaleDateString('it-IT')}</p>
-            <div class="info-box">
-              <strong>Obiettivo:</strong> ${plan.goal || 'N/A'} | 
-              <strong>Durata:</strong> ${plan.duration || 'N/A'} giorni | 
-              <strong>Pasti:</strong> ${plan.meals_per_day || 'N/A'} al giorno
-            </div>
-          </div>
-          <div style="white-space: pre-wrap; font-size: 14px;">${completeDocument}</div>
-          <div class="footer">
-            <p><strong>Meal Prep Planner Pro</strong> - Il tuo assistente per una alimentazione sana</p>
-            <p>Generato il ${new Date().toLocaleDateString('it-IT')} alle ${new Date().toLocaleTimeString('it-IT')}</p>
-          </div>
-        </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
+  const getObjectiveIcon = (obiettivo: string) => {
+    const lower = obiettivo.toLowerCase();
+    if (lower.includes('perdita') || lower.includes('dimagrimento')) return '🔥';
+    if (lower.includes('massa') || lower.includes('aumento')) return '💪';
+    return '⚖️';
   };
 
-  // Controlla se già loggato
-  useEffect(() => {
-    const userAuth = sessionStorage.getItem('userAuth');
-    if (userAuth) {
-      setIsLoggedIn(true);
-      loadUserData(userAuth);
-    }
-  }, []);
-
-  // 📊 CARICA WEIGHT HISTORY
-  useEffect(() => {
-    const history = JSON.parse(localStorage.getItem('weightHistory') || '[]');
-    setWeightHistory(history);
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (loginData.email && loginData.password.length >= 4) {
-      setIsLoggedIn(true);
-      sessionStorage.setItem('userAuth', loginData.email);
-      setLoginError('');
-      loadUserData(loginData.email);
-    } else {
-      setLoginError('Email e password (min 4 caratteri) richiesti');
-    }
+  const getObjectiveColor = (obiettivo: string) => {
+    const lower = obiettivo.toLowerCase();
+    if (lower.includes('perdita') || lower.includes('dimagrimento')) return 'text-red-400 bg-red-500/20';
+    if (lower.includes('massa') || lower.includes('aumento')) return 'text-blue-400 bg-blue-500/20';
+    return 'text-green-400 bg-green-500/20';
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem('userAuth');
-    setLoginData({ email: '', password: '' });
-    setUserData(null);
-    setRecentPlans([]);
-  };
-
-  const loadUserData = async (userEmail: string) => {
-    setIsLoading(true);
-    try {
-      console.log('📊 Loading user data for:', userEmail);
-      
-      try {
-        console.log('🔍 Calling getUserMealRequests API...');
-        const response = await fetch('/api/airtable', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            action: 'getUserMealRequests',
-            data: { email: userEmail }
-          })
-        });
-        
-        console.log('📡 API response status:', response.status);
-        const data = await response.json();
-        console.log('📊 API response data:', data);
-        
-        if (data.success && data.records) {
-          console.log('✅ Loaded', data.records.length, 'records from Airtable for user:', userEmail);
-          
-          const userPlans = data.records.map((record: any) => ({
-            id: record.id,
-            nome: record.fields?.Nome || 'Utente',
-            email: record.fields?.Email || userEmail,
-            goal: record.fields?.Goal || 'N/A',
-            duration: record.fields?.Duration || 0,
-            meals_per_day: record.fields?.Meals_Per_Day || 3,
-            weight: record.fields?.Weight || 0,
-            height: record.fields?.Height || 0,
-            age: record.fields?.Age || 0,
-            gender: record.fields?.Gender || 'N/A',
-            activity_level: record.fields?.Activity_Level || 'N/A',
-            created_at: record.fields?.Created_At ? new Date(record.fields.Created_At).toLocaleDateString('it-IT') : '',
-            status: record.fields?.Status || 'In attesa',
-            createdTime: record.createdTime || '',
-            exclusions: record.fields?.Exclusions || '',
-            foods_at_home: record.fields?.Foods_At_Home || ''
-          }));
-          
-          console.log('👤 Mapped user plans:', userPlans);
-          setRecentPlans(userPlans);
-          
-          if (userPlans.length > 0) {
-            const firstPlan = userPlans[0];
-            setUserData({
-              nome: firstPlan.nome,
-              email: firstPlan.email,
-              eta: firstPlan.age,
-              peso: firstPlan.weight,
-              altezza: firstPlan.height,
-              sesso: firstPlan.gender,
-              obiettivo: firstPlan.goal,
-              attivita: firstPlan.activity_level,
-              pasti: firstPlan.meals_per_day,
-              allergie: firstPlan.exclusions ? firstPlan.exclusions.split(', ') : [],
-              preferenze: firstPlan.foods_at_home ? firstPlan.foods_at_home.split(', ') : []
-            });
-          }
-          
-          // 🎯 CALCOLA ACHIEVEMENT
-          const unlockedAchievements = calculateAchievements(userPlans);
-          
-          setUserStats({
-            plansCreated: userPlans.length,
-            currentPlan: 'Free',
-            daysTracked: userPlans.reduce((sum: number, plan: any) => 
-              sum + (parseInt(plan.duration) || 0), 0),
-            favoriteRecipes: userPlans.length * 3,
-            weightProgress: 0,
-            streak: calculateStreak(userPlans),
-            totalCalories: userPlans.length * 1800, // Stima
-            achievements: unlockedAchievements
-          });
-          
-        } else {
-          console.log('❌ Failed to load user data from Airtable:', data.error);
-          loadFromLocalStorage();
-        }
-      } catch (airtableError) {
-        console.error('❌ Airtable API error:', airtableError);
-        loadFromLocalStorage();
-      }
-    } catch (error) {
-      console.error('❌ Error loading user data:', error);
-      loadFromLocalStorage();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 🎯 CALCOLA ACHIEVEMENT
-  const calculateAchievements = (plans: any[]) => {
-    const unlocked = [];
-    
-    if (plans.length >= 1) unlocked.push('first_plan');
-    if (plans.length >= 5) unlocked.push('five_plans');
-    
-    // Simula altri achievement
-    const daysSinceFirst = plans.length > 0 ? 
-      Math.floor((Date.now() - new Date(plans[0].createdTime).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    
-    if (daysSinceFirst >= 7) unlocked.push('week_streak');
-    if (daysSinceFirst >= 30) unlocked.push('month_streak');
-    
-    return unlocked;
-  };
-
-  const calculateStreak = (plans: any[]) => {
-    // Semplice calcolo streak basato su numero di piani
-    return Math.min(plans.length * 3, 30);
-  };
-
-  const loadFromLocalStorage = () => {
-    console.log('💾 Loading from localStorage fallback...');
-    
-    const formData = localStorage.getItem('mealPrepFormData');
-    if (formData) {
-      try {
-        const parsed = JSON.parse(formData);
-        setUserData(parsed);
-        console.log('✅ Loaded form data from localStorage:', parsed);
-      } catch (e) {
-        console.error('❌ Error parsing localStorage formData:', e);
-      }
-    }
-    
-    const plans = JSON.parse(localStorage.getItem('userPlans') || '[]');
-    setRecentPlans(plans);
-    console.log('📋 Loaded', plans.length, 'plans from localStorage');
-    
-    const unlockedAchievements = calculateAchievements(plans);
-    
-    setUserStats({
-      plansCreated: plans.length,
-      currentPlan: 'Free',
-      daysTracked: plans.reduce((sum: number, plan: any) => sum + (parseInt(plan.durata) || 0), 0),
-      favoriteRecipes: plans.length * 3,
-      weightProgress: 0,
-      streak: calculateStreak(plans),
-      totalCalories: plans.length * 1800,
-      achievements: unlockedAchievements
-    });
-  };
-
-  const addWeightEntry = () => {
-    if (newWeight && userData) {
-      const weightHistory = JSON.parse(localStorage.getItem('weightHistory') || '[]');
-      const newEntry = {
-        weight: parseFloat(newWeight),
-        date: new Date().toISOString(),
-        timestamp: Date.now()
-      };
-      
-      weightHistory.push(newEntry);
-      localStorage.setItem('weightHistory', JSON.stringify(weightHistory));
-      setWeightHistory(weightHistory);
-      
-      if (weightHistory.length > 1) {
-        const firstWeight = weightHistory[0].weight;
-        const currentWeight = parseFloat(newWeight);
-        const progress = firstWeight - currentWeight;
-        setUserStats(prev => ({ ...prev, weightProgress: progress }));
-      }
-      
-      setShowWeightModal(false);
-      setNewWeight('');
-      alert('✅ Peso registrato con successo!');
-    }
-  };
-
-  const testAirtableConnection = async () => {
-    try {
-      console.log('🧪 Testing Airtable connection...');
-      const response = await fetch('/api/airtable', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action: 'testConnection'})
-      });
-      
-      const data = await response.json();
-      console.log('🔍 Test result:', data);
-      
-      if (data.success) {
-        alert('✅ Connessione Airtable attiva!\n\nStatus: ' + data.status + '\nRecords trovati: ' + (data.recordsFound || 0));
-      } else {
-        alert('❌ Errore connessione: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('❌ Test error:', error);
-      alert('❌ Errore di rete: ' + error);
-    }
-  };
-
-  // 📊 PROGRESS CHART COMPONENT
-  const ProgressChart = () => {
-    const maxWeight = Math.max(...weightHistory.map(w => w.weight), userData?.peso || 0);
-    const minWeight = Math.min(...weightHistory.map(w => w.weight), userData?.peso || 0);
-    const range = maxWeight - minWeight || 10;
-    
+  if (loading) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-4 text-green-400">📊 Progresso Peso</h3>
-        {weightHistory.length > 0 ? (
-          <div className="space-y-4">
-            <div className="flex justify-between text-sm text-gray-400">
-              <span>Peso iniziale: {weightHistory[0]?.weight || 'N/A'} kg</span>
-              <span>Peso attuale: {weightHistory[weightHistory.length - 1]?.weight || 'N/A'} kg</span>
-            </div>
-            
-            {/* Grafico semplificato */}
-            <div className="relative h-32 bg-gray-700 rounded-lg p-4">
-              <div className="absolute inset-0 flex items-end justify-between px-4 pb-4">
-                {weightHistory.slice(-7).map((entry, index) => {
-                  const height = ((entry.weight - minWeight) / range) * 80 + 10;
-                  return (
-                    <div key={index} className="flex flex-col items-center">
-                      <div 
-                        className="w-4 bg-green-500 rounded-t transition-all duration-300"
-                        style={{ height: `${height}px` }}
-                      ></div>
-                      <span className="text-xs text-gray-400 mt-1">
-                        {new Date(entry.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-green-600/20 p-3 rounded-lg">
-                <div className="text-lg font-bold text-green-400">
-                  {userStats.weightProgress > 0 ? `-${userStats.weightProgress.toFixed(1)}` : 
-                   userStats.weightProgress < 0 ? `+${Math.abs(userStats.weightProgress).toFixed(1)}` : '0.0'}
-                </div>
-                <div className="text-xs text-gray-400">Variazione</div>
-              </div>
-              <div className="bg-blue-600/20 p-3 rounded-lg">
-                <div className="text-lg font-bold text-blue-400">{userStats.streak}</div>
-                <div className="text-xs text-gray-400">Streak giorni</div>
-              </div>
-              <div className="bg-purple-600/20 p-3 rounded-lg">
-                <div className="text-lg font-bold text-purple-400">{weightHistory.length}</div>
-                <div className="text-xs text-gray-400">Misurazioni</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-4">📈</div>
-            <p className="text-gray-400 mb-4">Nessun dato peso disponibile</p>
-            <button
-              onClick={() => setShowWeightModal(true)}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition-colors"
-            >
-              Aggiungi Peso
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // 🗓️ CALENDAR COMPONENT
-  const MealCalendar = () => {
-    const currentWeek = new Date();
-    const startOfWeek = new Date(currentWeek);
-    startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1 + (selectedWeek * 7));
-    
-    const weekDates = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      return date;
-    });
-
-    // Dati pasti mock (in produzione verrebbero da API)
-    const getMealForDay = (dayIndex: number, mealType: string) => {
-      const meals = {
-        0: { Colazione: 'Porridge proteico', Pranzo: 'Insalata di pollo', Cena: 'Salmone grigliato', Spuntino: 'Yogurt greco' },
-        1: { Colazione: 'Uova strapazzate', Pranzo: 'Riso integrale con verdure', Cena: 'Petto di pollo', Spuntino: 'Frutta secca' },
-        2: { Colazione: 'Smoothie proteico', Pranzo: 'Quinoa bowl', Cena: 'Pesce al vapore', Spuntino: 'Ricotta' },
-        3: { Colazione: 'Avena overnight', Pranzo: 'Bowl vegano', Cena: 'Tagliata di manzo', Spuntino: 'Protein shake' },
-        4: { Colazione: 'Pancakes fitness', Pranzo: 'Wrap di pollo', Cena: 'Risotto ai funghi', Spuntino: 'Mandorle' },
-        5: { Colazione: 'French toast fit', Pranzo: 'Buddha bowl', Cena: 'Branzino al limone', Spuntino: 'Hummus' },
-        6: { Colazione: 'Chia pudding', Pranzo: 'Pasta integrale', Cena: 'Pollo alle erbe', Spuntino: 'Barretta proteica' }
-      };
-      
-      return (meals as any)[dayIndex]?.[mealType] || 'Libero';
-    };
-
-    return (
-      <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-green-400">🗓️ Calendario Pasti</h3>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setSelectedWeek(selectedWeek - 1)}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-            >
-              ←
-            </button>
-            <span className="px-4 py-2 bg-gray-700 rounded-lg text-sm">
-              {selectedWeek === 0 ? 'Questa settimana' : `Settimana ${selectedWeek > 0 ? '+' : ''}${selectedWeek}`}
-            </span>
-            <button 
-              onClick={() => setSelectedWeek(selectedWeek + 1)}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-            >
-              →
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-8 gap-2 mb-4">
-          <div className="p-2 text-center text-gray-400 text-sm font-medium">Pasto</div>
-          {weekDates.map((date, index) => (
-            <div key={index} className="p-2 text-center text-sm">
-              <div className="font-medium">{weekDays[index].substring(0, 3)}</div>
-              <div className="text-gray-400">{date.getDate()}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          {mealTypes.map((mealType) => (
-            <div key={mealType} className="grid grid-cols-8 gap-2">
-              <div className="p-3 text-sm font-medium text-gray-300 flex items-center">
-                {mealType === 'Colazione' && '🌅'}
-                {mealType === 'Pranzo' && '🍽️'}
-                {mealType === 'Cena' && '🌙'}
-                {mealType === 'Spuntino' && '🍎'}
-                <span className="ml-2">{mealType}</span>
-              </div>
-              {Array.from({ length: 7 }, (_, dayIndex) => (
-                <div 
-                  key={dayIndex}
-                  className="p-2 bg-gray-700 rounded-lg text-xs text-center hover:bg-gray-600 transition-colors cursor-pointer"
-                >
-                  {getMealForDay(dayIndex, mealType)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-          <h4 className="font-semibold mb-2">💡 Suggerimento della settimana:</h4>
-          <p className="text-sm text-gray-300">
-            Prepara i pasti domenica sera per tutta la settimana. 
-            Risparmierai tempo e manterrai la dieta più facilmente!
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  // 🎯 ACHIEVEMENTS COMPONENT
-  const AchievementsSection = () => {
-    const userAchievements = achievements.map(achievement => ({
-      ...achievement,
-      unlocked: userStats.achievements.includes(achievement.id)
-    }));
-
-    return (
-      <div className="bg-gray-800 rounded-xl p-6 shadow-lg">
-        <h3 className="text-xl font-bold mb-6 text-green-400">🎯 I Tuoi Achievement</h3>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          {userAchievements.map((achievement) => (
-            <div 
-              key={achievement.id}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                achievement.unlocked 
-                  ? 'bg-gradient-to-r from-green-600/20 to-green-400/20 border-green-500' 
-                  : 'bg-gray-700 border-gray-600'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`text-2xl ${achievement.unlocked ? 'animate-pulse' : 'grayscale'}`}>
-                  {achievement.icon}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className={`font-bold ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
-                      {achievement.name}
-                    </h4>
-                    {achievement.unlocked && (
-                      <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
-                        SBLOCCATO
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {achievement.desc}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 p-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-lg">
-          <h4 className="font-semibold mb-2">🏆 Prossimo Obiettivo:</h4>
-          <p className="text-sm text-gray-300">
-            {userStats.plansCreated < 5 
-              ? `Crea altri ${5 - userStats.plansCreated} piani per sbloccare "Esperto Nutrizionale"` 
-              : 'Hai sbloccato tutti gli achievement principali! 🎉'}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  // Login Form
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-2xl border border-gray-700">
-            <div className="text-center mb-6 md:mb-8">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full mx-auto mb-4 md:mb-6 flex items-center justify-center" style={{backgroundColor: '#8FBC8F'}}>
-                <span className="text-2xl md:text-3xl">👤</span>
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold mb-2 md:mb-3" style={{color: '#8FBC8F'}}>
-                Accedi alla Dashboard
-              </h1>
-              <p className="text-sm md:text-base text-gray-400">
-                Gestisci i tuoi piani alimentari
-              </p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
-              <div>
-                <label className="block text-sm md:text-base font-medium mb-2 md:mb-3">Email</label>
-                <input
-                  type="email"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-4 md:px-6 py-3 md:py-4 text-base md:text-lg rounded-xl bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none transition-colors"
-                  placeholder="inserisci@email.com"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm md:text-base font-medium mb-2 md:mb-3">Password</label>
-                <input
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full px-4 md:px-6 py-3 md:py-4 text-base md:text-lg rounded-xl bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none transition-colors"
-                  placeholder="Password (min 4 caratteri)"
-                  required
-                />
-                {loginError && (
-                  <p className="text-red-400 text-sm md:text-base mt-2">❌ {loginError}</p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 md:py-4 rounded-xl font-semibold text-base md:text-lg transition-all"
-                style={{backgroundColor: '#8FBC8F', color: 'black'}}
-              >
-                🚀 Accedi alla Dashboard
-              </button>
-            </form>
-
-            <div className="text-center text-sm md:text-base text-gray-400 mt-6 md:mt-8">
-              <p className="mb-2 md:mb-3">Non hai un account? Inizia creando il tuo primo piano!</p>
-              <Link 
-                href="/"
-                className="text-green-400 hover:text-green-300 transition-colors"
-              >
-                ← Vai al Meal Planner
-              </Link>
-            </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+        <Header />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto mb-4"></div>
+            <p className="text-gray-400">Caricamento piani...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Enhanced Dashboard Content
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-      {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
-              <h1 className="text-lg md:text-2xl font-bold">La Mia Dashboard</h1>
-              {isLoading && <span className="text-green-400 text-sm">⏳</span>}
-            </div>
-            
-            <nav className="flex items-center justify-between md:justify-center md:gap-6">
-              <div className="flex gap-4 md:gap-6">
-                <Link href="/" className="text-sm md:text-base hover:text-green-400 transition-colors">Crea Piano</Link>
-                <span className="text-sm md:text-base text-green-400 font-semibold">Dashboard</span>
-                <button 
-                  onClick={testAirtableConnection}
-                  className="bg-blue-600 hover:bg-blue-700 px-2 md:px-3 py-1 rounded text-xs md:text-sm transition-colors"
-                >
-                  🔗 Test
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 md:gap-4">
-                <span className="text-xs md:text-sm text-gray-300 truncate max-w-32 md:max-w-none">
-                  👋 {sessionStorage.getItem('userAuth')?.split('@')[0]}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 px-3 md:px-4 py-1 md:py-2 rounded-lg transition-colors text-xs md:text-sm"
-                >
-                  Esci
-                </button>
-              </div>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="text-center py-6 md:py-8 px-4" style={{background: 'linear-gradient(to right, #8FBC8F, #9ACD32)'}}>
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-black mb-2 md:mb-3">
-            🎯 Dashboard Pro
-          </h1>
-          <p className="text-sm md:text-base lg:text-lg text-gray-800 mb-4 md:mb-6 leading-relaxed">
-            Grafici, Calendario e Achievement per il tuo successo
-          </p>
-          {userData && (
-            <div className="bg-black/20 rounded-lg px-4 md:px-6 py-2 md:py-3 inline-block">
-              <span className="text-white font-semibold text-sm md:text-base">
-                🎯 {userData.obiettivo} | 🔥 {userStats.streak} giorni streak
-              </span>
-            </div>
-          )}
-        </div>
-      </section>
-
+      <Header />
+      
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Enhanced Stats Cards */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl p-4 md:p-6 text-white shadow-lg">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-2 md:mb-0">
-                <p className="text-blue-100 text-xs md:text-sm font-medium">Piani Creati</p>
-                <p className="text-2xl md:text-3xl font-bold">{userStats.plansCreated}</p>
-                <p className="text-blue-200 text-xs">Achievement: {userStats.achievements.length}/6</p>
+        {/* Header Dashboard */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2" style={{color: '#8FBC8F'}}>
+            📊 I Miei Piani Alimentari
+          </h1>
+          <p className="text-gray-400 mb-6">
+            Gestisci e visualizza tutti i tuoi piani fitness personalizzati
+          </p>
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="text-2xl font-bold text-green-400">{savedPlans.length}</div>
+              <div className="text-sm text-gray-400">Piani Totali</div>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-400">
+                {Math.round(savedPlans.reduce((acc, plan) => acc + plan.calorie, 0) / savedPlans.length) || 0}
               </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center self-end md:self-auto">
-                <span className="text-lg md:text-2xl">📋</span>
+              <div className="text-sm text-gray-400">Kcal Media</div>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="text-2xl font-bold text-purple-400">
+                {savedPlans.filter(plan => plan.createdAt === new Date().toISOString().split('T')[0]).length}
               </div>
+              <div className="text-sm text-gray-400">Oggi</div>
+            </div>
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="text-2xl font-bold text-orange-400">
+                {Math.round(savedPlans.reduce((acc, plan) => acc + plan.totalProteins, 0) / savedPlans.length) || 0}g
+              </div>
+              <div className="text-sm text-gray-400">Proteine Media</div>
             </div>
           </div>
+        </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-emerald-700 rounded-xl p-4 md:p-6 text-white shadow-lg">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-2 md:mb-0">
-                <p className="text-green-100 text-xs md:text-sm font-medium">Streak Giorni</p>
-                <p className="text-2xl md:text-3xl font-bold">{userStats.streak}</p>
-                <p className="text-green-200 text-xs">Consecutivi</p>
-              </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center self-end md:self-auto">
-                <span className="text-lg md:text-2xl">🔥</span>
-              </div>
+        {/* Filtri e Controlli */}
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            {/* Ricerca */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Cerca per nome o obiettivo..."
+                value={filters.search}
+                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-400 focus:outline-none"
+              />
             </div>
-          </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-4 md:p-6 text-white shadow-lg">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-2 md:mb-0">
-                <p className="text-orange-100 text-xs md:text-sm font-medium">Calorie Totali</p>
-                <p className="text-2xl md:text-3xl font-bold">{(userStats.totalCalories / 1000).toFixed(1)}k</p>
-                <p className="text-orange-200 text-xs">Pianificate</p>
-              </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center self-end md:self-auto">
-                <span className="text-lg md:text-2xl">📊</span>
-              </div>
-            </div>
-          </div>
+            {/* Filtro Obiettivo */}
+            <select
+              value={filters.obiettivo}
+              onChange={(e) => setFilters({...filters, obiettivo: e.target.value})}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-400 focus:outline-none"
+            >
+              <option value="">Tutti gli obiettivi</option>
+              <option value="perdita">Perdita peso</option>
+              <option value="massa">Aumento massa</option>
+              <option value="mantenimento">Mantenimento</option>
+            </select>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl p-4 md:p-6 text-white shadow-lg">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-2 md:mb-0">
-                <p className="text-purple-100 text-xs md:text-sm font-medium">Progresso</p>
-                <p className="text-lg md:text-2xl font-bold">
-                  {userStats.weightProgress > 0 ? `-${userStats.weightProgress.toFixed(1)}` : 
-                   userStats.weightProgress < 0 ? `+${Math.abs(userStats.weightProgress).toFixed(1)}` : '0.0'}kg
-                </p>
-                <p className="text-purple-200 text-xs">Peso</p>
-              </div>
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-white/20 rounded-lg flex items-center justify-center self-end md:self-auto">
-                <span className="text-lg md:text-2xl">⚖️</span>
-              </div>
-            </div>
-          </div>
-        </section>
+            {/* Filtro Periodo */}
+            <select
+              value={filters.periodo}
+              onChange={(e) => setFilters({...filters, periodo: e.target.value})}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-400 focus:outline-none"
+            >
+              <option value="">Tutti i periodi</option>
+              <option value="week">Ultima settimana</option>
+              <option value="month">Ultimo mese</option>
+              <option value="quarter">Ultimi 3 mesi</option>
+            </select>
 
-        {/* Navigation Tabs */}
-        <section className="mb-8">
-          <div className="flex flex-wrap gap-2 bg-gray-800 p-2 rounded-xl">
-            {[
-              { id: 'overview', label: 'Panoramica', icon: '📊' },
-              { id: 'progress', label: 'Progresso', icon: '📈' },
-              { id: 'calendar', label: 'Calendario', icon: '🗓️' },
-              { id: 'achievements', label: 'Achievement', icon: '🏆' }
-            ].map((tab) => (
+            {/* Ordinamento */}
+            <select
+              value={filters.sortBy}
+              onChange={(e) => setFilters({...filters, sortBy: e.target.value})}
+              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-green-400 focus:outline-none"
+            >
+              <option value="recent">Più recenti</option>
+              <option value="oldest">Più vecchi</option>
+              <option value="name">Nome A-Z</option>
+              <option value="calories">Calorie (alte)</option>
+            </select>
+
+            {/* Toggle Vista */}
+            <div className="flex bg-gray-700 rounded-lg p-1">
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-green-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'text-gray-400'}`}
               >
-                <span className="mr-2">{tab.icon}</span>
-                <span className="hidden md:inline">{tab.label}</span>
+                <Grid size={20} />
               </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded ${viewMode === 'list' ? 'bg-green-600 text-white' : 'text-gray-400'}`}
+              >
+                <List size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista/Griglia Piani */}
+        {filteredPlans.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🍽️</div>
+            <h3 className="text-2xl font-bold mb-2">Nessun piano trovato</h3>
+            <p className="text-gray-400 mb-6">
+              {savedPlans.length === 0 
+                ? 'Non hai ancora creato nessun piano alimentare.'
+                : 'Prova a modificare i filtri di ricerca.'
+              }
+            </p>
+            <Link 
+              href="/"
+              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
+            >
+              <span>🚀</span>
+              Crea il Primo Piano
+            </Link>
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+            : 'space-y-4'
+          }>
+            {filteredPlans.map((plan) => (
+              <div key={plan.id} className={`bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors ${
+                viewMode === 'list' ? 'flex items-center p-4' : 'p-6'
+              }`}>
+                {/* Grid View */}
+                {viewMode === 'grid' && (
+                  <>
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                          {plan.nome.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white capitalize">{plan.nome}</h3>
+                          <p className="text-sm text-gray-400">
+                            {new Date(plan.createdAt).toLocaleDateString('it-IT')}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-2xl`}>
+                        {getObjectiveIcon(plan.obiettivo)}
+                      </span>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className={`px-3 py-2 rounded-lg ${getObjectiveColor(plan.obiettivo)}`}>
+                        <div className="text-sm font-medium">{plan.obiettivo}</div>
+                      </div>
+                      <div className="bg-gray-700 px-3 py-2 rounded-lg">
+                        <div className="text-sm text-gray-300">{plan.durata} giorni</div>
+                      </div>
+                      <div className="bg-gray-700 px-3 py-2 rounded-lg">
+                        <div className="text-sm text-gray-300">{plan.pasti} pasti/giorno</div>
+                      </div>
+                      <div className="bg-orange-600/20 text-orange-400 px-3 py-2 rounded-lg">
+                        <div className="text-sm font-medium">{plan.calorie} kcal</div>
+                      </div>
+                    </div>
+
+                    {/* Allergie/Preferenze */}
+                    {(plan.allergie?.length > 0 || plan.preferenze?.length > 0) && (
+                      <div className="mb-4 space-y-2">
+                        {plan.allergie?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {plan.allergie.slice(0, 2).map((allergia, idx) => (
+                              <span key={idx} className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded">
+                                ⚠️ {allergia}
+                              </span>
+                            ))}
+                            {plan.allergie.length > 2 && (
+                              <span className="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded">
+                                +{plan.allergie.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {plan.preferenze?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {plan.preferenze.slice(0, 2).map((pref, idx) => (
+                              <span key={idx} className="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded">
+                                🥗 {pref}
+                              </span>
+                            ))}
+                            {plan.preferenze.length > 2 && (
+                              <span className="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded">
+                                +{plan.preferenze.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openPlanModal(plan)}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Eye size={16} />
+                        Visualizza
+                      </button>
+                      <button
+                        onClick={() => sharePlan(plan)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <Share2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => exportPlan(plan)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        onClick={() => deletePlan(plan.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* List View */}
+                {viewMode === 'list' && (
+                  <>
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                        {plan.nome.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-white capitalize">{plan.nome}</h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <span>{new Date(plan.createdAt).toLocaleDateString('it-IT')}</span>
+                          <span>{getObjectiveIcon(plan.obiettivo)} {plan.obiettivo}</span>
+                          <span>📅 {plan.durata}g</span>
+                          <span>🍽️ {plan.pasti}p</span>
+                          <span>🔥 {plan.calorie}kcal</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openPlanModal(plan)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                        >
+                          Visualizza
+                        </button>
+                        <button
+                          onClick={() => sharePlan(plan)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors"
+                        >
+                          <Share2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => deletePlan(plan.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             ))}
           </div>
-        </section>
-
-        {/* Dynamic Content Based on Active Tab */}
-        {activeTab === 'overview' && (
-          <section className="space-y-8">
-            {/* Quick Actions */}
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6" style={{color: '#8FBC8F'}}>
-                🚀 Azioni Rapide
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                <Link 
-                  href="/"
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-4 md:p-6 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-lg flex items-center justify-center text-xl md:text-2xl mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">
-                      ➕
-                    </div>
-                    <h3 className="text-sm md:text-lg font-bold mb-1 md:mb-2">Nuovo Piano</h3>
-                    <p className="text-gray-400 text-xs md:text-sm">Crea meal prep</p>
-                  </div>
-                </Link>
-
-                <button
-                  onClick={() => setShowWeightModal(true)}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-4 md:p-6 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-blue-600 rounded-lg flex items-center justify-center text-xl md:text-2xl mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">
-                      ⚖️
-                    </div>
-                    <h3 className="text-sm md:text-lg font-bold mb-1 md:mb-2">Registra Peso</h3>
-                    <p className="text-gray-400 text-xs md:text-sm">Traccia progressi</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('achievements')}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-4 md:p-6 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-purple-600 rounded-lg flex items-center justify-center text-xl md:text-2xl mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">
-                      🏆
-                    </div>
-                    <h3 className="text-sm md:text-lg font-bold mb-1 md:mb-2">Achievement</h3>
-                    <p className="text-gray-400 text-xs md:text-sm">{userStats.achievements.length}/6 sbloccati</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('calendar')}
-                  className="bg-gray-800 hover:bg-gray-700 rounded-xl p-4 md:p-6 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-yellow-600 rounded-lg flex items-center justify-center text-xl md:text-2xl mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">
-                      🗓️
-                    </div>
-                    <h3 className="text-sm md:text-lg font-bold mb-1 md:mb-2">Calendario</h3>
-                    <p className="text-gray-400 text-xs md:text-sm">Pianifica pasti</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Recent Plans */}
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6" style={{color: '#8FBC8F'}}>
-                📋 I Miei Piani {recentPlans.length > 0 && <span className="text-lg md:text-xl">({recentPlans.length})</span>}
-              </h2>
-              
-              {recentPlans.length > 0 ? (
-                <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {recentPlans.slice(0, 3).map((plan, index) => (
-                    <div key={index} className="bg-gray-800 rounded-xl p-4 md:p-6 shadow-lg">
-                      <div className="flex justify-between items-start mb-3 md:mb-4">
-                        <h3 className="text-lg md:text-xl font-bold truncate mr-2">
-                          {plan.nome || `Piano ${index + 1}`}
-                        </h3>
-                        <span className="bg-green-600 text-white px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold whitespace-nowrap">
-                          {plan.duration || plan.durata || 3}gg
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2 md:space-y-3 text-sm md:text-base text-gray-300 mb-4 md:mb-6">
-                        <div className="flex items-center gap-2">
-                          <span className="text-green-400">📅</span>
-                          <span>Creato: {plan.created_at || plan.createdAt || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-blue-400">🎯</span>
-                          <span className="truncate">{plan.goal || plan.obiettivo || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-orange-400">🍽️</span>
-                          <span>{plan.meals_per_day || plan.pasti || 'N/A'} pasti/giorno</span>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2 md:gap-3">
-                        <button
-                          onClick={() => viewPlan(plan)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-semibold transition-colors"
-                        >
-                          👁️
-                        </button>
-                        <button 
-                          onClick={() => downloadPDF(plan)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-semibold transition-colors"
-                        >
-                          📥
-                        </button>
-                        <Link
-                          href="/"
-                          className="bg-gray-600 hover:bg-gray-700 text-white px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs md:text-sm font-semibold transition-colors text-center"
-                        >
-                          🔄
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-gray-800 rounded-xl p-6 md:p-8 text-center">
-                  <div className="text-4xl md:text-6xl mb-4">📋</div>
-                  <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-4">
-                    {isLoading ? 'Caricamento in corso...' : 'Nessun piano trovato'}
-                  </h3>
-                  <p className="text-sm md:text-base text-gray-400 mb-4 md:mb-6">
-                    {isLoading ? 'Stiamo cercando i tuoi piani...' : 'Inizia creando il tuo primo piano alimentare!'}
-                  </p>
-                  <Link 
-                    href="/"
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg inline-block transition-colors font-semibold"
-                  >
-                    🚀 Crea Primo Piano
-                  </Link>
-                </div>
-              )}
-            </div>
-          </section>
         )}
 
-        {activeTab === 'progress' && <ProgressChart />}
-        {activeTab === 'calendar' && <MealCalendar />}
-        {activeTab === 'achievements' && <AchievementsSection />}
+        {/* CTA Bottom */}
+        <div className="mt-12 text-center">
+          <Link 
+            href="/"
+            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors"
+          >
+            <span>🚀</span>
+            Crea Nuovo Piano Fitness
+          </Link>
+        </div>
       </div>
 
-      {/* Modals */}
-      
-      {/* Plan View Modal */}
+      {/* Modal Piano Dettagliato */}
       {showPlanModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 md:p-6 border-b border-gray-700">
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-4" style={{color: '#8FBC8F'}}>
-                    📋 Piano per {selectedPlan.nome}
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-xs md:text-sm">
-                    <div className="bg-gray-700 p-2 md:p-3 rounded-lg">
-                      <span className="text-gray-400 block">Obiettivo</span>
-                      <span className="font-semibold text-white">{selectedPlan.goal || 'N/A'}</span>
-                    </div>
-                    <div className="bg-gray-700 p-2 md:p-3 rounded-lg">
-                      <span className="text-gray-400 block">Durata</span>
-                      <span className="font-semibold text-white">{selectedPlan.duration || 'N/A'} giorni</span>
-                    </div>
-                    <div className="bg-gray-700 p-2 md:p-3 rounded-lg">
-                      <span className="text-gray-400 block">Pasti</span>
-                      <span className="font-semibold text-white">{selectedPlan.meals_per_day || 'N/A'}/giorno</span>
-                    </div>
-                    <div className="bg-gray-700 p-2 md:p-3 rounded-lg">
-                      <span className="text-gray-400 block">Creato</span>
-                      <span className="font-semibold text-white">{selectedPlan.created_at || 'N/A'}</span>
-                    </div>
-                  </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header Modal */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">
+                    Piano di {selectedPlan.nome}
+                  </h2>
+                  <p className="text-gray-400">
+                    Creato il {new Date(selectedPlan.createdAt).toLocaleDateString('it-IT')}
+                  </p>
                 </div>
-                
                 <button
                   onClick={() => setShowPlanModal(false)}
-                  className="bg-gray-700 hover:bg-gray-600 p-2 md:p-3 rounded-lg transition-colors flex-shrink-0"
+                  className="text-gray-400 hover:text-white text-2xl"
                 >
-                  <span className="text-lg md:text-xl">✕</span>
+                  ×
                 </button>
               </div>
-            </div>
-            
-            <div className="p-4 md:p-6">
-              <div className="text-center py-8 md:py-12 text-gray-400">
-                <div className="text-4xl md:text-6xl mb-4">📋</div>
-                <p className="text-base md:text-lg">Piano dettagliato disponibile presto!</p>
-                <p className="text-sm md:text-base mt-2">Funzionalità avanzata in sviluppo.</p>
+
+              {/* Ricette con Foto */}
+              <div className="space-y-6">
+                {selectedPlan.days.map((day, dayIndex) => (
+                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-green-400 mb-4">{day.day}</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => (
+                        <div key={mealType} className="bg-gray-600 rounded-lg p-4">
+                          {/* Foto Ricetta */}
+                          {meal.imageUrl && (
+                            <img 
+                              src={meal.imageUrl}
+                              alt={meal.nome}
+                              className="w-full h-32 object-cover rounded-lg mb-3"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop`;
+                              }}
+                            />
+                          )}
+                          
+                          <h4 className="font-bold text-white mb-2">{meal.nome}</h4>
+                          <div className="flex items-center gap-3 text-sm text-gray-300 mb-3">
+                            <span className="flex items-center gap-1">
+                              <Flame size={14} className="text-orange-500" />
+                              {meal.calorie} kcal
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={14} className="text-blue-400" />
+                              {meal.tempo}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Users size={14} className="text-green-400" />
+                              {meal.porzioni}p
+                            </span>
+                          </div>
+                          
+                          <div className="text-xs text-gray-400 mb-2">
+                            P: {meal.proteine}g | C: {meal.carboidrati}g | G: {meal.grassi}g
+                          </div>
+                          
+                          <p className="text-sm text-gray-300">
+                            {meal.preparazione?.substring(0, 100)}...
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions Modal */}
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={() => exportPlan(selectedPlan)}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Download size={16} />
+                  Esporta Piano
+                </button>
+                <button
+                  onClick={() => sharePlan(selectedPlan)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Share2 size={16} />
+                  Condividi
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Weight Modal */}
-      {showWeightModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl max-w-md w-full">
-            <div className="p-4 md:p-6 border-b border-gray-700">
-              <h3 className="text-xl md:text-2xl font-bold" style={{color: '#8FBC8F'}}>
-                ⚖️ Registra Peso
-              </h3>
-            </div>
-            
-            <div className="p-4 md:p-6">
-              <div className="mb-4 md:mb-6">
-                <label className="block text-sm md:text-base font-medium mb-2 md:mb-3">
-                  Peso attuale (kg)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={newWeight}
-                  onChange={(e) => setNewWeight(e.target.value)}
-                  className="w-full px-4 md:px-6 py-3 md:py-4 text-base md:text-lg rounded-xl bg-gray-700 border border-gray-600 focus:border-green-400 focus:outline-none transition-colors"
-                  placeholder="Es: 75.5"
-                />
-              </div>
-              
-              <div className="flex gap-3 md:gap-4">
-                <button
-                  onClick={addWeightEntry}
-                  className="flex-1 py-3 md:py-4 rounded-xl font-semibold transition-all text-sm md:text-base"
-                  style={{backgroundColor: '#8FBC8F', color: 'black'}}
-                >
-                  ✅ Salva Peso
-                </button>
-                <button
-                  onClick={() => setShowWeightModal(false)}
-                  className="flex-1 py-3 md:py-4 bg-gray-600 hover:bg-gray-700 rounded-xl font-semibold transition-colors text-sm md:text-base"
-                >
-                  Annulla
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer className="bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex justify-center items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
-            <h3 className="text-xl font-bold">Meal Prep Planner Pro</h3>
-          </div>
-          <p className="text-gray-400 text-sm">
-            Dashboard avanzata con grafici, calendario e achievement system
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
