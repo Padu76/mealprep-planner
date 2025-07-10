@@ -107,7 +107,6 @@ export async function POST(request: NextRequest) {
               Exclusions: data.exclusions || '',
               Foods_At_Home: data.foods_at_home || '',
               Phone: data.phone || '',
-              Created_At: new Date().toISOString(),
               Status: 'In attesa',
               Source: 'Website Form'
             }
