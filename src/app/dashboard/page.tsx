@@ -27,8 +27,7 @@ interface Achievement {
   icon: string;
   points: number;
   unlocked: boolean;
-  progress?: number;
-  maxProgress?: number;
+  category: string;
 }
 
 interface UserStats {
@@ -53,6 +52,7 @@ export default function DashboardPage() {
   const [selectedPlan, setSelectedPlan] = useState<SavedPlan | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [showGamificationInfo, setShowGamificationInfo] = useState(false);
 
   // Carica piani salvati
   useEffect(() => {
@@ -104,7 +104,7 @@ export default function DashboardPage() {
     }, {});
     const preferredObjective = Object.entries(objCount).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'Nessuno';
     
-    // Calcola streak
+    // Calcola streak (piani generati in settimane consecutive)
     const sortedPlans = [...plans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
@@ -137,20 +137,19 @@ export default function DashboardPage() {
     });
     const varietyScore = Math.min(100, Math.round(allIngredients.size * 2));
     
-    // Sistema punti
-    const basePoints = plans.length * 10; // 10 punti per piano
-    const streakBonus = currentStreak * 5; // 5 punti per giorno streak
-    const varietyBonus = Math.round(varietyScore / 10); // Bonus varietà
-    const calorieBonus = Math.round(totalCalories / 1000); // 1 punto ogni 1000 cal
-    const totalPoints = basePoints + streakBonus + varietyBonus + calorieBonus;
+    // Sistema punti semplificato
+    const basePoints = plans.length * 20; // 20 punti per piano
+    const streakBonus = currentStreak * 10; // 10 punti per settimana streak
+    const varietyBonus = Math.round(varietyScore / 5); // Bonus varietà
+    const totalPoints = basePoints + streakBonus + varietyBonus;
     
     // Punti mensili (ultimi 30 giorni)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const recentPlans = plans.filter(plan => new Date(plan.createdAt) >= thirtyDaysAgo);
-    const monthlyPoints = recentPlans.length * 10;
+    const monthlyPoints = recentPlans.length * 20;
     
-    // Livello (ogni 100 punti = 1 livello)
-    const level = Math.floor(totalPoints / 100) + 1;
+    // Livello (ogni 200 punti = 1 livello)
+    const level = Math.floor(totalPoints / 200) + 1;
 
     setUserStats({
       totalPlans: plans.length,
@@ -167,12 +166,13 @@ export default function DashboardPage() {
     });
   };
 
-  // Sistema achievements avanzato
+  // Sistema achievements semplificato (6 categorie)
   const calculateAchievements = (plans: SavedPlan[]) => {
     const stats = userStats || {} as UserStats;
     const uniqueObjectives = new Set(plans.map(p => p.obiettivo)).size;
     const totalIngredients = new Set<string>();
-    const totalMeals = plans.reduce((sum, plan) => {
+    
+    plans.forEach(plan => {
       plan.days.forEach(day => {
         Object.values(day.meals).forEach((meal: any) => {
           if (meal?.ingredienti) {
@@ -180,48 +180,266 @@ export default function DashboardPage() {
           }
         });
       });
-      return sum + plan.days.length * parseInt(plan.pasti);
-    }, 0);
+    });
 
     const achievements: Achievement[] = [
-      // PIANI GENERATI
-      { id: 'first-plan', title: '🌟 Primo Passo', description: 'Genera il tuo primo piano', icon: '🎯', points: 10, unlocked: plans.length >= 1 },
-      { id: 'plan-5', title: '🔥 In Forma', description: 'Genera 5 piani', icon: '💪', points: 50, unlocked: plans.length >= 5 },
-      { id: 'plan-10', title: '🏆 Dedicato', description: 'Genera 10 piani', icon: '🏅', points: 100, unlocked: plans.length >= 10 },
-      { id: 'plan-25', title: '🚀 Expert', description: 'Genera 25 piani', icon: '👑', points: 250, unlocked: plans.length >= 25 },
-      { id: 'plan-50', title: '🌟 Master Chef', description: 'Genera 50 piani', icon: '🎖️', points: 500, unlocked: plans.length >= 50 },
+      // 1. PIANI GENERATI
+      { id: 'plan-1', title: '🌟 Primo Piano', description: 'Genera il tuo primo piano meal prep', icon: '🎯', points: 20, unlocked: plans.length >= 1, category: 'Piani' },
+      { id: 'plan-5', title: '🔥 Enthusiast', description: 'Genera 5 piani meal prep', icon: '💪', points: 100, unlocked: plans.length >= 5, category: 'Piani' },
+      { id: 'plan-15', title: '🏆 Expert', description: 'Genera 15 piani meal prep', icon: '👑', points: 300, unlocked: plans.length >= 15, category: 'Piani' },
       
-      // STREAK & CONSISTENZA
-      { id: 'streak-3', title: '🔄 Costante', description: '3 piani in 3 settimane', icon: '⚡', points: 30, unlocked: (stats.currentStreak || 0) >= 3 },
-      { id: 'streak-7', title: '📅 Disciplinato', description: '7 piani consecutivi', icon: '🎯', points: 70, unlocked: (stats.longestStreak || 0) >= 7 },
-      { id: 'streak-14', title: '🔥 Inarrestabile', description: '14 piani consecutivi', icon: '🌟', points: 140, unlocked: (stats.longestStreak || 0) >= 14 },
+      // 2. STREAK CONSECUTIVI
+      { id: 'streak-3', title: '📅 Costante', description: 'Mantieni uno streak di 3 settimane', icon: '⚡', points: 60, unlocked: (stats.currentStreak || 0) >= 3, category: 'Streak' },
+      { id: 'streak-8', title: '🔥 Dedicato', description: 'Mantieni uno streak di 8 settimane', icon: '🌟', points: 160, unlocked: (stats.longestStreak || 0) >= 8, category: 'Streak' },
       
-      // VARIETÀ E OBIETTIVI
-      { id: 'multi-goal', title: '🎭 Versatile', description: 'Prova 3 obiettivi diversi', icon: '🎨', points: 60, unlocked: uniqueObjectives >= 3 },
-      { id: 'variety-master', title: '🌈 Variety Master', description: '100+ ingredienti diversi', icon: '🍽️', points: 150, unlocked: totalIngredients.size >= 100 },
-      { id: 'ingredient-explorer', title: '🔍 Esploratore', description: '50+ ingredienti diversi', icon: '🧭', points: 80, unlocked: totalIngredients.size >= 50 },
+      // 3. VARIETÀ INGREDIENTI
+      { id: 'variety-25', title: '🌈 Esploratore', description: 'Usa 25+ ingredienti diversi', icon: '🧭', points: 50, unlocked: totalIngredients.size >= 25, category: 'Varietà' },
+      { id: 'variety-50', title: '🍽️ Gourmet', description: 'Usa 50+ ingredienti diversi', icon: '👨‍🍳', points: 100, unlocked: totalIngredients.size >= 50, category: 'Varietà' },
       
-      // CALORIE E MACRO
-      { id: 'calorie-10k', title: '⚡ Energico', description: '10.000+ calorie pianificate', icon: '🔋', points: 100, unlocked: (stats.totalCalories || 0) >= 10000 },
-      { id: 'calorie-50k', title: '🚀 Powerhouse', description: '50.000+ calorie pianificate', icon: '💥', points: 200, unlocked: (stats.totalCalories || 0) >= 50000 },
+      // 4. OBIETTIVI DIVERSI
+      { id: 'multi-goal', title: '🎭 Versatile', description: 'Prova tutti gli obiettivi fitness', icon: '🎨', points: 120, unlocked: uniqueObjectives >= 3, category: 'Obiettivi' },
       
-      // PASTI E GIORNI
-      { id: 'meals-100', title: '🍽️ Gourmand', description: '100+ pasti pianificati', icon: '🥘', points: 120, unlocked: totalMeals >= 100 },
-      { id: 'days-30', title: '📆 Planner Pro', description: '30+ giorni pianificati', icon: '🗓️', points: 90, unlocked: (stats.totalDays || 0) >= 30 },
-      { id: 'days-100', title: '📅 Time Master', description: '100+ giorni pianificati', icon: '⏰', points: 300, unlocked: (stats.totalDays || 0) >= 100 },
+      // 5. CALORIE PIANIFICATE
+      { id: 'cal-20k', title: '⚡ Energetico', description: 'Pianifica 20.000+ calorie totali', icon: '🔋', points: 80, unlocked: (stats.totalCalories || 0) >= 20000, category: 'Calorie' },
+      { id: 'cal-100k', title: '💥 Powerhouse', description: 'Pianifica 100.000+ calorie totali', icon: '🚀', points: 200, unlocked: (stats.totalCalories || 0) >= 100000, category: 'Calorie' },
       
-      // PUNTI E LIVELLI
-      { id: 'points-500', title: '💎 Skilled', description: '500+ punti totali', icon: '💯', points: 50, unlocked: (stats.totalPoints || 0) >= 500 },
-      { id: 'points-1000', title: '👑 Elite', description: '1000+ punti totali', icon: '🏆', points: 100, unlocked: (stats.totalPoints || 0) >= 1000 },
-      { id: 'level-5', title: '⭐ Rising Star', description: 'Raggiungi livello 5', icon: '🌟', points: 150, unlocked: (stats.level || 1) >= 5 },
-      { id: 'level-10', title: '🔥 Legendary', description: 'Raggiungi livello 10', icon: '🎖️', points: 300, unlocked: (stats.level || 1) >= 10 },
-      
-      // ACHIEVEMENTS MENSILI
-      { id: 'monthly-5', title: '📈 Attivo', description: '5 piani questo mese', icon: '📊', points: 50, unlocked: (stats.monthlyPoints || 0) >= 50 },
-      { id: 'monthly-10', title: '🚀 Super Attivo', description: '10 piani questo mese', icon: '🎯', points: 100, unlocked: (stats.monthlyPoints || 0) >= 100 }
+      // 6. LIVELLI
+      { id: 'level-3', title: '⭐ Rising', description: 'Raggiungi il livello 3', icon: '🌟', points: 100, unlocked: (stats.level || 1) >= 3, category: 'Livelli' },
+      { id: 'level-10', title: '👑 Legend', description: 'Raggiungi il livello 10', icon: '🏆', points: 500, unlocked: (stats.level || 1) >= 10, category: 'Livelli' }
     ];
 
     setAchievements(achievements);
+  };
+
+  // Genera PDF completo
+  const generatePDF = (plan: SavedPlan) => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Piano Meal Prep - ${plan.nome}</title>
+          <style>
+            @page { margin: 15mm; size: A4; }
+            body { 
+              font-family: 'Georgia', 'Times New Roman', serif; 
+              line-height: 1.5; color: #333; font-size: 12px;
+              margin: 0; padding: 0;
+            }
+            .header {
+              text-align: center; margin-bottom: 30px;
+              border-bottom: 3px solid #8FBC8F; padding-bottom: 15px;
+            }
+            .title { font-size: 24px; font-weight: bold; color: #2F4F4F; margin-bottom: 8px; }
+            .subtitle { font-size: 14px; color: #666; margin-bottom: 10px; }
+            .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+            .stat { text-align: center; }
+            .stat-value { font-size: 18px; font-weight: bold; color: #8FBC8F; }
+            .stat-label { font-size: 12px; color: #666; }
+            h2 {
+              color: #8FBC8F; font-size: 18px; margin: 25px 0 15px 0;
+              border-bottom: 2px solid #8FBC8F; padding-bottom: 8px;
+            }
+            h3 {
+              color: #2F4F4F; font-size: 16px; margin: 20px 0 10px 0;
+            }
+            .day-container { margin-bottom: 25px; page-break-inside: avoid; }
+            .meal-container { 
+              margin: 15px 0; padding: 12px; 
+              border: 1px solid #ddd; border-radius: 8px;
+            }
+            .meal-header { 
+              font-weight: bold; font-size: 14px; color: #8FBC8F; 
+              margin-bottom: 8px; display: flex; justify-content: space-between;
+            }
+            .ingredients { margin: 8px 0; }
+            .ingredients ul { margin: 5px 0; padding-left: 20px; }
+            .preparation { 
+              background: #f8f9fa; padding: 10px; border-radius: 5px; 
+              margin-top: 8px; font-style: italic;
+            }
+            .shopping-list { margin-top: 30px; }
+            .category { margin-bottom: 15px; }
+            .category h4 { color: #8FBC8F; margin-bottom: 8px; }
+            .category ul { margin: 0; padding-left: 20px; }
+            @media print { 
+              body { font-size: 11px; } 
+              .no-print { display: none; }
+              .day-container { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">🏋️‍♂️ Piano Meal Prep Personalizzato</div>
+            <div class="subtitle">Generato per ${plan.nome} • ${new Date(plan.createdAt).toLocaleDateString('it-IT')}</div>
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-value">${plan.durata}</div>
+                <div class="stat-label">Giorni</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">${plan.pasti}</div>
+                <div class="stat-label">Pasti/Giorno</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">${plan.calorie}</div>
+                <div class="stat-label">Kcal/Giorno</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">${plan.obiettivo}</div>
+                <div class="stat-label">Obiettivo</div>
+              </div>
+            </div>
+          </div>
+
+          <h2>📋 Piano Alimentare Dettagliato</h2>
+          ${plan.days.map((day: any, index: number) => `
+            <div class="day-container">
+              <h3>${day.day} - ${Math.round(Object.values(day.meals).reduce((sum: number, meal: any) => sum + (meal?.calorie || 0), 0))} kcal totali</h3>
+              ${Object.entries(day.meals).map(([mealType, meal]: [string, any]) => `
+                <div class="meal-container">
+                  <div class="meal-header">
+                    <span>${mealType.toUpperCase()}: ${meal.nome}</span>
+                    <span>${meal.calorie} kcal | ${meal.proteine}g proteine</span>
+                  </div>
+                  <div class="ingredients">
+                    <strong>🛒 Ingredienti:</strong>
+                    <ul>
+                      ${meal.ingredienti?.map((ing: string) => `<li>${ing}</li>`).join('') || '<li>Non specificati</li>'}
+                    </ul>
+                  </div>
+                  <div class="preparation">
+                    <strong>👨‍🍳 Preparazione:</strong> ${meal.preparazione || 'Metodo di preparazione da definire'}
+                  </div>
+                  <div style="margin-top: 8px; font-size: 11px; color: #666;">
+                    ⏱️ Tempo: ${meal.tempo || '15 min'} • 🍽️ Porzioni: ${meal.porzioni || 1} • ⭐ Rating: ${meal.rating || 4.5}/5
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+
+          <div class="shopping-list">
+            <h2>🛒 Lista della Spesa Completa</h2>
+            ${(() => {
+              const shoppingList = generateShoppingList(plan);
+              return Object.entries(shoppingList).map(([category, items]) => `
+                <div class="category">
+                  <h4>${category}</h4>
+                  <ul>
+                    ${items.map(item => `<li>${item}</li>`).join('')}
+                  </ul>
+                </div>
+              `).join('');
+            })()}
+          </div>
+
+          <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center;">
+            <h2 style="margin-top: 0;">💪 Note Importanti</h2>
+            <p><strong>Obiettivo:</strong> ${plan.obiettivo}</p>
+            ${plan.allergie.length > 0 ? `<p><strong>⚠️ Allergie:</strong> ${plan.allergie.join(', ')}</p>` : ''}
+            ${plan.preferenze.length > 0 ? `<p><strong>❤️ Preferenze:</strong> ${plan.preferenze.join(', ')}</p>` : ''}
+            <p style="font-size: 10px; color: #888; margin-top: 20px;">
+              Piano generato con Meal Prep Planner AI • Personalizzato per i tuoi obiettivi fitness
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    } else {
+      alert('Popup bloccato! Abilita i popup per scaricare il PDF');
+    }
+  };
+
+  // Genera lista spesa migliorata
+  const generateShoppingList = (plan: SavedPlan) => {
+    const ingredients: { [key: string]: string[] } = {
+      '🥚 Uova e Latticini': [],
+      '🍎 Frutta e Verdura': [],
+      '🥩 Carne e Pesce': [],
+      '🌾 Cereali e Legumi': [],
+      '🥜 Frutta Secca': [],
+      '🫒 Grassi e Condimenti': [],
+      '💊 Integratori': [],
+      '🛒 Altri': []
+    };
+    
+    plan.days.forEach((day: any) => {
+      Object.values(day.meals).forEach((meal: any) => {
+        if (meal?.ingredienti) {
+          meal.ingredienti.forEach((ingredient: string) => {
+            const category = categorizeIngredientAdvanced(ingredient);
+            if (!ingredients[category].includes(ingredient)) {
+              ingredients[category].push(ingredient);
+            }
+          });
+        }
+      });
+    });
+
+    // Rimuovi categorie vuote
+    Object.keys(ingredients).forEach(category => {
+      if (ingredients[category].length === 0) {
+        delete ingredients[category];
+      }
+    });
+
+    return ingredients;
+  };
+
+  // Categorizza ingredienti
+  const categorizeIngredientAdvanced = (ingredient: string): string => {
+    const lower = ingredient.toLowerCase();
+    
+    if (lower.includes('uova') || lower.includes('albumi') || lower.includes('ricotta') || 
+        lower.includes('yogurt') || lower.includes('mozzarella') || lower.includes('parmigiano') ||
+        lower.includes('cottage') || lower.includes('latte')) {
+      return '🥚 Uova e Latticini';
+    }
+    
+    if (lower.includes('spinaci') || lower.includes('broccoli') || lower.includes('zucchine') || 
+        lower.includes('pomodori') || lower.includes('banana') || lower.includes('mela') || 
+        lower.includes('frutti') || lower.includes('verdure')) {
+      return '🍎 Frutta e Verdura';
+    }
+    
+    if (lower.includes('pollo') || lower.includes('manzo') || lower.includes('tacchino') ||
+        lower.includes('salmone') || lower.includes('tonno') || lower.includes('merluzzo') || 
+        lower.includes('orata')) {
+      return '🥩 Carne e Pesce';
+    }
+    
+    if (lower.includes('avena') || lower.includes('riso') || lower.includes('quinoa') || 
+        lower.includes('pasta') || lower.includes('pane') || lower.includes('legumi') ||
+        lower.includes('ceci') || lower.includes('fagioli')) {
+      return '🌾 Cereali e Legumi';
+    }
+    
+    if (lower.includes('mandorle') || lower.includes('noci') || lower.includes('semi')) {
+      return '🥜 Frutta Secca';
+    }
+    
+    if (lower.includes('olio') || lower.includes('burro') || lower.includes('avocado') ||
+        lower.includes('limone') || lower.includes('spezie') || lower.includes('erbe')) {
+      return '🫒 Grassi e Condimenti';
+    }
+    
+    if (lower.includes('proteine') || lower.includes('whey') || lower.includes('creatina')) {
+      return '💊 Integratori';
+    }
+    
+    return '🛒 Altri';
   };
 
   // Applica filtri
@@ -253,104 +471,6 @@ export default function DashboardPage() {
 
     filterPlans();
   }, [selectedFilter, savedPlans]);
-
-  // Genera lista spesa migliorata con categorie specifiche
-  const generateShoppingList = (plan: SavedPlan) => {
-    const ingredients: { [key: string]: string[] } = {
-      '🥚 Uova e Latticini': [],
-      '🍎 Frutta e Verdura': [],
-      '🥩 Carne e Pesce': [],
-      '🌾 Cereali': [],
-      '🥜 Frutta Secca': [],
-      '🫒 Grassi e Condimenti': [],
-      '💊 Integratori': [],
-      '🥤 Bevande': [],
-      '🛒 Altri': []
-    };
-    
-    plan.days.forEach((day: any) => {
-      Object.values(day.meals).forEach((meal: any) => {
-        if (meal?.ingredienti) {
-          meal.ingredienti.forEach((ingredient: string) => {
-            const category = categorizeIngredientAdvanced(ingredient);
-            if (!ingredients[category].includes(ingredient)) {
-              ingredients[category].push(ingredient);
-            }
-          });
-        }
-      });
-    });
-
-    // Rimuovi categorie vuote
-    Object.keys(ingredients).forEach(category => {
-      if (ingredients[category].length === 0) {
-        delete ingredients[category];
-      }
-    });
-
-    return ingredients;
-  };
-
-  // Categorizza ingredienti migliorata
-  const categorizeIngredientAdvanced = (ingredient: string): string => {
-    const lower = ingredient.toLowerCase();
-    
-    // Uova e Latticini
-    if (lower.includes('uova') || lower.includes('albumi') || lower.includes('ricotta') || 
-        lower.includes('yogurt') || lower.includes('mozzarella') || lower.includes('parmigiano') ||
-        lower.includes('cottage') || lower.includes('latte') || lower.includes('burro')) {
-      return '🥚 Uova e Latticini';
-    }
-    
-    // Frutta e Verdura
-    if (lower.includes('spinaci') || lower.includes('broccoli') || lower.includes('zucchine') || 
-        lower.includes('pomodori') || lower.includes('carote') || lower.includes('insalata') ||
-        lower.includes('banana') || lower.includes('mela') || lower.includes('frutti') ||
-        lower.includes('verdure') || lower.includes('cetrioli') || lower.includes('peperoni')) {
-      return '🍎 Frutta e Verdura';
-    }
-    
-    // Carne e Pesce
-    if (lower.includes('pollo') || lower.includes('manzo') || lower.includes('tacchino') ||
-        lower.includes('salmone') || lower.includes('tonno') || lower.includes('merluzzo') || 
-        lower.includes('orata') || lower.includes('carne') || lower.includes('pesce')) {
-      return '🥩 Carne e Pesce';
-    }
-    
-    // Cereali
-    if (lower.includes('avena') || lower.includes('riso') || lower.includes('quinoa') || 
-        lower.includes('pasta') || lower.includes('pane') || lower.includes('farina') ||
-        lower.includes('cereali') || lower.includes('orzo')) {
-      return '🌾 Cereali';
-    }
-    
-    // Frutta Secca
-    if (lower.includes('mandorle') || lower.includes('noci') || lower.includes('semi') ||
-        lower.includes('pistacchi') || lower.includes('nocciole')) {
-      return '🥜 Frutta Secca';
-    }
-    
-    // Grassi e Condimenti
-    if (lower.includes('olio') || lower.includes('burro') || lower.includes('avocado') ||
-        lower.includes('limone') || lower.includes('aceto') || lower.includes('spezie') ||
-        lower.includes('erbe') || lower.includes('sale')) {
-      return '🫒 Grassi e Condimenti';
-    }
-    
-    // Integratori
-    if (lower.includes('proteine') || lower.includes('whey') || lower.includes('creatina') ||
-        lower.includes('vitamine') || lower.includes('omega')) {
-      return '💊 Integratori';
-    }
-    
-    // Bevande
-    if (lower.includes('acqua') || lower.includes('latte') || lower.includes('succo') ||
-        lower.includes('tè') || lower.includes('caffè')) {
-      return '🥤 Bevande';
-    }
-    
-    return '🛒 Altri';
-  };
 
   // Elimina piano
   const deletePlan = (planId: string) => {
@@ -410,7 +530,7 @@ export default function DashboardPage() {
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
                 <div className="text-2xl font-bold text-yellow-400">{userStats.currentStreak}</div>
-                <div className="text-sm text-gray-400">Streak Attuale</div>
+                <div className="text-sm text-gray-400">Streak Settimanale</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
                 <div className="text-2xl font-bold text-red-400">Lv.{userStats.level}</div>
@@ -429,79 +549,125 @@ export default function DashboardPage() {
         {/* Gamification Section */}
         {userStats && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-green-400">🎮 I Tuoi Achievement</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-green-400">🎮 Sistema Punti e Achievement</h2>
+              <button
+                onClick={() => setShowGamificationInfo(!showGamificationInfo)}
+                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors text-sm"
+              >
+                {showGamificationInfo ? '❌ Chiudi Info' : 'ℹ️ Come Funziona'}
+              </button>
+            </div>
+
+            {/* Info Gamification */}
+            {showGamificationInfo && (
+              <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-bold mb-4 text-blue-400">📚 Come Funziona il Sistema Punti</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <h4 className="font-semibold mb-2 text-yellow-400">🏆 Come Guadagni Punti:</h4>
+                    <ul className="space-y-1 text-gray-300">
+                      <li>• <strong>20 punti</strong> per ogni piano generato</li>
+                      <li>• <strong>10 punti</strong> per ogni settimana di streak</li>
+                      <li>• <strong>Bonus varietà</strong> per ingredienti diversi</li>
+                      <li>• <strong>Achievement</strong> sbloccati per obiettivi raggiunti</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2 text-green-400">🎯 Cosa Significano i Livelli:</h4>
+                    <ul className="space-y-1 text-gray-300">
+                      <li>• <strong>Livello 1-2:</strong> Principiante (0-400 punti)</li>
+                      <li>• <strong>Livello 3-5:</strong> Intermedio (400-1000 punti)</li>
+                      <li>• <strong>Livello 6-10:</strong> Esperto (1000+ punti)</li>
+                      <li>• <strong>Ogni 200 punti</strong> = 1 livello superiore</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Progress Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">📊 Progresso Mensile</h3>
+                <h3 className="font-semibold mb-3">📊 Progresso Livello</h3>
                 <div className="mb-2">
                   <div className="flex justify-between text-sm">
-                    <span>Punti questo mese</span>
-                    <span>{userStats.monthlyPoints}/150</span>
+                    <span>Livello {userStats.level}</span>
+                    <span>{userStats.totalPoints % 200}/200</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${Math.min(100, (userStats.monthlyPoints / 150) * 100)}%` }}
+                      style={{ width: `${((userStats.totalPoints % 200) / 200) * 100}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
               
               <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">🔥 Streak Fitness</h3>
+                <h3 className="font-semibold mb-3">🔥 Streak Settimanale</h3>
                 <div className="mb-2">
                   <div className="flex justify-between text-sm">
-                    <span>Streak attuale</span>
-                    <span>{userStats.currentStreak} giorni</span>
+                    <span>Settimane consecutive</span>
+                    <span>{userStats.currentStreak}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-orange-500 h-2 rounded-full" 
-                      style={{ width: `${Math.min(100, (userStats.currentStreak / 14) * 100)}%` }}
+                      style={{ width: `${Math.min(100, (userStats.currentStreak / 8) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
               
               <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">🌟 Varietà Score</h3>
+                <h3 className="font-semibold mb-3">🌟 Punti Mensili</h3>
                 <div className="mb-2">
                   <div className="flex justify-between text-sm">
-                    <span>Varietà ingredienti</span>
-                    <span>{userStats.varietyScore}/100</span>
+                    <span>Questo mese</span>
+                    <span>{userStats.monthlyPoints} pt</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-purple-500 h-2 rounded-full" 
-                      style={{ width: `${userStats.varietyScore}%` }}
+                      style={{ width: `${Math.min(100, (userStats.monthlyPoints / 200) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Achievements Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {achievements.map((achievement) => (
-                <div
-                  key={achievement.id}
-                  className={`p-3 rounded-lg text-center transition-all ${
-                    achievement.unlocked
-                      ? 'bg-green-800 border border-green-600 shadow-lg shadow-green-500/20'
-                      : 'bg-gray-800 border border-gray-600 opacity-60'
-                  }`}
-                >
-                  <div className={`text-2xl mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
-                    {achievement.icon}
+            {/* Achievements Grid - Organizzati per Categoria */}
+            <div className="space-y-4">
+              {['Piani', 'Streak', 'Varietà', 'Obiettivi', 'Calorie', 'Livelli'].map(category => {
+                const categoryAchievements = achievements.filter(a => a.category === category);
+                return (
+                  <div key={category}>
+                    <h4 className="text-lg font-semibold mb-3 text-yellow-400">{category}</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {categoryAchievements.map((achievement) => (
+                        <div
+                          key={achievement.id}
+                          className={`p-3 rounded-lg text-center transition-all ${
+                            achievement.unlocked
+                              ? 'bg-green-800 border border-green-600 shadow-lg shadow-green-500/20'
+                              : 'bg-gray-800 border border-gray-600 opacity-60'
+                          }`}
+                        >
+                          <div className={`text-2xl mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
+                            {achievement.icon}
+                          </div>
+                          <div className={`text-xs font-medium ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
+                            {achievement.title}
+                          </div>
+                          <div className="text-xs text-gray-500 mb-1">{achievement.description}</div>
+                          <div className="text-xs text-orange-400">{achievement.points}pt</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className={`text-xs font-medium ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
-                    {achievement.title}
-                  </div>
-                  <div className="text-xs text-gray-500">{achievement.points}pt</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -516,58 +682,72 @@ export default function DashboardPage() {
                   {selectedPlan.createdAt} • {selectedPlan.obiettivo} • {selectedPlan.durata} giorni • {selectedPlan.calorie} kcal/giorno
                 </p>
               </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => generatePDF(selectedPlan)}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  📄 Genera PDF
+                </button>
+              </div>
             </div>
 
-            {/* Ricette con Foto */}
+            {/* Ricettario Completo con Preparazione */}
             <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4 text-green-400">🍽️ Ricette Complete</h3>
+              <h3 className="text-xl font-bold mb-4 text-green-400">📖 Ricettario Completo</h3>
               <div className="space-y-6">
                 {selectedPlan.days.map((day: any, dayIndex: number) => (
-                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-4">
+                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-6">
                     <h4 className="text-lg font-bold mb-4 text-yellow-400">{day.day}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => (
                         <div key={mealType} className="bg-gray-600 rounded-lg overflow-hidden">
                           {/* Foto Ricetta */}
-                          <div className="h-32 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                            <span className="text-4xl">
+                          <div className="h-40 bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center relative">
+                            <span className="text-5xl">
                               {mealType === 'colazione' ? '🌅' : 
                                mealType === 'pranzo' ? '☀️' : 
                                mealType === 'cena' ? '🌙' : '🍎'}
                             </span>
+                            <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                              {mealType.toUpperCase()}
+                            </div>
                           </div>
                           
                           <div className="p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h5 className="font-semibold capitalize text-sm">{mealType}</h5>
-                            </div>
+                            <h5 className="font-bold text-lg mb-3">{meal.nome}</h5>
                             
-                            <h6 className="font-bold text-sm mb-2">{meal.nome}</h6>
-                            
-                            <div className="grid grid-cols-2 gap-1 text-xs mb-3">
+                            <div className="grid grid-cols-3 gap-2 text-xs mb-4">
                               <span className="bg-blue-600 px-2 py-1 rounded text-center">
                                 {meal.calorie} kcal
                               </span>
                               <span className="bg-green-600 px-2 py-1 rounded text-center">
                                 {meal.proteine}g P
                               </span>
+                              <span className="bg-purple-600 px-2 py-1 rounded text-center">
+                                {meal.tempo || '15 min'}
+                              </span>
                             </div>
                             
-                            <div className="mb-2">
-                              <p className="text-xs font-medium mb-1">Ingredienti:</p>
-                              <ul className="text-xs space-y-1 max-h-20 overflow-y-auto">
-                                {meal.ingredienti?.slice(0, 3).map((ing: string, idx: number) => (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium mb-2">🛒 Ingredienti:</p>
+                              <ul className="text-sm space-y-1">
+                                {meal.ingredienti?.map((ing: string, idx: number) => (
                                   <li key={idx} className="text-gray-300">• {ing}</li>
                                 ))}
-                                {meal.ingredienti?.length > 3 && (
-                                  <li className="text-gray-400">...e altri {meal.ingredienti.length - 3}</li>
-                                )}
                               </ul>
                             </div>
                             
+                            <div className="mb-4">
+                              <p className="text-sm font-medium mb-2">👨‍🍳 Preparazione:</p>
+                              <p className="text-sm text-gray-300 bg-gray-700 p-3 rounded">
+                                {meal.preparazione || 'Unire tutti gli ingredienti seguendo le proporzioni indicate. Cuocere secondo preferenza e servire caldo.'}
+                              </p>
+                            </div>
+                            
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-yellow-400">⭐ {meal.rating || 4.5}</span>
-                              <span className="text-gray-400">🕒 {meal.tempo}</span>
+                              <span className="text-yellow-400">⭐ {meal.rating || 4.5}/5</span>
+                              <span className="text-gray-400">🍽️ {meal.porzioni || 1} porzione</span>
                             </div>
                           </div>
                         </div>
@@ -585,7 +765,7 @@ export default function DashboardPage() {
               {(() => {
                 const shoppingList = generateShoppingList(selectedPlan);
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {Object.entries(shoppingList).map(([category, items]) => (
                       <div key={category} className="bg-gray-600 rounded-lg p-4">
                         <h4 className="font-semibold text-lg mb-3">{category}</h4>
@@ -715,22 +895,6 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-
-        {/* Funzioni Extra */}
-        <div className="mt-12 bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-xl font-bold mb-4 text-green-400">🛠️ Funzioni Extra</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button className="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg transition-colors">
-              📊 Esporta Report Completo
-            </button>
-            <button className="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg transition-colors">
-              🔄 Confronta Piani
-            </button>
-            <button className="bg-orange-600 hover:bg-orange-700 p-4 rounded-lg transition-colors">
-              ⭐ Le Tue Ricette Preferite
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
