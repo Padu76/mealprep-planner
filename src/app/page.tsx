@@ -163,6 +163,21 @@ export default function HomePage() {
     }, 0);
   };
 
+  // 🧮 CALCOLA BMR (Basal Metabolic Rate)
+  const calculateBMR = (formData: any) => {
+    const weight = parseInt(formData.peso) || 70;
+    const height = parseInt(formData.altezza) || 170;
+    const age = parseInt(formData.eta) || 30;
+    const gender = formData.sesso;
+    
+    // Formula Mifflin-St Jeor
+    if (gender === 'maschio') {
+      return (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else {
+      return (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+  };
+
   const getDisplayObjective = (obiettivo: string) => {
     const map: { [key: string]: string } = {
       'dimagrimento': 'Perdita peso',
@@ -542,24 +557,32 @@ export default function HomePage() {
     return { days };
   };
 
-  // 💾 SALVA IN AIRTABLE - FUNZIONE CORRETTA SENZA sessionStorage
+  // 💾 SALVA IN AIRTABLE - MAPPING CORRETTO CON CAMPI REALI
   const saveToAirtable = async (plan: any, formData: any) => {
     console.log('💾 Attempting to save to Airtable...');
     console.log('📝 Form data for save:', formData);
     
     try {
-      // 🔧 MAPPING CORRETTO PER CAMPI SELECT
+      // 🔧 MAPPING CORRETTO BASATO SU CAMPI AIRTABLE REALI
       const goalMapping: { [key: string]: string } = {
-        'dimagrimento': 'Dimagrimento', 
-        'aumento-massa': 'Aumento massa',
-        'mantenimento': 'Mantenimento',
-        'definizione': 'Definizione'
+        'dimagrimento': 'dimagrimento', // ESATTO come in Airtable
+        'aumento-massa': 'aumento massa', // ESATTO come in Airtable  
+        'mantenimento': 'mantenimento', // ESATTO come in Airtable
+        'definizione': 'Perdita peso' // Fallback su opzione esistente
+      };
+
+      // Diet_Type mapping - nuovo campo
+      const dietTypeMapping: { [key: string]: string } = {
+        'dimagrimento': 'low_carb', // Dimagrimento → low carb
+        'aumento-massa': 'bilanciata', // Massa → bilanciata
+        'mantenimento': 'bilanciata', // Mantenimento → bilanciata
+        'definizione': 'low_carb' // Definizione → low carb
       };
 
       const activityMapping: { [key: string]: string } = {
         'sedentario': 'sedentario',
-        'leggero': 'leggero',
-        'moderato': 'moderato', 
+        'leggero': 'leggero', 
+        'moderato': 'moderato',
         'intenso': 'intenso',
         'molto_intenso': 'molto intenso'
       };
@@ -571,26 +594,27 @@ export default function HomePage() {
         'donna': 'femmina'
       };
 
-      // 🔧 PREPARA DATI CON MAPPING CORRETTO - FIX sessionStorage
+      // 🔧 DATI MAPPATI CON CAMPI CORRETTI
       const mappedData = {
         nome: formData.nome || '',
-        email: formData.email || 'noemail@test.com', // FIX: rimosso sessionStorage
-        age: formData.eta || '',
-        weight: formData.peso || '',
-        height: formData.altezza || '',
-        gender: genderMapping[formData.sesso] || formData.sesso || '',
-        activity_level: activityMapping[formData.attivita] || formData.attivita || '',
-        goal: goalMapping[formData.obiettivo] || formData.obiettivo || '',
-        duration: formData.durata || '',
-        meals_per_day: formData.pasti || '',
+        email: formData.email || 'noemail@test.com',
+        age: parseInt(formData.eta) || 0,
+        weight: parseInt(formData.peso) || 0, 
+        height: parseInt(formData.altezza) || 0,
+        gender: genderMapping[formData.sesso] || '',
+        activity_level: activityMapping[formData.attivita] || '',
+        goal: goalMapping[formData.obiettivo] || 'mantenimento', // Usa Goal corretto
+        diet_type: dietTypeMapping[formData.obiettivo] || 'bilanciata', // Nuovo campo Diet_Type
+        duration: parseInt(formData.durata) || 0,
+        meals_per_day: parseInt(formData.pasti) || 3,
         exclusions: Array.isArray(formData.allergie) ? formData.allergie.join(', ') : formData.allergie || '',
         foods_at_home: Array.isArray(formData.preferenze) ? formData.preferenze.join(', ') : formData.preferenze || '',
         phone: formData.telefono || '',
-        // AGGIUNGI DATI DEL PIANO GENERATO
-        plan_details: JSON.stringify(plan), // Piano completo come JSON
-        total_calories: calculateTotalCalories(plan),
-        daily_calories: calculateDailyCalories(plan),
-        bmr: 1800 // Valore di esempio, potrai calcolarlo dinamicamente
+        // DATI PIANO
+        plan_details: JSON.stringify(plan),
+        total_calories: calculateTotalCalories(plan) || 0,
+        daily_calories: calculateDailyCalories(plan) || 0,
+        bmr: Math.round(calculateBMR(formData)) || 1800
       };
 
       console.log('📤 Mapped data for Airtable:', mappedData);
@@ -599,7 +623,7 @@ export default function HomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'saveMealPlan', // CAMBIATO DA saveMealRequest A saveMealPlan
+          action: 'saveMealPlan',
           data: mappedData
         })
       });
