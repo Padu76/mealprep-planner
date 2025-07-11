@@ -55,7 +55,7 @@ export default function MealForm({
     <section id="meal-form" className="max-w-4xl mx-auto px-4 py-20">
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold mb-4" style={{color: '#8FBC8F'}}>
-          🍽️ Crea la Tua Programmazione Pasti e Ricette
+          📦 Crea il Tuo Meal Prep
         </h2>
         <p className="text-gray-300 text-lg">
           Compila il form per ottenere il tuo piano alimentare FITNESS personalizzato con ricette ottimizzate
@@ -205,7 +205,7 @@ export default function MealForm({
 
           {/* OBIETTIVI FITNESS */}
           <div className="md:col-span-2">
-            <h3 className="text-xl font-bold mb-4 text-green-400">🎯 Obiettivi Fitness</h3>
+            <h3 className="text-xl font-bold mb-4 text-green-400">💪 Obiettivi Fitness</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
               {/* Obiettivo */}
@@ -372,13 +372,9 @@ export default function MealForm({
                 🧠 Generazione Piano FITNESS in corso...
               </span>
             ) : (
-              '🏋️‍♂️ Genera Piano Alimentare Fitness Personalizzato'
+              '🏋️‍♂️ Genera Meal Prep'
             )}
           </button>
-          
-          <p className="text-gray-400 text-sm mt-4">
-            ⚡ Generazione automatica con AI + Database ricette FITNESS-ottimizzate
-          </p>
         </div>
       </form>
     </section>
