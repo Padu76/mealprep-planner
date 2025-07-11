@@ -142,7 +142,7 @@ async function saveMealRequest(data: any) {
   try {
     console.log('💾 Saving meal request with data:', data);
     
-    // Dati minimi obbligatori per evitare 422 - MAPPING CORRETTO AIRTABLE
+    // Dati minimi obbligatori per evitare 422
     const cleanedData = {
       Nome: String(data.nome || data.name || 'Utente'),
       Email: String(data.email || 'noemail@test.com'),
@@ -150,13 +150,13 @@ async function saveMealRequest(data: any) {
       Source: 'Website Form'
     };
     
-    // Aggiungi solo campi se presenti - NOMI CORRETTI DA AIRTABLE
+    // Aggiungi solo campi se presenti
     if (data.age || data.eta) cleanedData.Age = Number(data.age || data.eta);
     if (data.weight || data.peso) cleanedData.Weight = Number(data.weight || data.peso);
     if (data.height || data.altezza) cleanedData.Height = Number(data.height || data.altezza);
     if (data.gender || data.sesso) cleanedData.Gender = String(data.gender || data.sesso);
     if (data.activity_level || data.attivita) cleanedData.Activity_Level = String(data.activity_level || data.attivita);
-    if (data.goal || data.obiettivo) cleanedData.Diet_Type = String(data.goal || data.obiettivo); // FIX: Goal → Diet_Type
+    if (data.goal || data.obiettivo) cleanedData.Goal = String(data.goal || data.obiettivo);
     if (data.duration || data.durata) cleanedData.Duration = Number(data.duration || data.durata);
     if (data.meals_per_day || data.pasti) cleanedData.Meals_Per_Day = Number(data.meals_per_day || data.pasti);
     if (data.exclusions) cleanedData.Exclusions = String(data.exclusions);
@@ -215,12 +215,12 @@ async function saveMealRequest(data: any) {
   }
 }
 
-// 💾 SALVA PIANO COMPLETO - SEMPLIFICATO
+// 💾 SALVA PIANO COMPLETO - CON MAPPING CORRETTO CAMPI AIRTABLE
 async function saveMealPlan(data: any) {
   try {
     console.log('📋 Saving meal plan with data:', data);
     
-    // Dati minimi per piano - MAPPING CORRETTO AIRTABLE
+    // SOLO CAMPI ESISTENTI IN AIRTABLE - MAPPING DIRETTO
     const cleanedData = {
       Nome: String(data.nome || data.name || 'Utente'),
       Email: String(data.email || 'noemail@test.com'),
@@ -228,26 +228,43 @@ async function saveMealPlan(data: any) {
       Source: 'Website Form'
     };
     
-    // Aggiungi dati del piano se presenti - NOMI CORRETTI DA AIRTABLE
-    if (data.plan_details) cleanedData.Meal_Plan = String(data.plan_details); // FIX: Plan_Details → Meal_Plan
-    if (data.total_calories || data.daily_calories) {
-      cleanedData.Calculated_Calories = Number(data.total_calories || data.daily_calories || 0); // FIX: Total_Calories → Calculated_Calories
-    }
-    if (data.bmr) cleanedData.BMR = Number(data.bmr);
+    // CAMPI NUMERICI - solo se presenti
+    if (data.age !== undefined && !isNaN(data.age)) cleanedData.Age = Number(data.age);
+    if (data.weight !== undefined && !isNaN(data.weight)) cleanedData.Weight = Number(data.weight);
+    if (data.height !== undefined && !isNaN(data.height)) cleanedData.Height = Number(data.height);
+    if (data.duration !== undefined && !isNaN(data.duration)) cleanedData.Duration = Number(data.duration);
+    if (data.meals_per_day !== undefined && !isNaN(data.meals_per_day)) cleanedData.Meals_Per_Day = Number(data.meals_per_day);
+    if (data.bmr !== undefined && !isNaN(data.bmr)) cleanedData.BMR = Number(data.bmr);
+    if (data.total_calories !== undefined && !isNaN(data.total_calories)) cleanedData.Calculated_Calories = Number(data.total_calories);
     
-    // Dati utente opzionali - NOMI CORRETTI
-    if (data.age || data.eta) cleanedData.Age = Number(data.age || data.eta);
-    if (data.weight || data.peso) cleanedData.Weight = Number(data.weight || data.peso);
-    if (data.height || data.altezza) cleanedData.Height = Number(data.height || data.altezza);
-    if (data.gender || data.sesso) cleanedData.Gender = String(data.gender || data.sesso);
-    if (data.activity_level || data.attivita) cleanedData.Activity_Level = String(data.activity_level || data.attivita);
-    if (data.goal || data.obiettivo) cleanedData.Diet_Type = String(data.goal || data.obiettivo); // FIX: Goal → Diet_Type
-    if (data.duration || data.durata) cleanedData.Duration = Number(data.duration || data.durata);
-    if (data.meals_per_day || data.pasti) cleanedData.Meals_Per_Day = Number(data.meals_per_day || data.pasti);
+    // CAMPI TESTUALI - solo se presenti
+    if (data.gender) cleanedData.Gender = String(data.gender);
+    if (data.activity_level) cleanedData.Activity_Level = String(data.activity_level);
+    if (data.phone) cleanedData.Phone = String(data.phone);
     if (data.exclusions) cleanedData.Exclusions = String(data.exclusions);
     if (data.foods_at_home) cleanedData.Foods_At_Home = String(data.foods_at_home);
+    
+    // CAMPI SELECT - solo valori esistenti in Airtable
+    if (data.goal) {
+      const validGoals = ['dimagrimento', 'mantenimento', 'aumento massa', 'Perdita peso'];
+      if (validGoals.includes(data.goal)) {
+        cleanedData.Goal = String(data.goal);
+      }
+    }
+    
+    if (data.diet_type) {
+      const validDietTypes = ['bilanciata', 'vegetariana', 'vegana', 'low_carb'];
+      if (validDietTypes.includes(data.diet_type)) {
+        cleanedData.Diet_Type = String(data.diet_type);
+      }
+    }
+    
+    // PIANO DETTAGLI - solo se presente
+    if (data.plan_details) {
+      cleanedData.Meal_Plan = String(data.plan_details);
+    }
 
-    console.log('🧹 Cleaned plan data for Airtable:', cleanedData);
+    console.log('🧹 Final cleaned data for Airtable:', cleanedData);
 
     const response = await fetch(AIRTABLE_BASE_URL, {
       method: 'POST',
@@ -350,15 +367,15 @@ async function getUserPlans(email: string) {
       height: record.fields?.Height || '',
       gender: record.fields?.Gender || '',
       activity_level: record.fields?.Activity_Level || '',
-      goal: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
+      goal: record.fields?.Goal || '',
+      diet_type: record.fields?.Diet_Type || '',
       duration: record.fields?.Duration || '',
       meals_per_day: record.fields?.Meals_Per_Day || '',
       exclusions: record.fields?.Exclusions || '',
       foods_at_home: record.fields?.Foods_At_Home || '',
       phone: record.fields?.Phone || '',
-      plan_details: record.fields?.Meal_Plan || '', // FIX: Plan_Details → Meal_Plan
-      total_calories: record.fields?.Calculated_Calories || 0, // FIX: Total_Calories → Calculated_Calories
-      daily_calories: record.fields?.Calculated_Calories || 0,
+      plan_details: record.fields?.Meal_Plan || '',
+      total_calories: record.fields?.Calculated_Calories || 0,
       bmr: record.fields?.BMR || 0,
       status: record.fields?.Status || 'In attesa'
     })) || [];
@@ -446,6 +463,7 @@ async function getMealRequests() {
           // CAMPI TESTUALI (se esistenti)
           ...(record.fields?.Gender && { Gender: record.fields.Gender }),
           ...(record.fields?.Activity_Level && { Activity_Level: record.fields.Activity_Level }),
+          ...(record.fields?.Goal && { Goal: record.fields.Goal }),
           ...(record.fields?.Diet_Type && { Diet_Type: record.fields.Diet_Type }),
           ...(record.fields?.Phone && { Phone: record.fields.Phone }),
           ...(record.fields?.Exclusions && { Exclusions: record.fields.Exclusions }),
@@ -545,7 +563,7 @@ async function getDashboardMetrics() {
         pendingRequests++;
       }
 
-      const goal = fields.Diet_Type || 'Non specificato'; // FIX: Goal → Diet_Type
+      const goal = fields.Goal || 'Non specificato';
       goalCounts[goal] = (goalCounts[goal] || 0) + 1;
 
       const activity = fields.Activity_Level || 'Non specificato';
@@ -647,7 +665,8 @@ async function getUserMealRequests(data: any) {
         Height: record.fields?.Height || '',
         Gender: record.fields?.Gender || '',
         Activity_Level: record.fields?.Activity_Level || '',
-        Diet_Type: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
+        Goal: record.fields?.Goal || '',
+        Diet_Type: record.fields?.Diet_Type || '',
         Duration: record.fields?.Duration || '',
         Meals_Per_Day: record.fields?.Meals_Per_Day || '',
         Exclusions: record.fields?.Exclusions || '',
@@ -812,6 +831,6 @@ export async function GET() {
       'updateStatus'
     ],
     timestamp: new Date().toISOString(),
-    version: '4.0.0-debug'
+    version: '5.0.0-campo-fix'
   });
 }
