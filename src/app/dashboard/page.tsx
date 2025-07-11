@@ -700,14 +700,6 @@ export default function DashboardPage() {
                   {selectedPlan.createdAt} • {selectedPlan.obiettivo} • {selectedPlan.durata} giorni • {selectedPlan.calorie} kcal/giorno
                 </p>
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => generatePDF(selectedPlan)}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  📄 Genera PDF
-                </button>
-              </div>
             </div>
 
             {/* Ricettario Completo con Preparazione */}
@@ -801,7 +793,7 @@ export default function DashboardPage() {
                 );
               })()}
               
-              <div className="mt-6 flex gap-4">
+              <div className="mt-6 flex flex-wrap gap-4">
                 <button
                   onClick={() => {
                     const shoppingList = generateShoppingList(selectedPlan);
@@ -827,6 +819,26 @@ export default function DashboardPage() {
                   className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
                 >
                   📱 Condividi WhatsApp
+                </button>
+                <button
+                  onClick={() => generatePDF(selectedPlan)}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  📄 Genera PDF Completo
+                </button>
+                <button
+                  onClick={() => {
+                    const planText = `Piano Meal Prep: ${selectedPlan.nome}\n` +
+                      `Obiettivo: ${selectedPlan.obiettivo}\n` +
+                      `Durata: ${selectedPlan.durata} giorni\n` +
+                      `Calorie/giorno: ${selectedPlan.calorie} kcal\n\n` +
+                      selectedPlan.generatedPlan;
+                    navigator.clipboard.writeText(planText);
+                    alert('Piano completo copiato negli appunti!');
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+                >
+                  📝 Copia Piano Completo
                 </button>
               </div>
             </div>
