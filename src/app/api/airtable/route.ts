@@ -384,12 +384,17 @@ async function getUserPlans(email: string) {
   }
 }
 
-// 📋 GET MEAL REQUESTS (per dashboard admin) - FIX 422
+// 📋 GET MEAL REQUESTS (per dashboard admin) - FIX 422 DEFINITIVO
 async function getMealRequests() {
   try {
     console.log('📋 Getting all meal requests for admin dashboard...');
     
-    const response = await fetch(`${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=100`, {
+    // URL SEMPLIFICATA per evitare errori di filtro
+    const url = `${AIRTABLE_BASE_URL}?maxRecords=100`;
+    console.log('🔗 Simple URL for getMealRequests:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
         'Content-Type': 'application/json'
@@ -414,33 +419,44 @@ async function getMealRequests() {
     }
 
     const result = JSON.parse(responseText);
+    console.log('✅ Raw Airtable records count:', result.records?.length || 0);
     
-    const formattedRecords = result.records?.map((record: any) => ({
-      id: record.id,
-      fields: {
-        Nome: record.fields?.Nome || '',
-        Email: record.fields?.Email || '',
-        Age: record.fields?.Age || '',
-        Weight: record.fields?.Weight || '',
-        Height: record.fields?.Height || '',
-        Gender: record.fields?.Gender || '',
-        Activity_Level: record.fields?.Activity_Level || '',
-        Diet_Type: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
-        Duration: record.fields?.Duration || '',
-        Meals_Per_Day: record.fields?.Meals_Per_Day || '',
-        Exclusions: record.fields?.Exclusions || '',
-        Foods_At_Home: record.fields?.Foods_At_Home || '',
-        Phone: record.fields?.Phone || '',
-        Status: record.fields?.Status || 'In attesa',
-        Source: record.fields?.Source || 'Manual',
-        Meal_Plan: record.fields?.Meal_Plan || '', // FIX: Plan_Details → Meal_Plan
-        Calculated_Calories: record.fields?.Calculated_Calories || 0, // FIX: Total_Calories → Calculated_Calories
-        BMR: record.fields?.BMR || 0
-      },
-      createdTime: record.createdTime || ''
-    })) || [];
+    // MAPPING SEMPLIFICATO - SOLO CAMPI ESISTENTI
+    const formattedRecords = result.records?.map((record: any) => {
+      console.log('🔍 Processing record fields:', Object.keys(record.fields || {}));
+      
+      return {
+        id: record.id,
+        fields: {
+          // CAMPI OBBLIGATORI
+          Nome: record.fields?.Nome || '',
+          Email: record.fields?.Email || '',
+          Status: record.fields?.Status || 'In attesa',
+          Source: record.fields?.Source || 'Manual',
+          
+          // CAMPI NUMERICI (se esistenti)
+          ...(record.fields?.Age && { Age: record.fields.Age }),
+          ...(record.fields?.Weight && { Weight: record.fields.Weight }),
+          ...(record.fields?.Height && { Height: record.fields.Height }),
+          ...(record.fields?.Duration && { Duration: record.fields.Duration }),
+          ...(record.fields?.Meals_Per_Day && { Meals_Per_Day: record.fields.Meals_Per_Day }),
+          ...(record.fields?.BMR && { BMR: record.fields.BMR }),
+          ...(record.fields?.Calculated_Calories && { Calculated_Calories: record.fields.Calculated_Calories }),
+          
+          // CAMPI TESTUALI (se esistenti)
+          ...(record.fields?.Gender && { Gender: record.fields.Gender }),
+          ...(record.fields?.Activity_Level && { Activity_Level: record.fields.Activity_Level }),
+          ...(record.fields?.Diet_Type && { Diet_Type: record.fields.Diet_Type }),
+          ...(record.fields?.Phone && { Phone: record.fields.Phone }),
+          ...(record.fields?.Exclusions && { Exclusions: record.fields.Exclusions }),
+          ...(record.fields?.Foods_At_Home && { Foods_At_Home: record.fields.Foods_At_Home }),
+          ...(record.fields?.Meal_Plan && { Meal_Plan: record.fields.Meal_Plan })
+        },
+        createdTime: record.createdTime || ''
+      };
+    }) || [];
 
-    console.log(`✅ Retrieved ${formattedRecords.length} meal requests for admin`);
+    console.log(`✅ Formatted ${formattedRecords.length} records for admin dashboard`);
 
     return NextResponse.json({
       success: true,
