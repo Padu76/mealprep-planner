@@ -53,6 +53,29 @@ export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+
+  // Genera URL foto cibo da Unsplash
+  const getFoodImage = (mealName: string, mealType: string) => {
+    const keywords = mealName.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(' ')
+      .slice(0, 2)
+      .join('%20');
+    
+    const fallbackKeywords: { [key: string]: string } = {
+      'colazione': 'breakfast%20healthy',
+      'pranzo': 'lunch%20healthy',
+      'cena': 'dinner%20healthy',
+      'spuntino1': 'snack%20healthy',
+      'spuntino2': 'protein%20snack',
+      'spuntino3': 'fruit%20snack'
+    };
+    
+    const searchTerm = keywords || fallbackKeywords[mealType] || 'healthy%20food';
+    return `https://images.unsplash.com/photo-${Math.floor(Math.random() * 9999999999999) + 1500000000000}?w=300&h=200&fit=crop&auto=format&q=80&fm=jpg&crop=faces&bg=f3f4f6&overlay=ffffff&overlay-opacity=0.1&txt=${searchTerm}`;
+  };
 
   // Carica piani salvati
   useEffect(() => {
@@ -209,6 +232,17 @@ export default function DashboardPage() {
     ];
 
     setAchievements(achievements);
+  };
+
+  // Modal ricetta completa
+  const openRecipeModal = (meal: any, dayName: string, mealType: string) => {
+    setSelectedMeal({ ...meal, dayName, mealType });
+    setShowRecipeModal(true);
+  };
+
+  const closeRecipeModal = () => {
+    setShowRecipeModal(false);
+    setSelectedMeal(null);
   };
 
   // Genera PDF completo - FUNZIONE CORRETTA
@@ -525,6 +559,149 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      {/* Modal Ricetta Completa */}
+      {showRecipeModal && selectedMeal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gray-800 p-6 border-b border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-green-400">{selectedMeal.nome}</h3>
+                  <p className="text-gray-400">{selectedMeal.dayName} - {selectedMeal.mealType.toUpperCase()}</p>
+                </div>
+                <button
+                  onClick={closeRecipeModal}
+                  className="bg-red-600 hover:bg-red-700 p-2 rounded-lg text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Foto ricetta */}
+              <div className="mb-6">
+                <img
+                  src={getFoodImage(selectedMeal.nome, selectedMeal.mealType)}
+                  alt={selectedMeal.nome}
+                  className="w-full h-64 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=250&fit=crop&auto=format&q=80`;
+                  }}
+                />
+              </div>
+
+              {/* Macros */}
+              <div className="grid grid-cols-4 gap-3 mb-6">
+                <div className="bg-blue-600/20 border border-blue-500 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-blue-400">{selectedMeal.calorie}</div>
+                  <div className="text-xs text-gray-400">Calorie</div>
+                </div>
+                <div className="bg-green-600/20 border border-green-500 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-green-400">{selectedMeal.proteine}g</div>
+                  <div className="text-xs text-gray-400">Proteine</div>
+                </div>
+                <div className="bg-purple-600/20 border border-purple-500 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-purple-400">{selectedMeal.carboidrati}g</div>
+                  <div className="text-xs text-gray-400">Carboidrati</div>
+                </div>
+                <div className="bg-yellow-600/20 border border-yellow-500 rounded-lg p-3 text-center">
+                  <div className="text-lg font-bold text-yellow-400">{selectedMeal.grassi}g</div>
+                  <div className="text-xs text-gray-400">Grassi</div>
+                </div>
+              </div>
+
+              {/* Informazioni base */}
+              <div className="grid grid-cols-3 gap-4 mb-6 text-center">
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-sm text-gray-400">Tempo</div>
+                  <div className="font-semibold">⏱️ {selectedMeal.tempo || '15 min'}</div>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-sm text-gray-400">Porzioni</div>
+                  <div className="font-semibold">🍽️ {selectedMeal.porzioni || 1}</div>
+                </div>
+                <div className="bg-gray-700 rounded-lg p-3">
+                  <div className="text-sm text-gray-400">Rating</div>
+                  <div className="font-semibold">⭐ {selectedMeal.rating || 4.5}/5</div>
+                </div>
+              </div>
+
+              {/* Ingredienti */}
+              <div className="mb-6">
+                <h4 className="text-lg font-bold mb-3 text-orange-400">🛒 Ingredienti:</h4>
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <ul className="space-y-2">
+                    {selectedMeal.ingredienti?.map((ingredient: string, idx: number) => (
+                      <li key={idx} className="flex items-center gap-3">
+                        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                        <span>{ingredient}</span>
+                      </li>
+                    )) || <li>Non specificati</li>}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Preparazione step-by-step */}
+              <div className="mb-6">
+                <h4 className="text-lg font-bold mb-3 text-blue-400">👨‍🍳 Preparazione Step-by-Step:</h4>
+                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                  <div className="prose prose-invert max-w-none">
+                    {selectedMeal.preparazione ? (
+                      <div className="space-y-3">
+                        {selectedMeal.preparazione.split(/[.\n]/).filter((step: string) => step.trim()).map((step: string, idx: number) => (
+                          <div key={idx} className="flex gap-3">
+                            <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <p className="text-gray-300 leading-relaxed">{step.trim()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex gap-3">
+                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                          <p className="text-gray-300">Prepara tutti gli ingredienti secondo le dosi indicate</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                          <p className="text-gray-300">Unisci gli ingredienti seguendo l'ordine consigliato</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                          <p className="text-gray-300">Cuoci secondo preferenza e servi caldo</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Fitness Score */}
+              {selectedMeal.fitnessScore && (
+                <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                  <h4 className="text-lg font-bold mb-2 text-green-400">💪 Fitness Score: {selectedMeal.fitnessScore}/100</h4>
+                  <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all" 
+                      style={{ width: `${selectedMeal.fitnessScore}%` }}
+                    ></div>
+                  </div>
+                  {selectedMeal.fitnessReasons && (
+                    <ul className="text-sm space-y-1">
+                      {selectedMeal.fitnessReasons.map((reason: string, idx: number) => (
+                        <li key={idx} className="text-gray-300">• {reason}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header con Stats Globali */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -541,32 +718,32 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Stats Header */}
+          {/* Stats Header - COMPATTI */}
           {userStats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-center">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-center">
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-green-400">{userStats.totalPlans}</div>
-                <div className="text-sm text-gray-400">Piani Totali</div>
+                <div className="text-xl font-bold text-green-400">{userStats.totalPlans}</div>
+                <div className="text-xs text-gray-400">Piani</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-blue-400">{Math.round(userStats.totalCalories / 1000)}k</div>
-                <div className="text-sm text-gray-400">Calorie Totali</div>
+                <div className="text-xl font-bold text-blue-400">{Math.round(userStats.totalCalories / 1000)}k</div>
+                <div className="text-xs text-gray-400">Calorie</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-purple-400">{userStats.totalDays}</div>
-                <div className="text-sm text-gray-400">Giorni Pianificati</div>
+                <div className="text-xl font-bold text-purple-400">{userStats.totalDays}</div>
+                <div className="text-xs text-gray-400">Giorni</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-yellow-400">{userStats.currentStreak}</div>
-                <div className="text-sm text-gray-400">Streak Settimanale</div>
+                <div className="text-xl font-bold text-yellow-400">{userStats.currentStreak}</div>
+                <div className="text-xs text-gray-400">Streak</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-red-400">Lv.{userStats.level}</div>
-                <div className="text-sm text-gray-400">Livello</div>
+                <div className="text-xl font-bold text-red-400">Lv.{userStats.level}</div>
+                <div className="text-xs text-gray-400">Livello</div>
               </div>
               <div className="bg-gray-700 rounded-lg p-3">
-                <div className="text-2xl font-bold text-orange-400">{userStats.totalPoints}</div>
-                <div className="text-sm text-gray-400">Punti Totali</div>
+                <div className="text-xl font-bold text-orange-400">{userStats.totalPoints}</div>
+                <div className="text-xs text-gray-400">Punti</div>
               </div>
             </div>
           )}
@@ -574,114 +751,33 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Gamification Section */}
+        {/* Gamification Section - COMPATTO SU 2 RIGHE */}
         {userStats && (
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-green-400">🎮 Sistema Punti e Achievement</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-green-400">🎮 Achievement</h2>
               <button
                 onClick={() => setShowGamificationInfo(!showGamificationInfo)}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors text-sm"
+                className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
               >
-                {showGamificationInfo ? '❌ Chiudi Info' : 'ℹ️ Come Funziona'}
+                {showGamificationInfo ? '❌' : 'ℹ️'}
               </button>
             </div>
 
-            {/* Info Gamification */}
-            {showGamificationInfo && (
-              <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-bold mb-4 text-blue-400">📚 Come Funziona il Sistema Punti</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                  <div>
-                    <h4 className="font-semibold mb-2 text-yellow-400">🏆 Come Guadagni Punti:</h4>
-                    <ul className="space-y-1 text-gray-300">
-                      <li>• <strong>20 punti</strong> per ogni piano generato</li>
-                      <li>• <strong>10 punti</strong> per ogni settimana di streak</li>
-                      <li>• <strong>Bonus varietà</strong> per ingredienti diversi</li>
-                      <li>• <strong>Achievement</strong> sbloccati per obiettivi raggiunti</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-green-400">🎯 Cosa Significano i Livelli:</h4>
-                    <ul className="space-y-1 text-gray-300">
-                      <li>• <strong>Livello 1-2:</strong> Principiante (0-400 punti)</li>
-                      <li>• <strong>Livello 3-5:</strong> Intermedio (400-1000 punti)</li>
-                      <li>• <strong>Livello 6-10:</strong> Esperto (1000+ punti)</li>
-                      <li>• <strong>Ogni 200 punti</strong> = 1 livello superiore</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Progress Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">📊 Progresso Livello</h3>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Livello {userStats.level}</span>
-                    <span>{userStats.totalPoints % 200}/200</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${((userStats.totalPoints % 200) / 200) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">🔥 Streak Settimanale</h3>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Settimane consecutive</span>
-                    <span>{userStats.currentStreak}</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-orange-500 h-2 rounded-full" 
-                      style={{ width: `${Math.min(100, (userStats.currentStreak / 8) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gray-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">🌟 Punti Mensili</h3>
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Questo mese</span>
-                    <span>{userStats.monthlyPoints} pt</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-purple-500 h-2 rounded-full" 
-                      style={{ width: `${Math.min(100, (userStats.monthlyPoints / 200) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Achievements Grid - COMPATTO SU 2 RIGHE */}
-            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            {/* Achievements Grid - COMPATTO */}
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-4">
               {achievements.slice(0, 16).map((achievement) => (
                 <div
                   key={achievement.id}
                   className={`p-2 rounded-lg text-center transition-all ${
                     achievement.unlocked
-                      ? 'bg-green-800 border border-green-600 shadow-lg shadow-green-500/20'
+                      ? 'bg-green-800 border border-green-600'
                       : 'bg-gray-800 border border-gray-600 opacity-60'
                   }`}
                   title={`${achievement.title}: ${achievement.description} (${achievement.points}pt)`}
                 >
-                  <div className={`text-xl mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
+                  <div className={`text-lg mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
                     {achievement.icon}
-                  </div>
-                  <div className={`text-xs font-medium ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
-                    {achievement.title.split(' ')[1] || achievement.title}
                   </div>
                   <div className="text-xs text-orange-400">{achievement.points}pt</div>
                 </div>
@@ -690,74 +786,80 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Piano Selezionato - Interfaccia Unica */}
+        {/* Piano Selezionato - LAYOUT COMPATTO CON FOTO */}
         {selectedPlan && (
           <div className="mb-8 bg-gray-800 rounded-xl p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-green-400">Piano: {selectedPlan.nome}</h2>
+                <h2 className="text-2xl font-bold text-green-400">📦 {selectedPlan.nome}</h2>
                 <p className="text-gray-400">
                   {selectedPlan.createdAt} • {selectedPlan.obiettivo} • {selectedPlan.durata} giorni • {selectedPlan.calorie} kcal/giorno
                 </p>
               </div>
             </div>
 
-            {/* Ricettario Completo con Preparazione */}
+            {/* Ricettario Compatto con Foto */}
             <div className="mb-8">
               <h3 className="text-xl font-bold mb-4 text-green-400">📖 Ricettario Completo</h3>
               <div className="space-y-6">
                 {selectedPlan.days.map((day: any, dayIndex: number) => (
-                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-6">
+                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-4">
                     <h4 className="text-lg font-bold mb-4 text-yellow-400">{day.day}</h4>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* GRID COMPATTA - 4 PASTI PER RIGA SU DESKTOP */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => (
-                        <div key={mealType} className="bg-gray-600 rounded-lg overflow-hidden">
-                          {/* Foto Ricetta */}
-                          <div className="h-40 bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center relative">
-                            <span className="text-5xl">
-                              {mealType === 'colazione' ? '🌅' : 
-                               mealType === 'pranzo' ? '☀️' : 
-                               mealType === 'cena' ? '🌙' : '🍎'}
-                            </span>
-                            <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                        <div 
+                          key={mealType} 
+                          className="bg-gray-600 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-500 transition-colors"
+                          onClick={() => openRecipeModal(meal, day.day, mealType)}
+                        >
+                          {/* Foto Ricetta - COMPATTA */}
+                          <div className="h-24 bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center relative">
+                            <img
+                              src={getFoodImage(meal.nome, mealType)}
+                              alt={meal.nome}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling!.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center" style={{display: 'none'}}>
+                              <span className="text-2xl">
+                                {mealType === 'colazione' ? '🌅' : 
+                                 mealType === 'pranzo' ? '☀️' : 
+                                 mealType === 'cena' ? '🌙' : '🍎'}
+                              </span>
+                            </div>
+                            <div className="absolute bottom-1 left-1 bg-black/70 px-1 py-0.5 rounded text-xs text-white">
                               {mealType.toUpperCase()}
+                            </div>
+                            <div className="absolute top-1 right-1 bg-green-600 px-1 py-0.5 rounded text-xs text-white">
+                              📖
                             </div>
                           </div>
                           
-                          <div className="p-4">
-                            <h5 className="font-bold text-lg mb-3">{meal.nome}</h5>
+                          {/* Info Compatte */}
+                          <div className="p-3">
+                            <h5 className="font-bold text-sm mb-2 truncate" title={meal.nome}>{meal.nome}</h5>
                             
-                            <div className="grid grid-cols-3 gap-2 text-xs mb-4">
-                              <span className="bg-blue-600 px-2 py-1 rounded text-center">
+                            <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+                              <span className="bg-blue-600 px-1 py-0.5 rounded text-center">
                                 {meal.calorie} kcal
                               </span>
-                              <span className="bg-green-600 px-2 py-1 rounded text-center">
+                              <span className="bg-green-600 px-1 py-0.5 rounded text-center">
                                 {meal.proteine}g P
                               </span>
-                              <span className="bg-purple-600 px-2 py-1 rounded text-center">
-                                {meal.tempo || '15 min'}
-                              </span>
-                            </div>
-                            
-                            <div className="mb-4">
-                              <p className="text-sm font-medium mb-2">🛒 Ingredienti:</p>
-                              <ul className="text-sm space-y-1">
-                                {meal.ingredienti?.map((ing: string, idx: number) => (
-                                  <li key={idx} className="text-gray-300">• {ing}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            
-                            <div className="mb-4">
-                              <p className="text-sm font-medium mb-2">👨‍🍳 Preparazione:</p>
-                              <p className="text-sm text-gray-300 bg-gray-700 p-3 rounded">
-                                {meal.preparazione || 'Unire tutti gli ingredienti seguendo le proporzioni indicate. Cuocere secondo preferenza e servire caldo.'}
-                              </p>
                             </div>
                             
                             <div className="flex justify-between items-center text-xs">
-                              <span className="text-yellow-400">⭐ {meal.rating || 4.5}/5</span>
-                              <span className="text-gray-400">🍽️ {meal.porzioni || 1} porzione</span>
+                              <span className="text-yellow-400">⭐ {meal.rating || 4.5}</span>
+                              <span className="text-gray-400">⏱️ {meal.tempo || '15min'}</span>
+                            </div>
+                            
+                            <div className="mt-2 text-xs text-center bg-gray-500 rounded py-1 text-white">
+                              Clicca per Ricetta
                             </div>
                           </div>
                         </div>
@@ -768,32 +870,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Lista Spesa Migliorata */}
+            {/* Lista Spesa + Azioni */}
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-6 text-green-400">🛒 Lista della Spesa Automatica</h3>
+              <h3 className="text-xl font-bold mb-4 text-green-400">🛒 Lista Spesa & Azioni</h3>
               
-              {(() => {
-                const shoppingList = generateShoppingList(selectedPlan);
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {Object.entries(shoppingList).map(([category, items]) => (
-                      <div key={category} className="bg-gray-600 rounded-lg p-4">
-                        <h4 className="font-semibold text-lg mb-3">{category}</h4>
-                        <ul className="space-y-2">
-                          {items.map((item, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" className="rounded" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              
-              <div className="mt-6 flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-3 mb-4">
                 <button
                   onClick={() => {
                     const shoppingList = generateShoppingList(selectedPlan);
@@ -801,9 +882,9 @@ export default function DashboardPage() {
                       .map(([category, items]) => `${category}:\n${items.map(item => `- ${item}`).join('\n')}`)
                       .join('\n\n');
                     navigator.clipboard.writeText(text);
-                    alert('Lista spesa copiata negli appunti!');
+                    alert('Lista spesa copiata!');
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm"
                 >
                   📋 Copia Lista
                 </button>
@@ -816,15 +897,15 @@ export default function DashboardPage() {
                     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`🛒 Lista Spesa - ${selectedPlan.nome}\n\n${text}`)}`;
                     window.open(whatsappUrl, '_blank');
                   }}
-                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                  className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm"
                 >
-                  📱 Condividi WhatsApp
+                  📱 WhatsApp
                 </button>
                 <button
                   onClick={() => generatePDF(selectedPlan)}
-                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm"
                 >
-                  📄 Genera PDF Completo
+                  📄 PDF
                 </button>
                 <button
                   onClick={() => {
@@ -834,30 +915,52 @@ export default function DashboardPage() {
                       `Calorie/giorno: ${selectedPlan.calorie} kcal\n\n` +
                       selectedPlan.generatedPlan;
                     navigator.clipboard.writeText(planText);
-                    alert('Piano completo copiato negli appunti!');
+                    alert('Piano copiato!');
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+                  className="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded text-sm"
                 >
-                  📝 Copia Piano Completo
+                  📝 Copia Piano
                 </button>
               </div>
+
+              {/* Lista Spesa Compatta */}
+              {(() => {
+                const shoppingList = generateShoppingList(selectedPlan);
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {Object.entries(shoppingList).slice(0, 4).map(([category, items]) => (
+                      <div key={category} className="bg-gray-600 rounded p-3">
+                        <h4 className="font-semibold text-sm mb-2">{category}</h4>
+                        <ul className="space-y-1 text-xs">
+                          {items.slice(0, 3).map((item, idx) => (
+                            <li key={idx} className="truncate" title={item}>• {item}</li>
+                          ))}
+                          {items.length > 3 && (
+                            <li className="text-gray-400">... +{items.length - 3} altri</li>
+                          )}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
 
         {/* Filtri */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-3">
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
             {[
-              { key: 'tutti', label: '📅 Tutti i Piani', count: savedPlans.length },
+              { key: 'tutti', label: '📅 Tutti', count: savedPlans.length },
               { key: 'oggi', label: '📆 Oggi', count: savedPlans.filter(p => p.createdAt === new Date().toISOString().split('T')[0]).length },
-              { key: 'settimana', label: '📆 Questa Settimana', count: savedPlans.filter(p => p.createdAt >= new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]).length },
-              { key: 'mese', label: '📆 Questo Mese', count: savedPlans.filter(p => p.createdAt >= new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]).length }
+              { key: 'settimana', label: '📆 Settimana', count: savedPlans.filter(p => p.createdAt >= new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0]).length },
+              { key: 'mese', label: '📆 Mese', count: savedPlans.filter(p => p.createdAt >= new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0]).length }
             ].map(filter => (
               <button
                 key={filter.key}
                 onClick={() => setSelectedFilter(filter.key as any)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-3 py-2 rounded text-sm transition-colors ${
                   selectedFilter === filter.key
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -869,30 +972,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Altri Piani */}
+        {/* Altri Piani - LAYOUT COMPATTO */}
         {filteredPlans.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-400 mb-4">Nessun piano trovato per il filtro selezionato</p>
+            <p className="text-xl text-gray-400 mb-4">Nessun piano trovato</p>
             <Link href="/" className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition-colors">
-              Crea il tuo primo Piano Fitness
+              Crea Piano Fitness
             </Link>
           </div>
         ) : (
           <div>
-            <h3 className="text-xl font-bold mb-4 text-green-400">📋 Altri Piani Salvati</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <h3 className="text-xl font-bold mb-4 text-green-400">📋 Altri Piani</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {filteredPlans.slice(1).map((plan) => (
                 <div 
                   key={plan.id} 
-                  className={`bg-gray-800 rounded-xl p-4 border transition-colors cursor-pointer ${
+                  className={`bg-gray-800 rounded-lg p-3 border transition-colors cursor-pointer ${
                     selectedPlan?.id === plan.id ? 'border-green-500' : 'border-gray-700 hover:border-green-500'
                   }`}
                   onClick={() => setSelectedPlan(plan)}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h4 className="font-bold text-green-400">{plan.nome}</h4>
-                      <p className="text-gray-400 text-sm">{plan.createdAt}</p>
+                      <h4 className="font-bold text-green-400 text-sm">{plan.nome}</h4>
+                      <p className="text-gray-400 text-xs">{plan.createdAt}</p>
                     </div>
                     <button
                       onClick={(e) => {
@@ -900,24 +1003,24 @@ export default function DashboardPage() {
                         deletePlan(plan.id);
                       }}
                       className="bg-red-600 hover:bg-red-700 p-1 rounded text-xs"
-                      title="Elimina Piano"
+                      title="Elimina"
                     >
                       🗑️
                     </button>
                   </div>
 
-                  <div className="space-y-1 text-sm">
+                  <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Obiettivo:</span>
-                      <span className="font-medium">{plan.obiettivo}</span>
+                      <span className="font-medium text-xs">{plan.obiettivo}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Durata:</span>
-                      <span>{plan.durata} giorni</span>
+                      <span className="text-xs">{plan.durata}gg</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Calorie/giorno:</span>
-                      <span className="text-green-400 font-medium">{plan.calorie} kcal</span>
+                      <span className="text-gray-400">Calorie:</span>
+                      <span className="text-green-400 font-medium text-xs">{plan.calorie} kcal</span>
                     </div>
                   </div>
                 </div>
