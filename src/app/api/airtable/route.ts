@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const { action, data, email } = body;
 
     console.log('🔍 Airtable API called with action:', action);
+    console.log('📝 Request data:', data);
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
       return NextResponse.json(
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Airtable API Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -90,9 +91,11 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// 🧪 TEST CONNECTION
+// 🧪 TEST CONNECTION - SEMPLIFICATO
 async function testConnection() {
   try {
+    console.log('🔗 Testing Airtable connection...');
+    
     const response = await fetch(`${AIRTABLE_BASE_URL}?maxRecords=1`, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -100,25 +103,29 @@ async function testConnection() {
       }
     });
     
+    const responseText = await response.text();
+    console.log('📡 Airtable test response status:', response.status);
+    console.log('📄 Airtable test response body:', responseText);
+    
     if (response.ok) {
-      const result = await response.json();
+      const result = JSON.parse(responseText);
       console.log('✅ Airtable connection successful');
       return NextResponse.json({
         success: true,
         message: 'Airtable connection working',
         status: 'connected',
         recordsFound: result.records?.length || 0,
-        tableName: 'Meal_Requests'
+        tableName: AIRTABLE_TABLE_NAME
       });
     } else {
-      const errorData = await response.json();
-      console.log('❌ Airtable connection failed:', errorData);
+      console.log('❌ Airtable connection failed:', responseText);
       return NextResponse.json({
         success: false,
         error: 'Airtable connection failed',
-        details: errorData,
-        tableName: 'Meal_Requests'
-      }, { status: 400 });
+        status: response.status,
+        details: responseText,
+        tableName: AIRTABLE_TABLE_NAME
+      }, { status: response.status });
     }
   } catch (connectionError) {
     console.log('❌ Airtable network error:', connectionError);
@@ -130,9 +137,34 @@ async function testConnection() {
   }
 }
 
-// 💾 SALVA RICHIESTA MEAL PLAN
+// 💾 SALVA RICHIESTA MEAL PLAN - SEMPLIFICATO PER DEBUG
 async function saveMealRequest(data: any) {
   try {
+    console.log('💾 Saving meal request with data:', data);
+    
+    // Dati minimi obbligatori per evitare 422 - MAPPING CORRETTO AIRTABLE
+    const cleanedData = {
+      Nome: String(data.nome || data.name || 'Utente'),
+      Email: String(data.email || 'noemail@test.com'),
+      Status: 'In attesa',
+      Source: 'Website Form'
+    };
+    
+    // Aggiungi solo campi se presenti - NOMI CORRETTI DA AIRTABLE
+    if (data.age || data.eta) cleanedData.Age = Number(data.age || data.eta);
+    if (data.weight || data.peso) cleanedData.Weight = Number(data.weight || data.peso);
+    if (data.height || data.altezza) cleanedData.Height = Number(data.height || data.altezza);
+    if (data.gender || data.sesso) cleanedData.Gender = String(data.gender || data.sesso);
+    if (data.activity_level || data.attivita) cleanedData.Activity_Level = String(data.activity_level || data.attivita);
+    if (data.goal || data.obiettivo) cleanedData.Diet_Type = String(data.goal || data.obiettivo); // FIX: Goal → Diet_Type
+    if (data.duration || data.durata) cleanedData.Duration = Number(data.duration || data.durata);
+    if (data.meals_per_day || data.pasti) cleanedData.Meals_Per_Day = Number(data.meals_per_day || data.pasti);
+    if (data.exclusions) cleanedData.Exclusions = String(data.exclusions);
+    if (data.foods_at_home) cleanedData.Foods_At_Home = String(data.foods_at_home);
+    if (data.phone || data.telefono) cleanedData.Phone = String(data.phone || data.telefono);
+
+    console.log('🧹 Cleaned data for Airtable:', cleanedData);
+
     const response = await fetch(AIRTABLE_BASE_URL, {
       method: 'POST',
       headers: {
@@ -140,40 +172,28 @@ async function saveMealRequest(data: any) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fields: {
-          Nome: data.nome || '',
-          Email: data.email || 'noemail@test.com',
-          Age: data.age || data.eta || '',
-          Weight: data.weight || data.peso || '',
-          Height: data.height || data.altezza || '',
-          Gender: data.gender || data.sesso || '',
-          Activity_Level: data.activity_level || data.attivita || '',
-          Goal: data.goal || data.obiettivo || '',
-          Duration: data.duration || data.durata || '',
-          Meals_Per_Day: data.meals_per_day || data.pasti || '',
-          Exclusions: data.exclusions || '',
-          Foods_At_Home: data.foods_at_home || '',
-          Phone: data.phone || data.telefono || '',
-          Status: 'In attesa',
-          Source: 'Website Form'
-        }
+        fields: cleanedData
       })
     });
 
+    const responseText = await response.text();
+    console.log('📡 Save response status:', response.status);
+    console.log('📄 Save response body:', responseText);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable API Error Response:', errorData);
+      console.error('❌ Airtable API Error Response:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to save to Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     console.log('✅ Meal request saved successfully:', result.id);
 
     return NextResponse.json({
@@ -183,7 +203,7 @@ async function saveMealRequest(data: any) {
     });
 
   } catch (error) {
-    console.error('Error saving meal request:', error);
+    console.error('💥 Error saving meal request:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -195,9 +215,40 @@ async function saveMealRequest(data: any) {
   }
 }
 
-// 💾 SALVA PIANO COMPLETO
+// 💾 SALVA PIANO COMPLETO - SEMPLIFICATO
 async function saveMealPlan(data: any) {
   try {
+    console.log('📋 Saving meal plan with data:', data);
+    
+    // Dati minimi per piano - MAPPING CORRETTO AIRTABLE
+    const cleanedData = {
+      Nome: String(data.nome || data.name || 'Utente'),
+      Email: String(data.email || 'noemail@test.com'),
+      Status: 'Piano generato',
+      Source: 'Website Form'
+    };
+    
+    // Aggiungi dati del piano se presenti - NOMI CORRETTI DA AIRTABLE
+    if (data.plan_details) cleanedData.Meal_Plan = String(data.plan_details); // FIX: Plan_Details → Meal_Plan
+    if (data.total_calories || data.daily_calories) {
+      cleanedData.Calculated_Calories = Number(data.total_calories || data.daily_calories || 0); // FIX: Total_Calories → Calculated_Calories
+    }
+    if (data.bmr) cleanedData.BMR = Number(data.bmr);
+    
+    // Dati utente opzionali - NOMI CORRETTI
+    if (data.age || data.eta) cleanedData.Age = Number(data.age || data.eta);
+    if (data.weight || data.peso) cleanedData.Weight = Number(data.weight || data.peso);
+    if (data.height || data.altezza) cleanedData.Height = Number(data.height || data.altezza);
+    if (data.gender || data.sesso) cleanedData.Gender = String(data.gender || data.sesso);
+    if (data.activity_level || data.attivita) cleanedData.Activity_Level = String(data.activity_level || data.attivita);
+    if (data.goal || data.obiettivo) cleanedData.Diet_Type = String(data.goal || data.obiettivo); // FIX: Goal → Diet_Type
+    if (data.duration || data.durata) cleanedData.Duration = Number(data.duration || data.durata);
+    if (data.meals_per_day || data.pasti) cleanedData.Meals_Per_Day = Number(data.meals_per_day || data.pasti);
+    if (data.exclusions) cleanedData.Exclusions = String(data.exclusions);
+    if (data.foods_at_home) cleanedData.Foods_At_Home = String(data.foods_at_home);
+
+    console.log('🧹 Cleaned plan data for Airtable:', cleanedData);
+
     const response = await fetch(AIRTABLE_BASE_URL, {
       method: 'POST',
       headers: {
@@ -205,44 +256,28 @@ async function saveMealPlan(data: any) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fields: {
-          Nome: data.nome || '',
-          Email: data.email || 'noemail@test.com',
-          Age: data.age || data.eta || '',
-          Weight: data.weight || data.peso || '',
-          Height: data.height || data.altezza || '',
-          Gender: data.gender || data.sesso || '',
-          Activity_Level: data.activity_level || data.attivita || '',
-          Goal: data.goal || data.obiettivo || '',
-          Duration: data.duration || data.durata || '',
-          Meals_Per_Day: data.meals_per_day || data.pasti || '',
-          Exclusions: data.exclusions || '',
-          Foods_At_Home: data.foods_at_home || '',
-          Phone: data.phone || data.telefono || '',
-          Plan_Details: data.plan_details || '',
-          Total_Calories: data.total_calories || 0,
-          Daily_Calories: data.daily_calories || 0,
-          Plan_Type: 'complete',
-          Status: 'Piano generato',
-          Source: 'Website Form'
-        }
+        fields: cleanedData
       })
     });
 
+    const responseText = await response.text();
+    console.log('📡 Plan save response status:', response.status);
+    console.log('📄 Plan save response body:', responseText);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable saveMealPlan Error:', errorData);
+      console.error('❌ Airtable saveMealPlan Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to save meal plan to Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     console.log('✅ Meal plan saved successfully:', result.id);
 
     return NextResponse.json({
@@ -252,7 +287,7 @@ async function saveMealPlan(data: any) {
     });
 
   } catch (error) {
-    console.error('Error saving meal plan:', error);
+    console.error('💥 Error saving meal plan:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -264,16 +299,19 @@ async function saveMealPlan(data: any) {
   }
 }
 
-// 📊 CARICA PIANI UTENTE
+// 📊 CARICA PIANI UTENTE - FIX 422
 async function getUserPlans(email: string) {
   try {
-    const filterFormula = email && email !== 'default@user.com' 
-      ? encodeURIComponent(`{Email} = "${email}"`)
-      : '';
+    console.log('👤 Getting user plans for email:', email);
     
-    const url = filterFormula 
-      ? `${AIRTABLE_BASE_URL}?filterByFormula=${filterFormula}&sort[0][field]=Created&sort[0][direction]=desc`
-      : `${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=20`;
+    let url = `${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=50`;
+    
+    if (email && email !== 'default@user.com' && email !== 'noemail@test.com') {
+      const filterFormula = encodeURIComponent(`{Email} = "${email}"`);
+      url = `${AIRTABLE_BASE_URL}?filterByFormula=${filterFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
+    }
+
+    console.log('🔗 Request URL:', url);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -283,42 +321,47 @@ async function getUserPlans(email: string) {
       }
     });
 
+    const responseText = await response.text();
+    console.log('📡 getUserPlans response status:', response.status);
+    console.log('📄 getUserPlans response body:', responseText.substring(0, 500) + '...');
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable getUserPlans Error:', errorData);
+      console.error('❌ Airtable getUserPlans Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to fetch user plans',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     
-    const plans = result.records.map((record: any) => ({
+    const plans = result.records?.map((record: any) => ({
       id: record.id,
       created_time: record.createdTime,
-      nome: record.fields.Nome,
-      email: record.fields.Email,
-      age: record.fields.Age,
-      weight: record.fields.Weight,
-      height: record.fields.Height,
-      gender: record.fields.Gender,
-      activity_level: record.fields.Activity_Level,
-      goal: record.fields.Goal,
-      duration: record.fields.Duration,
-      meals_per_day: record.fields.Meals_Per_Day,
-      exclusions: record.fields.Exclusions,
-      foods_at_home: record.fields.Foods_At_Home,
-      phone: record.fields.Phone,
-      plan_details: record.fields.Plan_Details,
-      total_calories: record.fields.Total_Calories,
-      daily_calories: record.fields.Daily_Calories,
-      plan_type: record.fields.Plan_Type
-    }));
+      nome: record.fields?.Nome || '',
+      email: record.fields?.Email || '',
+      age: record.fields?.Age || '',
+      weight: record.fields?.Weight || '',
+      height: record.fields?.Height || '',
+      gender: record.fields?.Gender || '',
+      activity_level: record.fields?.Activity_Level || '',
+      goal: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
+      duration: record.fields?.Duration || '',
+      meals_per_day: record.fields?.Meals_Per_Day || '',
+      exclusions: record.fields?.Exclusions || '',
+      foods_at_home: record.fields?.Foods_At_Home || '',
+      phone: record.fields?.Phone || '',
+      plan_details: record.fields?.Meal_Plan || '', // FIX: Plan_Details → Meal_Plan
+      total_calories: record.fields?.Calculated_Calories || 0, // FIX: Total_Calories → Calculated_Calories
+      daily_calories: record.fields?.Calculated_Calories || 0,
+      bmr: record.fields?.BMR || 0,
+      status: record.fields?.Status || 'In attesa'
+    })) || [];
 
     console.log(`✅ Fetched ${plans.length} plans for email: ${email}`);
 
@@ -329,7 +372,7 @@ async function getUserPlans(email: string) {
     });
 
   } catch (error) {
-    console.error('Error fetching user plans:', error);
+    console.error('💥 Error fetching user plans:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -341,54 +384,63 @@ async function getUserPlans(email: string) {
   }
 }
 
-// 📋 GET MEAL REQUESTS (per dashboard admin)
+// 📋 GET MEAL REQUESTS (per dashboard admin) - FIX 422
 async function getMealRequests() {
   try {
-    const response = await fetch(`${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc`, {
+    console.log('📋 Getting all meal requests for admin dashboard...');
+    
+    const response = await fetch(`${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=100`, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
 
+    const responseText = await response.text();
+    console.log('📡 getMealRequests response status:', response.status);
+    console.log('📄 getMealRequests response length:', responseText.length);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable getMealRequests Error:', errorData);
+      console.error('❌ Airtable getMealRequests Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to get from Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     
     const formattedRecords = result.records?.map((record: any) => ({
       id: record.id,
       fields: {
         Nome: record.fields?.Nome || '',
         Email: record.fields?.Email || '',
-        Age: record.fields?.Age || 0,
-        Weight: record.fields?.Weight || 0,
-        Height: record.fields?.Height || 0,
+        Age: record.fields?.Age || '',
+        Weight: record.fields?.Weight || '',
+        Height: record.fields?.Height || '',
         Gender: record.fields?.Gender || '',
         Activity_Level: record.fields?.Activity_Level || '',
-        Goal: record.fields?.Goal || '',
-        Duration: record.fields?.Duration || 0,
-        Meals_Per_Day: record.fields?.Meals_Per_Day || 3,
+        Diet_Type: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
+        Duration: record.fields?.Duration || '',
+        Meals_Per_Day: record.fields?.Meals_Per_Day || '',
         Exclusions: record.fields?.Exclusions || '',
         Foods_At_Home: record.fields?.Foods_At_Home || '',
         Phone: record.fields?.Phone || '',
         Status: record.fields?.Status || 'In attesa',
-        Source: record.fields?.Source || 'Manual'
+        Source: record.fields?.Source || 'Manual',
+        Meal_Plan: record.fields?.Meal_Plan || '', // FIX: Plan_Details → Meal_Plan
+        Calculated_Calories: record.fields?.Calculated_Calories || 0, // FIX: Total_Calories → Calculated_Calories
+        BMR: record.fields?.BMR || 0
       },
       createdTime: record.createdTime || ''
     })) || [];
 
-    console.log(`✅ Retrieved ${formattedRecords.length} meal requests`);
+    console.log(`✅ Retrieved ${formattedRecords.length} meal requests for admin`);
 
     return NextResponse.json({
       success: true,
@@ -398,7 +450,7 @@ async function getMealRequests() {
     });
 
   } catch (error) {
-    console.error('Error getting meal requests:', error);
+    console.error('💥 Error getting meal requests:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -410,9 +462,11 @@ async function getMealRequests() {
   }
 }
 
-// 📊 GET DASHBOARD METRICS
+// 📊 GET DASHBOARD METRICS - INVARIATO (funziona)
 async function getDashboardMetrics() {
   try {
+    console.log('📊 Getting dashboard metrics...');
+    
     const response = await fetch(AIRTABLE_BASE_URL, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -420,20 +474,23 @@ async function getDashboardMetrics() {
       }
     });
 
+    const responseText = await response.text();
+    console.log('📡 Metrics response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable getDashboardMetrics Error:', errorData);
+      console.error('❌ Airtable getDashboardMetrics Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to get metrics from Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     const records = result.records || [];
     
     // Calcola metriche
@@ -472,7 +529,7 @@ async function getDashboardMetrics() {
         pendingRequests++;
       }
 
-      const goal = fields.Goal || 'Non specificato';
+      const goal = fields.Diet_Type || 'Non specificato'; // FIX: Goal → Diet_Type
       goalCounts[goal] = (goalCounts[goal] || 0) + 1;
 
       const activity = fields.Activity_Level || 'Non specificato';
@@ -499,7 +556,7 @@ async function getDashboardMetrics() {
       lastUpdated: new Date().toISOString()
     };
 
-    console.log('✅ Dashboard metrics calculated:', metrics);
+    console.log('✅ Dashboard metrics calculated successfully');
 
     return NextResponse.json({
       success: true,
@@ -508,7 +565,7 @@ async function getDashboardMetrics() {
     });
 
   } catch (error) {
-    console.error('Error getting dashboard metrics:', error);
+    console.error('💥 Error getting dashboard metrics:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -520,10 +577,12 @@ async function getDashboardMetrics() {
   }
 }
 
-// 👤 GET USER MEAL REQUESTS
+// 👤 GET USER MEAL REQUESTS - SEMPLIFICATO
 async function getUserMealRequests(data: any) {
   try {
     const { email } = data;
+    console.log('👤 Getting user meal requests for:', email);
+    
     if (!email) {
       return NextResponse.json({
         success: false,
@@ -532,44 +591,49 @@ async function getUserMealRequests(data: any) {
     }
 
     const filterFormula = `{Email} = "${email}"`;
-    const response = await fetch(
-      `${AIRTABLE_BASE_URL}?filterByFormula=${encodeURIComponent(filterFormula)}&sort[0][field]=Created&sort[0][direction]=desc`,
-      {
-        headers: {
-          'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+    const encodedFormula = encodeURIComponent(filterFormula);
+    const url = `${AIRTABLE_BASE_URL}?filterByFormula=${encodedFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
+    
+    console.log('🔗 User requests URL:', url);
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json'
       }
-    );
+    });
+
+    const responseText = await response.text();
+    console.log('📡 User requests response status:', response.status);
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable getUserMealRequests Error:', errorData);
+      console.error('❌ Airtable getUserMealRequests Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to get user data from Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     
     const formattedRecords = result.records?.map((record: any) => ({
       id: record.id,
       fields: {
         Nome: record.fields?.Nome || '',
         Email: record.fields?.Email || '',
-        Age: record.fields?.Age || 0,
-        Weight: record.fields?.Weight || 0,
-        Height: record.fields?.Height || 0,
+        Age: record.fields?.Age || '',
+        Weight: record.fields?.Weight || '',
+        Height: record.fields?.Height || '',
         Gender: record.fields?.Gender || '',
         Activity_Level: record.fields?.Activity_Level || '',
-        Goal: record.fields?.Goal || '',
-        Duration: record.fields?.Duration || 0,
-        Meals_Per_Day: record.fields?.Meals_Per_Day || 3,
+        Diet_Type: record.fields?.Diet_Type || '', // FIX: Goal → Diet_Type
+        Duration: record.fields?.Duration || '',
+        Meals_Per_Day: record.fields?.Meals_Per_Day || '',
         Exclusions: record.fields?.Exclusions || '',
         Foods_At_Home: record.fields?.Foods_At_Home || '',
         Phone: record.fields?.Phone || '',
@@ -589,7 +653,7 @@ async function getUserMealRequests(data: any) {
     });
 
   } catch (error) {
-    console.error('Error getting user meal requests:', error);
+    console.error('💥 Error getting user meal requests:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -605,6 +669,8 @@ async function getUserMealRequests(data: any) {
 async function updateStatus(data: any) {
   try {
     const { recordId, newStatus } = data;
+    console.log('🔧 Updating status for record:', recordId, 'to:', newStatus);
+    
     if (!recordId || !newStatus) {
       return NextResponse.json({
         success: false,
@@ -625,20 +691,23 @@ async function updateStatus(data: any) {
       })
     });
 
+    const responseText = await response.text();
+    console.log('📡 Update status response:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable updateStatus Error:', errorData);
+      console.error('❌ Airtable updateStatus Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to update status',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     console.log('✅ Status updated successfully:', result.id);
 
     return NextResponse.json({
@@ -649,7 +718,7 @@ async function updateStatus(data: any) {
     });
 
   } catch (error) {
-    console.error('Error updating status:', error);
+    console.error('💥 Error updating status:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -664,6 +733,8 @@ async function updateStatus(data: any) {
 // 🗑️ ELIMINA PIANO
 async function deletePlan(recordId: string) {
   try {
+    console.log('🗑️ Deleting plan:', recordId);
+    
     const response = await fetch(`${AIRTABLE_BASE_URL}/${recordId}`, {
       method: 'DELETE',
       headers: {
@@ -671,20 +742,23 @@ async function deletePlan(recordId: string) {
       }
     });
 
+    const responseText = await response.text();
+    console.log('📡 Delete response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Airtable deletePlan Error:', errorData);
+      console.error('❌ Airtable deletePlan Error:', responseText);
       return NextResponse.json(
         { 
           success: false, 
           error: 'Failed to delete plan from Airtable',
-          details: errorData 
+          status: response.status,
+          details: responseText 
         },
         { status: response.status }
       );
     }
 
-    const result = await response.json();
+    const result = JSON.parse(responseText);
     console.log('✅ Plan deleted successfully:', recordId);
 
     return NextResponse.json({
@@ -694,7 +768,7 @@ async function deletePlan(recordId: string) {
     });
 
   } catch (error) {
-    console.error('Error deleting plan:', error);
+    console.error('💥 Error deleting plan:', error);
     return NextResponse.json(
       { 
         success: false, 
@@ -710,7 +784,7 @@ async function deletePlan(recordId: string) {
 export async function GET() {
   return NextResponse.json({
     status: 'Airtable API is running',
-    tableName: 'Meal_Requests',
+    tableName: AIRTABLE_TABLE_NAME,
     availableActions: [
       'testConnection',
       'saveMealRequest', 
@@ -722,6 +796,6 @@ export async function GET() {
       'updateStatus'
     ],
     timestamp: new Date().toISOString(),
-    version: '3.0.0'
+    version: '4.0.0-debug'
   });
 }
