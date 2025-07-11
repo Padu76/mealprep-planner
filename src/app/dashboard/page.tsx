@@ -54,97 +54,246 @@ export default function DashboardPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
 
-  // Genera URL foto cibo da Unsplash con fallback
+  // 🖼️ IMMAGINI CORRETTE E TESTATE
   const getFoodImage = (mealName: string, mealType: string) => {
-    const mealImages: { [key: string]: string } = {
-      'Power Breakfast Bowl': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop',
-      'Pancakes Proteici': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
-      'Chicken Power Bowl': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-      'Risotto Fitness': 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop',
-      'Lean Salmon Plate': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
-      'Tagliata Fitness': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-      'Salmone alle Erbe': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
-      'Pollo Grigliato': 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&h=300&fit=crop',
-      'Smoothie Verde': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
-      'Overnight Oats': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop'
+    console.log('🖼️ Getting image for:', mealName, mealType);
+    
+    // Database immagini food con URL testati e funzionanti
+    const foodImages: { [key: string]: string } = {
+      // COLAZIONI
+      'Power Breakfast Bowl': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&q=80',
+      'Pancakes Proteici': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&q=80',
+      'Overnight Oats': 'https://images.unsplash.com/photo-1571197119842-7d67d6d82b75?w=400&h=300&fit=crop&q=80',
+      'Smoothie Verde': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80',
+      'Porridge Proteico': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&q=80',
+      
+      // PRANZI
+      'Chicken Power Bowl': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&q=80',
+      'Risotto Fitness': 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&q=80',
+      'Pollo Grigliato': 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&h=300&fit=crop&q=80',
+      'Buddha Bowl': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&q=80',
+      'Quinoa Bowl': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&q=80',
+      
+      // CENE
+      'Lean Salmon Plate': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&q=80',
+      'Tagliata Fitness': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&q=80',
+      'Salmone alle Erbe': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&q=80',
+      'Orata al Forno': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&q=80',
+      'Tonno Grigliato': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&q=80',
+      
+      // SPUNTINI
+      'Energy Balls': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80',
+      'Smoothie Proteico': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80',
+      'Yogurt Bowl': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&q=80'
     };
 
-    // Prova prima con nome esatto
-    if (mealImages[mealName]) {
-      return mealImages[mealName];
+    // Cerca prima per nome esatto
+    if (foodImages[mealName]) {
+      console.log('✅ Found specific image for:', mealName);
+      return foodImages[mealName];
     }
+
+    // Cerca per parole chiave nel nome
+    const name = mealName.toLowerCase();
+    if (name.includes('bowl')) return foodImages['Buddha Bowl'];
+    if (name.includes('pancakes') || name.includes('pancake')) return foodImages['Pancakes Proteici'];
+    if (name.includes('salmone') || name.includes('salmon')) return foodImages['Salmone alle Erbe'];
+    if (name.includes('pollo') || name.includes('chicken')) return foodImages['Pollo Grigliato'];
+    if (name.includes('risotto')) return foodImages['Risotto Fitness'];
+    if (name.includes('smoothie')) return foodImages['Smoothie Proteico'];
+    if (name.includes('tagliata')) return foodImages['Tagliata Fitness'];
+    if (name.includes('oats') || name.includes('avena')) return foodImages['Overnight Oats'];
 
     // Fallback per tipo pasto
     const typeImages: { [key: string]: string } = {
-      'colazione': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop',
-      'pranzo': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
-      'cena': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
-      'spuntino1': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
-      'spuntino2': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
-      'spuntino3': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop'
+      'colazione': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&q=80',
+      'pranzo': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&q=80',
+      'cena': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&q=80',
+      'spuntino1': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80',
+      'spuntino2': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80',
+      'spuntino3': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&q=80'
     };
 
-    return typeImages[mealType] || 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop';
+    console.log('🔄 Using fallback image for type:', mealType);
+    return typeImages[mealType] || 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop&q=80';
   };
 
-  // Genera preparazione step-by-step intelligente
+  // 👨‍🍳 PREPARAZIONE SPECIFICA E DETTAGLIATA
   const generateStepByStep = (meal: any): string[] => {
     const { nome, ingredienti, preparazione } = meal;
+    console.log('👨‍🍳 Generating steps for:', nome);
     
-    // Se c'è già una preparazione dettagliata, usala
-    if (preparazione && preparazione.length > 50 && preparazione.includes('.')) {
-      return preparazione.split(/[.\n]/).filter((step: string) => step.trim().length > 10);
+    // Se c'è già una preparazione dettagliata con steps numerati, usala
+    if (preparazione && preparazione.length > 100 && (preparazione.includes('1.') || preparazione.includes('Step'))) {
+      const steps = preparazione.split(/[.\n]/).filter((step: string) => step.trim().length > 15);
+      if (steps.length >= 3) {
+        return steps;
+      }
     }
 
-    // Altrimenti genera step-by-step basato sul nome e ingredienti
-    const steps: string[] = [];
-    
-    if (nome.toLowerCase().includes('bowl')) {
-      steps.push('Prepara tutti gli ingredienti pesandoli secondo le dosi indicate');
-      steps.push('Cuoci la proteina principale (pollo, salmone) alla griglia o in padella');
-      steps.push('Prepara i cereali (quinoa, riso) seguendo le istruzioni sulla confezione');
-      steps.push('Taglia le verdure fresche a pezzetti medi');
-      steps.push('Componi il bowl sistemando ogni ingrediente in sezioni separate');
-      steps.push('Aggiungi condimenti e servi immediatamente');
-    } else if (nome.toLowerCase().includes('pancakes')) {
-      steps.push('Mescola ricotta, uova e farina di avena in una ciotola');
-      steps.push('Amalgama bene fino ad ottenere un impasto liscio');
-      steps.push('Scalda una padella antiaderente a fuoco medio');
-      steps.push('Versa porzioni di impasto formando dei pancakes');
-      steps.push('Cuoci 2-3 minuti per lato fino a doratura');
-      steps.push('Servi caldi con i mirtilli freschi sopra');
-    } else if (nome.toLowerCase().includes('risotto')) {
-      steps.push('Tosta il riso integrale in una padella con poco olio');
-      steps.push('Aggiungi brodo vegetale caldo poco alla volta');
-      steps.push('Nel frattempo cuoci il pollo a dadini in padella separata');
-      steps.push('Taglia le zucchine a rondelle e saltale velocemente');
-      steps.push('Mescola pollo e zucchine al risotto negli ultimi 5 minuti');
-      steps.push('Manteca con parmigiano e servi immediatamente');
-    } else if (nome.toLowerCase().includes('tagliata')) {
-      steps.push('Porta la carne a temperatura ambiente 20 minuti prima');
-      steps.push('Scalda una griglia o padella a fuoco alto');
-      steps.push('Cuoci la tagliata 2-3 minuti per lato per cottura al sangue');
-      steps.push('Lascia riposare la carne 3-4 minuti prima di affettare');
-      steps.push('Disponi la rucola nel piatto e aggiungi pomodorini');
-      steps.push('Affetta la carne, adagia sulla rucola e completa con grana');
-    } else if (nome.toLowerCase().includes('salmone')) {
-      steps.push('Preriscalda il forno a 180°C');
-      steps.push('Condisci il salmone con sale, pepe e erbe aromatiche');
-      steps.push('Cuoci in forno per 12-15 minuti (dipende dallo spessore)');
-      steps.push('Nel frattempo cuoci al vapore i broccoli per 8-10 minuti');
-      steps.push('Cuoci le patate dolci al forno o in padella');
-      steps.push('Componi il piatto e servi con un filo di olio EVO');
-    } else {
-      // Steps generici per altre ricette
-      steps.push('Prepara tutti gli ingredienti seguendo le dosi indicate nella ricetta');
-      steps.push('Pulisci e taglia le verdure secondo necessità');
-      steps.push('Cuoci la proteina principale con il metodo preferito (griglia, padella, forno)');
-      steps.push('Prepara eventuali carboidrati (riso, pasta, quinoa) secondo istruzioni');
-      steps.push('Assembla tutti i componenti nel piatto');
-      steps.push('Aggiungi condimenti finali e servi secondo preferenza');
+    // Database preparazioni specifiche per ricette comuni
+    const specificRecipes: { [key: string]: string[] } = {
+      'Power Breakfast Bowl': [
+        'Metti 60g di avena in una ciotola e aggiungi 150ml di latte caldo',
+        'Mescola 25g di proteine whey con un po\' di acqua fino a ottenere una crema',
+        'Aggiungi le proteine all\'avena e mescola bene',
+        'Lava 100g di frutti di bosco e asciugali delicatamente',
+        'Trita grossolanamente 15g di mandorle',
+        'Componi il bowl: avena sul fondo, frutti di bosco sopra, mandorle per completare'
+      ],
+      
+      'Pancakes Proteici': [
+        'In una ciotola, schiaccia 150g di ricotta con una forchetta fino a renderla cremosa',
+        'Aggiungi 2 uova intere e sbatti energicamente con una frusta',
+        'Incorpora 40g di farina di avena setacciata, mescola fino a eliminare i grumi',
+        'Lascia riposare l\'impasto 5 minuti per far idratare la farina',
+        'Scalda una padella antiaderente a fuoco medio-basso',
+        'Versa piccole porzioni di impasto formando pancakes di 8-10cm',
+        'Cuoci 2-3 minuti fino alle bollicine in superficie, poi gira',
+        'Cuoci altri 2 minuti, servi caldi con 80g di mirtilli freschi sopra'
+      ],
+      
+      'Chicken Power Bowl': [
+        'Taglia 120g di petto di pollo a strisce spesse 1cm',
+        'Marina il pollo con sale, pepe, paprica e un filo d\'olio per 15 minuti',
+        'Sciacqua 80g di quinoa sotto acqua fredda fino a che l\'acqua è limpida',
+        'Cuoci la quinoa in 160ml di brodo vegetale per 15 minuti',
+        'Scalda una griglia o padella antiaderente a fuoco alto',
+        'Griglia il pollo 3-4 minuti per lato fino a doratura completa',
+        'Taglia le verdure miste a julienne e conditele con limone',
+        'Taglia 1/2 avocado a fette sottili',
+        'Componi il bowl: quinoa alla base, pollo al centro, verdure e avocado ai lati'
+      ],
+      
+      'Risotto Fitness': [
+        'Porta a bollore 400ml di brodo vegetale e tienilo caldo a fuoco basso',
+        'Taglia 100g di petto di pollo a dadini di 1cm',
+        'Lava e taglia 80g di zucchine a rondelle di 5mm',
+        'In una padella larga, tosta 90g di riso integrale con un filo d\'olio per 2 minuti',
+        'Aggiungi il brodo caldo un mestolo alla volta, mescolando sempre',
+        'Dopo 10 minuti, aggiungi i dadini di pollo e continua a mescolare',
+        'Negli ultimi 5 minuti, aggiungi le zucchine',
+        'A cottura ultimata (25 minuti totali), manteca con 30g di parmigiano grattugiato',
+        'Lascia riposare 2 minuti coperto, poi servi immediatamente'
+      ],
+      
+      'Lean Salmon Plate': [
+        'Preriscalda il forno a 200°C',
+        'Condisci 130g di filetto di salmone con sale, pepe e erbe provenzali',
+        'Avvolgi il salmone in carta forno con un filo d\'olio e mezzo limone a fette',
+        'Inforna per 12-15 minuti (dipende dallo spessore del filetto)',
+        'Nel frattempo, taglia 100g di broccoli a cimette uniformi',
+        'Cuoci i broccoli al vapore per 8-10 minuti fino a tenerezza',
+        'Pela e taglia 80g di patate dolci a cubetti',
+        'Arrostisci le patate in forno con olio, sale e rosmarino per 20 minuti',
+        'Componi il piatto: salmone al centro, broccoli e patate ai lati'
+      ],
+      
+      'Tagliata Fitness': [
+        'Porta 120g di tagliata di manzo a temperatura ambiente 30 minuti prima',
+        'Prepara un mix di sale grosso, pepe nero e aglio in polvere',
+        'Massaggia la carne con le spezie e un filo d\'olio EVO',
+        'Scalda una griglia o padella a fuoco altissimo fino a che fuma',
+        'Griglia la tagliata 2 minuti per lato per cottura al sangue (3 per media)',
+        'Avvolgi la carne in alluminio e lasciala riposare 5 minuti',
+        'Lava 80g di rucola e asciugala in centrifuga',
+        'Taglia 60g di pomodorini a metà',
+        'Affetta la tagliata contro fibra a fette spesse 5mm',
+        'Componi: letto di rucola, tagliata sopra, pomodorini e 20g di grana a scaglie'
+      ],
+      
+      'Salmone alle Erbe': [
+        'Preriscalda il forno a 180°C',
+        'Prepara un mix di prezzemolo, basilico, timo e aglio tritati finemente',
+        'Condisci 130g di salmone con sale, pepe e il mix di erbe',
+        'Disponi il salmone su carta forno con fettine di limone sopra',
+        'Cuoci in forno per 15 minuti controllando con forchetta',
+        'Accompagna con verdure di stagione saltate in padella'
+      ]
+    };
+
+    // Cerca ricetta specifica nel database
+    if (specificRecipes[nome]) {
+      console.log('✅ Found specific recipe steps for:', nome);
+      return specificRecipes[nome];
     }
 
-    return steps;
+    // Steps basati su tipo di ricetta (per nomi simili)
+    const name = nome.toLowerCase();
+    
+    if (name.includes('bowl') || name.includes('buddha')) {
+      return [
+        'Prepara tutti gli ingredienti pesandoli secondo le dosi indicate',
+        'Cuoci la proteina principale (pollo, tofu, legumi) con il metodo preferito',
+        'Prepara i cereali (quinoa, riso, orzo) in acqua salata bollente',
+        'Taglia le verdure crude a julienne o a dadini',
+        'Se previste, sbollenta brevemente le verdure da cuocere',
+        'Prepara la salsa o condimento mescolando gli ingredienti',
+        'Componi il bowl sistemando ogni ingrediente in sezioni separate',
+        'Aggiungi il condimento e servi immediatamente'
+      ];
+    }
+    
+    if (name.includes('smoothie') || name.includes('frullato')) {
+      return [
+        'Pela e taglia a pezzi la frutta fresca',
+        'Se usi frutta congelata, lasciala scongelare 5 minuti',
+        'Versa prima i liquidi (latte, acqua) nel frullatore',
+        'Aggiungi la frutta e le proteine in polvere',
+        'Frulla a velocità crescente per 60-90 secondi',
+        'Controlla la consistenza e aggiungi liquidi se troppo denso',
+        'Versa in un bicchiere alto e consuma subito'
+      ];
+    }
+    
+    if (name.includes('oats') || name.includes('avena')) {
+      return [
+        'In un barattolo di vetro, versa l\'avena e il liquido',
+        'Aggiungi un pizzico di sale e dolcificante se gradito',
+        'Mescola bene per evitare grumi',
+        'Aggiungi semi, frutta secca o proteine in polvere',
+        'Copri e lascia in frigorifero tutta la notte',
+        'Al mattino, mescola e aggiungi frutta fresca',
+        'Consuma freddo o scalda 1 minuto in microonde'
+      ];
+    }
+
+    // Steps generici per pesce
+    if (name.includes('salmone') || name.includes('tonno') || name.includes('orata')) {
+      return [
+        'Porta il pesce a temperatura ambiente 15 minuti prima della cottura',
+        'Condisci con sale, pepe e aromi a scelta',
+        'Scalda una padella antiaderente con un filo d\'olio',
+        'Cuoci il pesce 3-4 minuti per lato (dipende dallo spessore)',
+        'Controlla la cottura: deve sfaldarsi facilmente con una forchetta',
+        'Accompagna con verdure di stagione e carboidrati complessi'
+      ];
+    }
+
+    // Steps generici per carne
+    if (name.includes('pollo') || name.includes('manzo') || name.includes('tacchino')) {
+      return [
+        'Porta la carne a temperatura ambiente 20 minuti prima',
+        'Batti leggermente se è spessa per uniformare lo spessore',
+        'Condisci con sale, pepe e spezie preferite',
+        'Scalda bene la griglia o padella a fuoco medio-alto',
+        'Cuoci senza muovere per i primi minuti per la doratura',
+        'Gira una sola volta e termina la cottura',
+        'Lascia riposare la carne 3-5 minuti prima di servire'
+      ];
+    }
+
+    // Steps generici di fallback
+    console.log('🔄 Using generic steps for:', nome);
+    return [
+      'Prepara tutti gli ingredienti seguendo le dosi indicate nella ricetta',
+      'Pulisci e taglia le verdure secondo necessità',
+      'Cuoci la proteina principale con il metodo più adatto',
+      'Prepara eventuali carboidrati (riso, pasta, quinoa) secondo istruzioni',
+      'Scalda una padella o preriscalda il forno se necessario',
+      'Assembla tutti i componenti nel piatto seguendo l\'ordine suggerito',
+      'Aggiungi condimenti finali e servi secondo preferenza'
+    ];
   };
 
   // Carica piani salvati
@@ -152,12 +301,14 @@ export default function DashboardPage() {
     const loadSavedPlans = () => {
       try {
         const plans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
+        console.log('📋 Loaded plans:', plans.length);
         setSavedPlans(plans);
         setFilteredPlans(plans);
         
         // Seleziona automaticamente l'ultimo piano
         if (plans.length > 0) {
           setSelectedPlan(plans[0]);
+          console.log('✅ Selected plan:', plans[0].nome);
         }
         
         // Calcola statistiche e achievements
@@ -166,13 +317,25 @@ export default function DashboardPage() {
         
         setLoading(false);
       } catch (error) {
-        console.error('Errore caricamento piani:', error);
+        console.error('❌ Error loading plans:', error);
         setLoading(false);
       }
     };
 
     loadSavedPlans();
   }, []);
+
+  // 🔧 FIX CLICK SU PIANI - FUNZIONE CORRETTA
+  const handlePlanClick = (plan: SavedPlan) => {
+    console.log('🖱️ Plan clicked:', plan.nome);
+    setSelectedPlan(plan);
+    
+    // Scroll smooth to top per vedere il piano selezionato
+    window.scrollTo({ 
+      top: 0, 
+      behavior: 'smooth' 
+    });
+  };
 
   // Calcola statistiche utente
   const calculateUserStats = (plans: SavedPlan[]) => {
@@ -545,6 +708,7 @@ export default function DashboardPage() {
 
   // Elimina piano
   const deletePlan = (planId: string) => {
+    console.log('🗑️ Deleting plan:', planId);
     const updatedPlans = savedPlans.filter(plan => plan.id !== planId);
     setSavedPlans(updatedPlans);
     localStorage.setItem('mealPrepSavedPlans', JSON.stringify(updatedPlans));
@@ -705,7 +869,8 @@ export default function DashboardPage() {
                                   alt={meal.nome}
                                   className="w-full h-48 lg:h-full object-cover"
                                   onError={(e) => {
-                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop';
+                                    console.log('❌ Image failed, using fallback for:', meal.nome);
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop&q=80';
                                   }}
                                 />
                                 <div className="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-white text-sm font-bold">
@@ -757,7 +922,7 @@ export default function DashboardPage() {
                                 </div>
                               </div>
                               
-                              {/* Colonna 3: Preparazione Step-by-Step */}
+                              {/* Colonna 3: Preparazione Step-by-Step SPECIFICA */}
                               <div className="p-4 bg-blue-900/20 border-l border-blue-700">
                                 <h6 className="font-bold mb-3 text-blue-400">👨‍🍳 Preparazione Step-by-Step:</h6>
                                 <div className="space-y-3">
@@ -880,7 +1045,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Altri Piani - LAYOUT COMPATTO */}
+        {/* Altri Piani - LAYOUT COMPATTO CON CLICK FUNZIONANTE */}
         {filteredPlans.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-xl text-gray-400 mb-4">Nessun piano trovato</p>
@@ -895,23 +1060,25 @@ export default function DashboardPage() {
               {filteredPlans.slice(1).map((plan) => (
                 <div 
                   key={plan.id} 
-                  className={`bg-gray-800 rounded-lg p-3 border transition-colors cursor-pointer ${
-                    selectedPlan?.id === plan.id ? 'border-green-500' : 'border-gray-700 hover:border-green-500'
+                  className={`bg-gray-800 rounded-lg p-3 border transition-all cursor-pointer hover:scale-105 ${
+                    selectedPlan?.id === plan.id ? 'border-green-500 ring-2 ring-green-500/50' : 'border-gray-700 hover:border-green-500'
                   }`}
-                  onClick={() => setSelectedPlan(plan)}
+                  onClick={() => handlePlanClick(plan)}
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="font-bold text-green-400 text-sm">{plan.nome}</h4>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-green-400 text-sm truncate" title={plan.nome}>{plan.nome}</h4>
                       <p className="text-gray-400 text-xs">{plan.createdAt}</p>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deletePlan(plan.id);
+                        if (confirm(`Sei sicuro di voler eliminare il piano "${plan.nome}"?`)) {
+                          deletePlan(plan.id);
+                        }
                       }}
-                      className="bg-red-600 hover:bg-red-700 p-1 rounded text-xs"
-                      title="Elimina"
+                      className="bg-red-600 hover:bg-red-700 p-1 rounded text-xs transition-colors ml-2"
+                      title="Elimina Piano"
                     >
                       🗑️
                     </button>
@@ -920,16 +1087,34 @@ export default function DashboardPage() {
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-gray-400">Obiettivo:</span>
-                      <span className="font-medium text-xs">{plan.obiettivo}</span>
+                      <span className="font-medium text-xs text-right">{plan.obiettivo}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Durata:</span>
-                      <span className="text-xs">{plan.durata}gg</span>
+                      <span className="text-xs">{plan.durata} giorni</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-400">Calorie:</span>
                       <span className="text-green-400 font-medium text-xs">{plan.calorie} kcal</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Pasti:</span>
+                      <span className="text-xs">{plan.pasti}/giorno</span>
+                    </div>
+                  </div>
+
+                  {/* Indicatore visivo per piano selezionato */}
+                  {selectedPlan?.id === plan.id && (
+                    <div className="mt-2 text-center">
+                      <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
+                        ✅ Piano Attivo
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Preview mini del piano */}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <span>👆 Clicca per visualizzare</span>
                   </div>
                 </div>
               ))}
