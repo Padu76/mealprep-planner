@@ -211,9 +211,12 @@ export default function DashboardPage() {
     setAchievements(achievements);
   };
 
-  // Genera PDF completo
+  // Genera PDF completo - FUNZIONE CORRETTA
   const generatePDF = (plan: SavedPlan) => {
-    const printContent = `
+    const shoppingList = generateShoppingList(plan);
+    
+    // Crea contenuto HTML per PDF
+    const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -222,49 +225,63 @@ export default function DashboardPage() {
           <style>
             @page { margin: 15mm; size: A4; }
             body { 
-              font-family: 'Georgia', 'Times New Roman', serif; 
-              line-height: 1.5; color: #333; font-size: 12px;
+              font-family: 'Arial', sans-serif; 
+              line-height: 1.4; color: #333; font-size: 12px;
               margin: 0; padding: 0;
             }
             .header {
-              text-align: center; margin-bottom: 30px;
-              border-bottom: 3px solid #8FBC8F; padding-bottom: 15px;
+              text-align: center; margin-bottom: 20px;
+              border-bottom: 3px solid #10B981; padding-bottom: 15px;
             }
-            .title { font-size: 24px; font-weight: bold; color: #2F4F4F; margin-bottom: 8px; }
-            .subtitle { font-size: 14px; color: #666; margin-bottom: 10px; }
-            .stats { display: flex; justify-content: space-around; margin: 20px 0; }
-            .stat { text-align: center; }
-            .stat-value { font-size: 18px; font-weight: bold; color: #8FBC8F; }
-            .stat-label { font-size: 12px; color: #666; }
+            .title { font-size: 22px; font-weight: bold; color: #1F2937; margin-bottom: 8px; }
+            .subtitle { font-size: 14px; color: #6B7280; margin-bottom: 10px; }
+            .stats { 
+              display: grid; grid-template-columns: repeat(4, 1fr); 
+              gap: 10px; margin: 20px 0; text-align: center;
+            }
+            .stat { 
+              background: #F3F4F6; padding: 10px; border-radius: 8px;
+            }
+            .stat-value { font-size: 16px; font-weight: bold; color: #10B981; }
+            .stat-label { font-size: 10px; color: #6B7280; }
             h2 {
-              color: #8FBC8F; font-size: 18px; margin: 25px 0 15px 0;
-              border-bottom: 2px solid #8FBC8F; padding-bottom: 8px;
+              color: #10B981; font-size: 16px; margin: 20px 0 10px 0;
+              border-bottom: 2px solid #10B981; padding-bottom: 5px;
             }
             h3 {
-              color: #2F4F4F; font-size: 16px; margin: 20px 0 10px 0;
+              color: #1F2937; font-size: 14px; margin: 15px 0 8px 0;
             }
-            .day-container { margin-bottom: 25px; page-break-inside: avoid; }
+            .day-container { 
+              margin-bottom: 20px; page-break-inside: avoid;
+              border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px;
+            }
             .meal-container { 
-              margin: 15px 0; padding: 12px; 
-              border: 1px solid #ddd; border-radius: 8px;
+              margin: 10px 0; padding: 8px; 
+              background: #F9FAFB; border-radius: 6px;
             }
             .meal-header { 
-              font-weight: bold; font-size: 14px; color: #8FBC8F; 
-              margin-bottom: 8px; display: flex; justify-content: space-between;
+              font-weight: bold; font-size: 13px; color: #10B981; 
+              margin-bottom: 5px; display: flex; justify-content: space-between;
             }
-            .ingredients { margin: 8px 0; }
-            .ingredients ul { margin: 5px 0; padding-left: 20px; }
+            .ingredients { margin: 5px 0; }
+            .ingredients ul { margin: 3px 0; padding-left: 15px; }
+            .ingredients li { margin: 2px 0; }
             .preparation { 
-              background: #f8f9fa; padding: 10px; border-radius: 5px; 
-              margin-top: 8px; font-style: italic;
+              background: #EFF6FF; padding: 6px; border-radius: 4px; 
+              margin-top: 5px; font-style: italic; font-size: 11px;
             }
-            .shopping-list { margin-top: 30px; }
-            .category { margin-bottom: 15px; }
-            .category h4 { color: #8FBC8F; margin-bottom: 8px; }
-            .category ul { margin: 0; padding-left: 20px; }
+            .shopping-list { margin-top: 25px; }
+            .category { 
+              margin-bottom: 12px; background: #F3F4F6; 
+              padding: 8px; border-radius: 6px;
+            }
+            .category h4 { 
+              color: #10B981; margin: 0 0 5px 0; font-size: 12px; 
+            }
+            .category ul { margin: 0; padding-left: 15px; }
+            .category li { margin: 2px 0; font-size: 11px; }
             @media print { 
-              body { font-size: 11px; } 
-              .no-print { display: none; }
+              body { font-size: 10px; } 
               .day-container { page-break-inside: avoid; }
             }
           </style>
@@ -294,14 +311,14 @@ export default function DashboardPage() {
           </div>
 
           <h2>📋 Piano Alimentare Dettagliato</h2>
-          ${plan.days.map((day: any, index: number) => `
+          ${plan.days.map((day: any) => `
             <div class="day-container">
               <h3>${day.day} - ${Math.round(Object.values(day.meals).reduce((sum: number, meal: any) => sum + (meal?.calorie || 0), 0))} kcal totali</h3>
               ${Object.entries(day.meals).map(([mealType, meal]: [string, any]) => `
                 <div class="meal-container">
                   <div class="meal-header">
-                    <span>${mealType.toUpperCase()}: ${meal.nome}</span>
-                    <span>${meal.calorie} kcal | ${meal.proteine}g proteine</span>
+                    <span><strong>${mealType.toUpperCase()}:</strong> ${meal.nome}</span>
+                    <span>${meal.calorie} kcal | ${meal.proteine}g prot</span>
                   </div>
                   <div class="ingredients">
                     <strong>🛒 Ingredienti:</strong>
@@ -310,10 +327,10 @@ export default function DashboardPage() {
                     </ul>
                   </div>
                   <div class="preparation">
-                    <strong>👨‍🍳 Preparazione:</strong> ${meal.preparazione || 'Metodo di preparazione da definire'}
+                    <strong>👨‍🍳 Preparazione:</strong> ${meal.preparazione || 'Unire tutti gli ingredienti seguendo le dosi indicate. Cuocere secondo preferenza e servire.'}
                   </div>
-                  <div style="margin-top: 8px; font-size: 11px; color: #666;">
-                    ⏱️ Tempo: ${meal.tempo || '15 min'} • 🍽️ Porzioni: ${meal.porzioni || 1} • ⭐ Rating: ${meal.rating || 4.5}/5
+                  <div style="margin-top: 5px; font-size: 10px; color: #6B7280;">
+                    ⏱️ ${meal.tempo || '15 min'} • 🍽️ ${meal.porzioni || 1} porzione • ⭐ ${meal.rating || 4.5}/5
                   </div>
                 </div>
               `).join('')}
@@ -322,25 +339,22 @@ export default function DashboardPage() {
 
           <div class="shopping-list">
             <h2>🛒 Lista della Spesa Completa</h2>
-            ${(() => {
-              const shoppingList = generateShoppingList(plan);
-              return Object.entries(shoppingList).map(([category, items]) => `
-                <div class="category">
-                  <h4>${category}</h4>
-                  <ul>
-                    ${items.map(item => `<li>${item}</li>`).join('')}
-                  </ul>
-                </div>
-              `).join('');
-            })()}
+            ${Object.entries(shoppingList).map(([category, items]) => `
+              <div class="category">
+                <h4>${category}</h4>
+                <ul>
+                  ${items.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+              </div>
+            `).join('')}
           </div>
 
-          <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px; text-align: center;">
-            <h2 style="margin-top: 0;">💪 Note Importanti</h2>
+          <div style="margin-top: 30px; padding: 15px; background: #F3F4F6; border-radius: 8px; text-align: center; page-break-inside: avoid;">
+            <h2 style="margin-top: 0;">💪 Informazioni Piano</h2>
             <p><strong>Obiettivo:</strong> ${plan.obiettivo}</p>
             ${plan.allergie.length > 0 ? `<p><strong>⚠️ Allergie:</strong> ${plan.allergie.join(', ')}</p>` : ''}
             ${plan.preferenze.length > 0 ? `<p><strong>❤️ Preferenze:</strong> ${plan.preferenze.join(', ')}</p>` : ''}
-            <p style="font-size: 10px; color: #888; margin-top: 20px;">
+            <p style="font-size: 9px; color: #9CA3AF; margin-top: 15px;">
               Piano generato con Meal Prep Planner AI • Personalizzato per i tuoi obiettivi fitness
             </p>
           </div>
@@ -348,17 +362,31 @@ export default function DashboardPage() {
       </html>
     `;
     
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    // Apri finestra di stampa
+    const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
     if (printWindow) {
-      printWindow.document.write(printContent);
+      printWindow.document.write(htmlContent);
       printWindow.document.close();
-      printWindow.onload = () => {
+      
+      // Attendi caricamento e stampa
+      printWindow.onload = function() {
         setTimeout(() => {
+          printWindow.focus();
           printWindow.print();
-        }, 500);
+        }, 250);
       };
     } else {
-      alert('Popup bloccato! Abilita i popup per scaricare il PDF');
+      // Fallback per popup bloccati
+      alert('⚠️ Popup bloccato! Abilita i popup per generare il PDF, oppure usa Ctrl+P per stampare questa pagina.');
+      
+      // Mostra contenuto in una nuova tab
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `piano-${plan.nome}-${plan.createdAt}.html`;
+      link.click();
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -637,37 +665,27 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Achievements Grid - Organizzati per Categoria */}
-            <div className="space-y-4">
-              {['Piani', 'Streak', 'Varietà', 'Obiettivi', 'Calorie', 'Livelli'].map(category => {
-                const categoryAchievements = achievements.filter(a => a.category === category);
-                return (
-                  <div key={category}>
-                    <h4 className="text-lg font-semibold mb-3 text-yellow-400">{category}</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {categoryAchievements.map((achievement) => (
-                        <div
-                          key={achievement.id}
-                          className={`p-3 rounded-lg text-center transition-all ${
-                            achievement.unlocked
-                              ? 'bg-green-800 border border-green-600 shadow-lg shadow-green-500/20'
-                              : 'bg-gray-800 border border-gray-600 opacity-60'
-                          }`}
-                        >
-                          <div className={`text-2xl mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
-                            {achievement.icon}
-                          </div>
-                          <div className={`text-xs font-medium ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
-                            {achievement.title}
-                          </div>
-                          <div className="text-xs text-gray-500 mb-1">{achievement.description}</div>
-                          <div className="text-xs text-orange-400">{achievement.points}pt</div>
-                        </div>
-                      ))}
-                    </div>
+            {/* Achievements Grid - COMPATTO SU 2 RIGHE */}
+            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {achievements.slice(0, 16).map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={`p-2 rounded-lg text-center transition-all ${
+                    achievement.unlocked
+                      ? 'bg-green-800 border border-green-600 shadow-lg shadow-green-500/20'
+                      : 'bg-gray-800 border border-gray-600 opacity-60'
+                  }`}
+                  title={`${achievement.title}: ${achievement.description} (${achievement.points}pt)`}
+                >
+                  <div className={`text-xl mb-1 ${achievement.unlocked ? '' : 'grayscale'}`}>
+                    {achievement.icon}
                   </div>
-                );
-              })}
+                  <div className={`text-xs font-medium ${achievement.unlocked ? 'text-green-400' : 'text-gray-400'}`}>
+                    {achievement.title.split(' ')[1] || achievement.title}
+                  </div>
+                  <div className="text-xs text-orange-400">{achievement.points}pt</div>
+                </div>
+              ))}
             </div>
           </div>
         )}
