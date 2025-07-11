@@ -542,7 +542,7 @@ export default function HomePage() {
     return { days };
   };
 
-  // 💾 SALVA IN AIRTABLE - FUNZIONE CORRETTA CON MAPPING
+  // 💾 SALVA IN AIRTABLE - FUNZIONE CORRETTA SENZA sessionStorage
   const saveToAirtable = async (plan: any, formData: any) => {
     console.log('💾 Attempting to save to Airtable...');
     console.log('📝 Form data for save:', formData);
@@ -571,10 +571,10 @@ export default function HomePage() {
         'donna': 'femmina'
       };
 
-      // 🔧 PREPARA DATI CON MAPPING CORRETTO
+      // 🔧 PREPARA DATI CON MAPPING CORRETTO - FIX sessionStorage
       const mappedData = {
         nome: formData.nome || '',
-        email: sessionStorage.getItem('userAuth') || formData.email || '',
+        email: formData.email || 'noemail@test.com', // FIX: rimosso sessionStorage
         age: formData.eta || '',
         weight: formData.peso || '',
         height: formData.altezza || '',
@@ -585,7 +585,12 @@ export default function HomePage() {
         meals_per_day: formData.pasti || '',
         exclusions: Array.isArray(formData.allergie) ? formData.allergie.join(', ') : formData.allergie || '',
         foods_at_home: Array.isArray(formData.preferenze) ? formData.preferenze.join(', ') : formData.preferenze || '',
-        phone: formData.telefono || ''
+        phone: formData.telefono || '',
+        // AGGIUNGI DATI DEL PIANO GENERATO
+        plan_details: JSON.stringify(plan), // Piano completo come JSON
+        total_calories: calculateTotalCalories(plan),
+        daily_calories: calculateDailyCalories(plan),
+        bmr: 1800 // Valore di esempio, potrai calcolarlo dinamicamente
       };
 
       console.log('📤 Mapped data for Airtable:', mappedData);
@@ -594,7 +599,7 @@ export default function HomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'saveMealRequest',
+          action: 'saveMealPlan', // CAMBIATO DA saveMealRequest A saveMealPlan
           data: mappedData
         })
       });
