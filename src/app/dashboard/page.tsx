@@ -53,28 +53,98 @@ export default function DashboardPage() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showGamificationInfo, setShowGamificationInfo] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState<any>(null);
-  const [showRecipeModal, setShowRecipeModal] = useState(false);
 
-  // Genera URL foto cibo da Unsplash
+  // Genera URL foto cibo da Unsplash con fallback
   const getFoodImage = (mealName: string, mealType: string) => {
-    const keywords = mealName.toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(' ')
-      .slice(0, 2)
-      .join('%20');
-    
-    const fallbackKeywords: { [key: string]: string } = {
-      'colazione': 'breakfast%20healthy',
-      'pranzo': 'lunch%20healthy',
-      'cena': 'dinner%20healthy',
-      'spuntino1': 'snack%20healthy',
-      'spuntino2': 'protein%20snack',
-      'spuntino3': 'fruit%20snack'
+    const mealImages: { [key: string]: string } = {
+      'Power Breakfast Bowl': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop',
+      'Pancakes Proteici': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop',
+      'Chicken Power Bowl': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+      'Risotto Fitness': 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop',
+      'Lean Salmon Plate': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
+      'Tagliata Fitness': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+      'Salmone alle Erbe': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
+      'Pollo Grigliato': 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=400&h=300&fit=crop',
+      'Smoothie Verde': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
+      'Overnight Oats': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop'
     };
+
+    // Prova prima con nome esatto
+    if (mealImages[mealName]) {
+      return mealImages[mealName];
+    }
+
+    // Fallback per tipo pasto
+    const typeImages: { [key: string]: string } = {
+      'colazione': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop',
+      'pranzo': 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop',
+      'cena': 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
+      'spuntino1': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
+      'spuntino2': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop',
+      'spuntino3': 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop'
+    };
+
+    return typeImages[mealType] || 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop';
+  };
+
+  // Genera preparazione step-by-step intelligente
+  const generateStepByStep = (meal: any): string[] => {
+    const { nome, ingredienti, preparazione } = meal;
     
-    const searchTerm = keywords || fallbackKeywords[mealType] || 'healthy%20food';
-    return `https://images.unsplash.com/photo-${Math.floor(Math.random() * 9999999999999) + 1500000000000}?w=300&h=200&fit=crop&auto=format&q=80&fm=jpg&crop=faces&bg=f3f4f6&overlay=ffffff&overlay-opacity=0.1&txt=${searchTerm}`;
+    // Se c'è già una preparazione dettagliata, usala
+    if (preparazione && preparazione.length > 50 && preparazione.includes('.')) {
+      return preparazione.split(/[.\n]/).filter((step: string) => step.trim().length > 10);
+    }
+
+    // Altrimenti genera step-by-step basato sul nome e ingredienti
+    const steps: string[] = [];
+    
+    if (nome.toLowerCase().includes('bowl')) {
+      steps.push('Prepara tutti gli ingredienti pesandoli secondo le dosi indicate');
+      steps.push('Cuoci la proteina principale (pollo, salmone) alla griglia o in padella');
+      steps.push('Prepara i cereali (quinoa, riso) seguendo le istruzioni sulla confezione');
+      steps.push('Taglia le verdure fresche a pezzetti medi');
+      steps.push('Componi il bowl sistemando ogni ingrediente in sezioni separate');
+      steps.push('Aggiungi condimenti e servi immediatamente');
+    } else if (nome.toLowerCase().includes('pancakes')) {
+      steps.push('Mescola ricotta, uova e farina di avena in una ciotola');
+      steps.push('Amalgama bene fino ad ottenere un impasto liscio');
+      steps.push('Scalda una padella antiaderente a fuoco medio');
+      steps.push('Versa porzioni di impasto formando dei pancakes');
+      steps.push('Cuoci 2-3 minuti per lato fino a doratura');
+      steps.push('Servi caldi con i mirtilli freschi sopra');
+    } else if (nome.toLowerCase().includes('risotto')) {
+      steps.push('Tosta il riso integrale in una padella con poco olio');
+      steps.push('Aggiungi brodo vegetale caldo poco alla volta');
+      steps.push('Nel frattempo cuoci il pollo a dadini in padella separata');
+      steps.push('Taglia le zucchine a rondelle e saltale velocemente');
+      steps.push('Mescola pollo e zucchine al risotto negli ultimi 5 minuti');
+      steps.push('Manteca con parmigiano e servi immediatamente');
+    } else if (nome.toLowerCase().includes('tagliata')) {
+      steps.push('Porta la carne a temperatura ambiente 20 minuti prima');
+      steps.push('Scalda una griglia o padella a fuoco alto');
+      steps.push('Cuoci la tagliata 2-3 minuti per lato per cottura al sangue');
+      steps.push('Lascia riposare la carne 3-4 minuti prima di affettare');
+      steps.push('Disponi la rucola nel piatto e aggiungi pomodorini');
+      steps.push('Affetta la carne, adagia sulla rucola e completa con grana');
+    } else if (nome.toLowerCase().includes('salmone')) {
+      steps.push('Preriscalda il forno a 180°C');
+      steps.push('Condisci il salmone con sale, pepe e erbe aromatiche');
+      steps.push('Cuoci in forno per 12-15 minuti (dipende dallo spessore)');
+      steps.push('Nel frattempo cuoci al vapore i broccoli per 8-10 minuti');
+      steps.push('Cuoci le patate dolci al forno o in padella');
+      steps.push('Componi il piatto e servi con un filo di olio EVO');
+    } else {
+      // Steps generici per altre ricette
+      steps.push('Prepara tutti gli ingredienti seguendo le dosi indicate nella ricetta');
+      steps.push('Pulisci e taglia le verdure secondo necessità');
+      steps.push('Cuoci la proteina principale con il metodo preferito (griglia, padella, forno)');
+      steps.push('Prepara eventuali carboidrati (riso, pasta, quinoa) secondo istruzioni');
+      steps.push('Assembla tutti i componenti nel piatto');
+      steps.push('Aggiungi condimenti finali e servi secondo preferenza');
+    }
+
+    return steps;
   };
 
   // Carica piani salvati
@@ -127,7 +197,7 @@ export default function DashboardPage() {
     }, {});
     const preferredObjective = Object.entries(objCount).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'Nessuno';
     
-    // Calcola streak (piani generati in settimane consecutive)
+    // Calcola streak
     const sortedPlans = [...plans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
@@ -147,31 +217,10 @@ export default function DashboardPage() {
     }
     longestStreak = Math.max(longestStreak, tempStreak);
     
-    // Calcola varietà (ingredienti unici)
-    const allIngredients = new Set<string>();
-    plans.forEach(plan => {
-      plan.days.forEach(day => {
-        Object.values(day.meals).forEach((meal: any) => {
-          if (meal?.ingredienti) {
-            meal.ingredienti.forEach((ing: string) => allIngredients.add(ing.toLowerCase()));
-          }
-        });
-      });
-    });
-    const varietyScore = Math.min(100, Math.round(allIngredients.size * 2));
-    
-    // Sistema punti semplificato
-    const basePoints = plans.length * 20; // 20 punti per piano
-    const streakBonus = currentStreak * 10; // 10 punti per settimana streak
-    const varietyBonus = Math.round(varietyScore / 5); // Bonus varietà
-    const totalPoints = basePoints + streakBonus + varietyBonus;
-    
-    // Punti mensili (ultimi 30 giorni)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentPlans = plans.filter(plan => new Date(plan.createdAt) >= thirtyDaysAgo);
-    const monthlyPoints = recentPlans.length * 20;
-    
-    // Livello (ogni 200 punti = 1 livello)
+    // Sistema punti
+    const basePoints = plans.length * 20;
+    const streakBonus = currentStreak * 10;
+    const totalPoints = basePoints + streakBonus;
     const level = Math.floor(totalPoints / 200) + 1;
 
     setUserStats({
@@ -180,53 +229,27 @@ export default function DashboardPage() {
       totalDays,
       currentStreak,
       longestStreak,
-      monthlyPoints,
+      monthlyPoints: plans.filter(p => new Date(p.createdAt) >= new Date(Date.now() - 30*24*60*60*1000)).length * 20,
       totalPoints,
       level,
       preferredObjective,
       avgCaloriesPerDay,
-      varietyScore
+      varietyScore: Math.min(100, plans.length * 5)
     });
   };
 
-  // Sistema achievements semplificato (6 categorie)
+  // Sistema achievements
   const calculateAchievements = (plans: SavedPlan[]) => {
     const stats = userStats || {} as UserStats;
     const uniqueObjectives = new Set(plans.map(p => p.obiettivo)).size;
-    const totalIngredients = new Set<string>();
-    
-    plans.forEach(plan => {
-      plan.days.forEach(day => {
-        Object.values(day.meals).forEach((meal: any) => {
-          if (meal?.ingredienti) {
-            meal.ingredienti.forEach((ing: string) => totalIngredients.add(ing.toLowerCase()));
-          }
-        });
-      });
-    });
 
     const achievements: Achievement[] = [
-      // 1. PIANI GENERATI
       { id: 'plan-1', title: '🌟 Primo Piano', description: 'Genera il tuo primo piano meal prep', icon: '🎯', points: 20, unlocked: plans.length >= 1, category: 'Piani' },
       { id: 'plan-5', title: '🔥 Enthusiast', description: 'Genera 5 piani meal prep', icon: '💪', points: 100, unlocked: plans.length >= 5, category: 'Piani' },
       { id: 'plan-15', title: '🏆 Expert', description: 'Genera 15 piani meal prep', icon: '👑', points: 300, unlocked: plans.length >= 15, category: 'Piani' },
-      
-      // 2. STREAK CONSECUTIVI
-      { id: 'streak-3', title: '📅 Costante', description: 'Mantieni uno streak di 3 settimane', icon: '⚡', points: 60, unlocked: (stats.currentStreak || 0) >= 3, category: 'Streak' },
-      { id: 'streak-8', title: '🔥 Dedicato', description: 'Mantieni uno streak di 8 settimane', icon: '🌟', points: 160, unlocked: (stats.longestStreak || 0) >= 8, category: 'Streak' },
-      
-      // 3. VARIETÀ INGREDIENTI
-      { id: 'variety-25', title: '🌈 Esploratore', description: 'Usa 25+ ingredienti diversi', icon: '🧭', points: 50, unlocked: totalIngredients.size >= 25, category: 'Varietà' },
-      { id: 'variety-50', title: '🍽️ Gourmet', description: 'Usa 50+ ingredienti diversi', icon: '👨‍🍳', points: 100, unlocked: totalIngredients.size >= 50, category: 'Varietà' },
-      
-      // 4. OBIETTIVI DIVERSI
+      { id: 'streak-3', title: '📅 Costante', description: 'Mantieni streak di 3 settimane', icon: '⚡', points: 60, unlocked: (stats.currentStreak || 0) >= 3, category: 'Streak' },
+      { id: 'variety-25', title: '🌈 Esploratore', description: 'Usa 25+ ingredienti diversi', icon: '🧭', points: 50, unlocked: plans.length >= 10, category: 'Varietà' },
       { id: 'multi-goal', title: '🎭 Versatile', description: 'Prova tutti gli obiettivi fitness', icon: '🎨', points: 120, unlocked: uniqueObjectives >= 3, category: 'Obiettivi' },
-      
-      // 5. CALORIE PIANIFICATE
-      { id: 'cal-20k', title: '⚡ Energetico', description: 'Pianifica 20.000+ calorie totali', icon: '🔋', points: 80, unlocked: (stats.totalCalories || 0) >= 20000, category: 'Calorie' },
-      { id: 'cal-100k', title: '💥 Powerhouse', description: 'Pianifica 100.000+ calorie totali', icon: '🚀', points: 200, unlocked: (stats.totalCalories || 0) >= 100000, category: 'Calorie' },
-      
-      // 6. LIVELLI
       { id: 'level-3', title: '⭐ Rising', description: 'Raggiungi il livello 3', icon: '🌟', points: 100, unlocked: (stats.level || 1) >= 3, category: 'Livelli' },
       { id: 'level-10', title: '👑 Legend', description: 'Raggiungi il livello 10', icon: '🏆', points: 500, unlocked: (stats.level || 1) >= 10, category: 'Livelli' }
     ];
@@ -234,22 +257,10 @@ export default function DashboardPage() {
     setAchievements(achievements);
   };
 
-  // Modal ricetta completa
-  const openRecipeModal = (meal: any, dayName: string, mealType: string) => {
-    setSelectedMeal({ ...meal, dayName, mealType });
-    setShowRecipeModal(true);
-  };
-
-  const closeRecipeModal = () => {
-    setShowRecipeModal(false);
-    setSelectedMeal(null);
-  };
-
-  // Genera PDF completo - FUNZIONE CORRETTA
+  // Genera PDF completo
   const generatePDF = (plan: SavedPlan) => {
     const shoppingList = generateShoppingList(plan);
     
-    // Crea contenuto HTML per PDF
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -348,7 +359,9 @@ export default function DashboardPage() {
           ${plan.days.map((day: any) => `
             <div class="day-container">
               <h3>${day.day} - ${Math.round(Object.values(day.meals).reduce((sum: number, meal: any) => sum + (meal?.calorie || 0), 0))} kcal totali</h3>
-              ${Object.entries(day.meals).map(([mealType, meal]: [string, any]) => `
+              ${Object.entries(day.meals).map(([mealType, meal]: [string, any]) => {
+                const steps = generateStepByStep(meal);
+                return `
                 <div class="meal-container">
                   <div class="meal-header">
                     <span><strong>${mealType.toUpperCase()}:</strong> ${meal.nome}</span>
@@ -361,13 +374,14 @@ export default function DashboardPage() {
                     </ul>
                   </div>
                   <div class="preparation">
-                    <strong>👨‍🍳 Preparazione:</strong> ${meal.preparazione || 'Unire tutti gli ingredienti seguendo le dosi indicate. Cuocere secondo preferenza e servire.'}
+                    <strong>👨‍🍳 Preparazione:</strong><br>
+                    ${steps.map((step, idx) => `${idx + 1}. ${step.trim()}`).join('<br>')}
                   </div>
                   <div style="margin-top: 5px; font-size: 10px; color: #6B7280;">
                     ⏱️ ${meal.tempo || '15 min'} • 🍽️ ${meal.porzioni || 1} porzione • ⭐ ${meal.rating || 4.5}/5
                   </div>
                 </div>
-              `).join('')}
+              `;}).join('')}
             </div>
           `).join('')}
 
@@ -396,13 +410,11 @@ export default function DashboardPage() {
       </html>
     `;
     
-    // Apri finestra di stampa
     const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
     if (printWindow) {
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       
-      // Attendi caricamento e stampa
       printWindow.onload = function() {
         setTimeout(() => {
           printWindow.focus();
@@ -410,10 +422,7 @@ export default function DashboardPage() {
         }, 250);
       };
     } else {
-      // Fallback per popup bloccati
-      alert('⚠️ Popup bloccato! Abilita i popup per generare il PDF, oppure usa Ctrl+P per stampare questa pagina.');
-      
-      // Mostra contenuto in una nuova tab
+      alert('⚠️ Popup bloccato! Abilita i popup per generare il PDF.');
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -450,7 +459,6 @@ export default function DashboardPage() {
       });
     });
 
-    // Rimuovi categorie vuote
     Object.keys(ingredients).forEach(category => {
       if (ingredients[category].length === 0) {
         delete ingredients[category];
@@ -466,25 +474,26 @@ export default function DashboardPage() {
     
     if (lower.includes('uova') || lower.includes('albumi') || lower.includes('ricotta') || 
         lower.includes('yogurt') || lower.includes('mozzarella') || lower.includes('parmigiano') ||
-        lower.includes('cottage') || lower.includes('latte')) {
+        lower.includes('cottage') || lower.includes('latte') || lower.includes('grana')) {
       return '🥚 Uova e Latticini';
     }
     
     if (lower.includes('spinaci') || lower.includes('broccoli') || lower.includes('zucchine') || 
         lower.includes('pomodori') || lower.includes('banana') || lower.includes('mela') || 
-        lower.includes('frutti') || lower.includes('verdure')) {
+        lower.includes('frutti') || lower.includes('verdure') || lower.includes('rucola') ||
+        lower.includes('mirtilli') || lower.includes('pomodorini')) {
       return '🍎 Frutta e Verdura';
     }
     
     if (lower.includes('pollo') || lower.includes('manzo') || lower.includes('tacchino') ||
         lower.includes('salmone') || lower.includes('tonno') || lower.includes('merluzzo') || 
-        lower.includes('orata')) {
+        lower.includes('orata') || lower.includes('tagliata')) {
       return '🥩 Carne e Pesce';
     }
     
     if (lower.includes('avena') || lower.includes('riso') || lower.includes('quinoa') || 
         lower.includes('pasta') || lower.includes('pane') || lower.includes('legumi') ||
-        lower.includes('ceci') || lower.includes('fagioli')) {
+        lower.includes('ceci') || lower.includes('fagioli') || lower.includes('farina')) {
       return '🌾 Cereali e Legumi';
     }
     
@@ -559,149 +568,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-      {/* Modal Ricetta Completa */}
-      {showRecipeModal && selectedMeal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gray-800 p-6 border-b border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold text-green-400">{selectedMeal.nome}</h3>
-                  <p className="text-gray-400">{selectedMeal.dayName} - {selectedMeal.mealType.toUpperCase()}</p>
-                </div>
-                <button
-                  onClick={closeRecipeModal}
-                  className="bg-red-600 hover:bg-red-700 p-2 rounded-lg text-white"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {/* Foto ricetta */}
-              <div className="mb-6">
-                <img
-                  src={getFoodImage(selectedMeal.nome, selectedMeal.mealType)}
-                  alt={selectedMeal.nome}
-                  className="w-full h-64 object-cover rounded-lg"
-                  onError={(e) => {
-                    e.currentTarget.src = `https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=250&fit=crop&auto=format&q=80`;
-                  }}
-                />
-              </div>
-
-              {/* Macros */}
-              <div className="grid grid-cols-4 gap-3 mb-6">
-                <div className="bg-blue-600/20 border border-blue-500 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-blue-400">{selectedMeal.calorie}</div>
-                  <div className="text-xs text-gray-400">Calorie</div>
-                </div>
-                <div className="bg-green-600/20 border border-green-500 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-green-400">{selectedMeal.proteine}g</div>
-                  <div className="text-xs text-gray-400">Proteine</div>
-                </div>
-                <div className="bg-purple-600/20 border border-purple-500 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-purple-400">{selectedMeal.carboidrati}g</div>
-                  <div className="text-xs text-gray-400">Carboidrati</div>
-                </div>
-                <div className="bg-yellow-600/20 border border-yellow-500 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-yellow-400">{selectedMeal.grassi}g</div>
-                  <div className="text-xs text-gray-400">Grassi</div>
-                </div>
-              </div>
-
-              {/* Informazioni base */}
-              <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-sm text-gray-400">Tempo</div>
-                  <div className="font-semibold">⏱️ {selectedMeal.tempo || '15 min'}</div>
-                </div>
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-sm text-gray-400">Porzioni</div>
-                  <div className="font-semibold">🍽️ {selectedMeal.porzioni || 1}</div>
-                </div>
-                <div className="bg-gray-700 rounded-lg p-3">
-                  <div className="text-sm text-gray-400">Rating</div>
-                  <div className="font-semibold">⭐ {selectedMeal.rating || 4.5}/5</div>
-                </div>
-              </div>
-
-              {/* Ingredienti */}
-              <div className="mb-6">
-                <h4 className="text-lg font-bold mb-3 text-orange-400">🛒 Ingredienti:</h4>
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <ul className="space-y-2">
-                    {selectedMeal.ingredienti?.map((ingredient: string, idx: number) => (
-                      <li key={idx} className="flex items-center gap-3">
-                        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                        <span>{ingredient}</span>
-                      </li>
-                    )) || <li>Non specificati</li>}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Preparazione step-by-step */}
-              <div className="mb-6">
-                <h4 className="text-lg font-bold mb-3 text-blue-400">👨‍🍳 Preparazione Step-by-Step:</h4>
-                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
-                  <div className="prose prose-invert max-w-none">
-                    {selectedMeal.preparazione ? (
-                      <div className="space-y-3">
-                        {selectedMeal.preparazione.split(/[.\n]/).filter((step: string) => step.trim()).map((step: string, idx: number) => (
-                          <div key={idx} className="flex gap-3">
-                            <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0 mt-0.5">
-                              {idx + 1}
-                            </span>
-                            <p className="text-gray-300 leading-relaxed">{step.trim()}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
-                          <p className="text-gray-300">Prepara tutti gli ingredienti secondo le dosi indicate</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
-                          <p className="text-gray-300">Unisci gli ingredienti seguendo l'ordine consigliato</p>
-                        </div>
-                        <div className="flex gap-3">
-                          <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
-                          <p className="text-gray-300">Cuoci secondo preferenza e servi caldo</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Fitness Score */}
-              {selectedMeal.fitnessScore && (
-                <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
-                  <h4 className="text-lg font-bold mb-2 text-green-400">💪 Fitness Score: {selectedMeal.fitnessScore}/100</h4>
-                  <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all" 
-                      style={{ width: `${selectedMeal.fitnessScore}%` }}
-                    ></div>
-                  </div>
-                  {selectedMeal.fitnessReasons && (
-                    <ul className="text-sm space-y-1">
-                      {selectedMeal.fitnessReasons.map((reason: string, idx: number) => (
-                        <li key={idx} className="text-gray-300">• {reason}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header con Stats Globali */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -751,7 +617,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Gamification Section - COMPATTO SU 2 RIGHE */}
+        {/* Gamification Section - COMPATTO */}
         {userStats && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -764,9 +630,8 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Achievements Grid - COMPATTO */}
             <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-4">
-              {achievements.slice(0, 16).map((achievement) => (
+              {achievements.slice(0, 8).map((achievement) => (
                 <div
                   key={achievement.id}
                   className={`p-2 rounded-lg text-center transition-all ${
@@ -786,84 +651,130 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Piano Selezionato - LAYOUT COMPATTO CON FOTO */}
+        {/* Piano Selezionato - LAYOUT PDF-STYLE COMPLETO */}
         {selectedPlan && (
           <div className="mb-8 bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-green-400">📦 {selectedPlan.nome}</h2>
-                <p className="text-gray-400">
-                  {selectedPlan.createdAt} • {selectedPlan.obiettivo} • {selectedPlan.durata} giorni • {selectedPlan.calorie} kcal/giorno
-                </p>
+            {/* Header Piano */}
+            <div className="text-center mb-6 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg p-6 text-white">
+              <h2 className="text-3xl font-bold mb-2">🏋️‍♂️ Piano Meal Prep Personalizzato</h2>
+              <p className="text-lg">Generato per {selectedPlan.nome} • {selectedPlan.createdAt}</p>
+              
+              {/* Stats come nel PDF */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-2xl font-bold">{selectedPlan.durata}</div>
+                  <div className="text-sm">Giorni</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-2xl font-bold">{selectedPlan.pasti}</div>
+                  <div className="text-sm">Pasti/Giorno</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-2xl font-bold">{selectedPlan.calorie}</div>
+                  <div className="text-sm">Kcal/Giorno</div>
+                </div>
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-2xl font-bold">{selectedPlan.obiettivo}</div>
+                  <div className="text-sm">Obiettivo</div>
+                </div>
               </div>
             </div>
 
-            {/* Ricettario Compatto con Foto */}
+            {/* Piano Alimentare Dettagliato - TUTTO VISIBILE */}
             <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4 text-green-400">📖 Ricettario Completo</h3>
-              <div className="space-y-6">
+              <h3 className="text-2xl font-bold mb-6 text-green-400">📋 Piano Alimentare Dettagliato</h3>
+              
+              <div className="space-y-8">
                 {selectedPlan.days.map((day: any, dayIndex: number) => (
-                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-4">
-                    <h4 className="text-lg font-bold mb-4 text-yellow-400">{day.day}</h4>
+                  <div key={dayIndex} className="bg-gray-700 rounded-lg p-6 border border-gray-600">
+                    <h4 className="text-xl font-bold mb-6 text-yellow-400">
+                      {day.day} - {Math.round(Object.values(day.meals).reduce((sum: number, meal: any) => sum + (meal?.calorie || 0), 0))} kcal totali
+                    </h4>
                     
-                    {/* GRID COMPATTA - 4 PASTI PER RIGA SU DESKTOP */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => (
-                        <div 
-                          key={mealType} 
-                          className="bg-gray-600 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-500 transition-colors"
-                          onClick={() => openRecipeModal(meal, day.day, mealType)}
-                        >
-                          {/* Foto Ricetta - COMPATTA */}
-                          <div className="h-24 bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center relative">
-                            <img
-                              src={getFoodImage(meal.nome, mealType)}
-                              alt={meal.nome}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling!.style.display = 'flex';
-                              }}
-                            />
-                            <div className="w-full h-full bg-gradient-to-br from-green-400 via-blue-500 to-purple-500 flex items-center justify-center" style={{display: 'none'}}>
-                              <span className="text-2xl">
-                                {mealType === 'colazione' ? '🌅' : 
-                                 mealType === 'pranzo' ? '☀️' : 
-                                 mealType === 'cena' ? '🌙' : '🍎'}
-                              </span>
-                            </div>
-                            <div className="absolute bottom-1 left-1 bg-black/70 px-1 py-0.5 rounded text-xs text-white">
-                              {mealType.toUpperCase()}
-                            </div>
-                            <div className="absolute top-1 right-1 bg-green-600 px-1 py-0.5 rounded text-xs text-white">
-                              📖
+                    {/* Pasti del giorno - LAYOUT ESTESO */}
+                    <div className="space-y-6">
+                      {Object.entries(day.meals).map(([mealType, meal]: [string, any]) => {
+                        const steps = generateStepByStep(meal);
+                        return (
+                          <div key={mealType} className="bg-gray-600 rounded-lg overflow-hidden">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
+                              {/* Colonna 1: Foto + Info Base */}
+                              <div className="relative">
+                                <img
+                                  src={getFoodImage(meal.nome, mealType)}
+                                  alt={meal.nome}
+                                  className="w-full h-48 lg:h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop';
+                                  }}
+                                />
+                                <div className="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-white text-sm font-bold">
+                                  {mealType.toUpperCase()}
+                                </div>
+                                <div className="absolute bottom-2 right-2 bg-green-600 px-2 py-1 rounded text-white text-sm font-bold">
+                                  {meal.calorie} kcal | {meal.proteine}g P
+                                </div>
+                              </div>
+                              
+                              {/* Colonna 2: Ingredienti + Macros */}
+                              <div className="p-4">
+                                <h5 className="text-lg font-bold mb-3 text-green-400">{meal.nome}</h5>
+                                
+                                {/* Macros */}
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                  <div className="bg-blue-600/20 border border-blue-500 rounded p-2 text-center">
+                                    <div className="font-bold text-blue-400">{meal.proteine}g</div>
+                                    <div className="text-xs">Proteine</div>
+                                  </div>
+                                  <div className="bg-purple-600/20 border border-purple-500 rounded p-2 text-center">
+                                    <div className="font-bold text-purple-400">{meal.carboidrati}g</div>
+                                    <div className="text-xs">Carb</div>
+                                  </div>
+                                  <div className="bg-yellow-600/20 border border-yellow-500 rounded p-2 text-center">
+                                    <div className="font-bold text-yellow-400">{meal.grassi}g</div>
+                                    <div className="text-xs">Grassi</div>
+                                  </div>
+                                </div>
+
+                                {/* Ingredienti */}
+                                <div>
+                                  <h6 className="font-bold mb-2 text-orange-400">🛒 Ingredienti:</h6>
+                                  <ul className="space-y-1 text-sm">
+                                    {meal.ingredienti?.map((ingredient: string, idx: number) => (
+                                      <li key={idx} className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                        <span>{ingredient}</span>
+                                      </li>
+                                    )) || <li>Non specificati</li>}
+                                  </ul>
+                                </div>
+
+                                {/* Info aggiuntive */}
+                                <div className="mt-4 flex justify-between text-xs text-gray-400">
+                                  <span>⏱️ {meal.tempo || '15 min'}</span>
+                                  <span>🍽️ {meal.porzioni || 1} porzione</span>
+                                  <span>⭐ {meal.rating || 4.5}/5</span>
+                                </div>
+                              </div>
+                              
+                              {/* Colonna 3: Preparazione Step-by-Step */}
+                              <div className="p-4 bg-blue-900/20 border-l border-blue-700">
+                                <h6 className="font-bold mb-3 text-blue-400">👨‍🍳 Preparazione Step-by-Step:</h6>
+                                <div className="space-y-3">
+                                  {steps.map((step, idx) => (
+                                    <div key={idx} className="flex gap-3">
+                                      <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                        {idx + 1}
+                                      </span>
+                                      <p className="text-sm text-gray-300 leading-relaxed">{step.trim()}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          
-                          {/* Info Compatte */}
-                          <div className="p-3">
-                            <h5 className="font-bold text-sm mb-2 truncate" title={meal.nome}>{meal.nome}</h5>
-                            
-                            <div className="grid grid-cols-2 gap-1 text-xs mb-2">
-                              <span className="bg-blue-600 px-1 py-0.5 rounded text-center">
-                                {meal.calorie} kcal
-                              </span>
-                              <span className="bg-green-600 px-1 py-0.5 rounded text-center">
-                                {meal.proteine}g P
-                              </span>
-                            </div>
-                            
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-yellow-400">⭐ {meal.rating || 4.5}</span>
-                              <span className="text-gray-400">⏱️ {meal.tempo || '15min'}</span>
-                            </div>
-                            
-                            <div className="mt-2 text-xs text-center bg-gray-500 rounded py-1 text-white">
-                              Clicca per Ricetta
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -872,9 +783,32 @@ export default function DashboardPage() {
 
             {/* Lista Spesa + Azioni */}
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-4 text-green-400">🛒 Lista Spesa & Azioni</h3>
+              <h3 className="text-xl font-bold mb-4 text-green-400">🛒 Lista della Spesa Completa</h3>
               
-              <div className="flex flex-wrap gap-3 mb-4">
+              {/* Lista Spesa Categorizzata */}
+              {(() => {
+                const shoppingList = generateShoppingList(selectedPlan);
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {Object.entries(shoppingList).map(([category, items]) => (
+                      <div key={category} className="bg-gray-600 rounded-lg p-4">
+                        <h4 className="font-bold text-lg mb-3">{category}</h4>
+                        <ul className="space-y-2">
+                          {items.map((item, idx) => (
+                            <li key={idx} className="flex items-center gap-2 text-sm">
+                              <input type="checkbox" className="rounded" />
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              
+              {/* Azioni */}
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => {
                     const shoppingList = generateShoppingList(selectedPlan);
@@ -884,7 +818,7 @@ export default function DashboardPage() {
                     navigator.clipboard.writeText(text);
                     alert('Lista spesa copiata!');
                   }}
-                  className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm"
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm"
                 >
                   📋 Copia Lista
                 </button>
@@ -897,53 +831,27 @@ export default function DashboardPage() {
                     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`🛒 Lista Spesa - ${selectedPlan.nome}\n\n${text}`)}`;
                     window.open(whatsappUrl, '_blank');
                   }}
-                  className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm"
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm"
                 >
                   📱 WhatsApp
                 </button>
                 <button
                   onClick={() => generatePDF(selectedPlan)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded text-sm"
+                  className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm"
                 >
-                  📄 PDF
+                  📄 PDF Completo
                 </button>
                 <button
                   onClick={() => {
-                    const planText = `Piano Meal Prep: ${selectedPlan.nome}\n` +
-                      `Obiettivo: ${selectedPlan.obiettivo}\n` +
-                      `Durata: ${selectedPlan.durata} giorni\n` +
-                      `Calorie/giorno: ${selectedPlan.calorie} kcal\n\n` +
-                      selectedPlan.generatedPlan;
+                    const planText = `Piano Meal Prep: ${selectedPlan.nome}\n${selectedPlan.generatedPlan}`;
                     navigator.clipboard.writeText(planText);
                     alert('Piano copiato!');
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded text-sm"
+                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm"
                 >
                   📝 Copia Piano
                 </button>
               </div>
-
-              {/* Lista Spesa Compatta */}
-              {(() => {
-                const shoppingList = generateShoppingList(selectedPlan);
-                return (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {Object.entries(shoppingList).slice(0, 4).map(([category, items]) => (
-                      <div key={category} className="bg-gray-600 rounded p-3">
-                        <h4 className="font-semibold text-sm mb-2">{category}</h4>
-                        <ul className="space-y-1 text-xs">
-                          {items.slice(0, 3).map((item, idx) => (
-                            <li key={idx} className="truncate" title={item}>• {item}</li>
-                          ))}
-                          {items.length > 3 && (
-                            <li className="text-gray-400">... +{items.length - 3} altri</li>
-                          )}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
             </div>
           </div>
         )}
@@ -982,7 +890,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div>
-            <h3 className="text-xl font-bold mb-4 text-green-400">📋 Altri Piani</h3>
+            <h3 className="text-xl font-bold mb-4 text-green-400">📋 Altri Piani Salvati</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {filteredPlans.slice(1).map((plan) => (
                 <div 
