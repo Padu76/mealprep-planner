@@ -11,6 +11,7 @@ import AISubstituteModal from '../components/AiSubstituteModal';
 import HowItWorksSection from '../components/HowItWorksSection';
 import { generateCompleteDocument } from '../utils/documentGenerator';
 import { useFormData } from '../hooks/useFormData';
+import { FITNESS_RECIPES_DB, selectFitnessRecipes } from '../utils/fitness_recipes_database';
 
 export default function HomePage() {
   const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
@@ -362,125 +363,18 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🔄 Piano fallback FITNESS-OTTIMIZZATO CON VARIETÀ
-  const createFallbackPlan = (formData: any) => {
+  // 🇮🇹 NUOVO: Piano fallback FITNESS ITALIANO CON DATABASE
+  const createFitnessBasedFallback = (formData: any) => {
     const numDays = parseInt(formData.durata) || 2;
-    const numPasti = parseInt(formData.pasti) || 4;
-    const varieta = formData.varieta || 'diversi';
+    const numPasti = parseInt(formData.pasti) || 3;
+    const obiettivo = formData.obiettivo || 'mantenimento';
+    const allergie = formData.allergie || [];
+    const preferenze = formData.preferenze || [];
     
-    console.log(`🍽️ Creating fallback plan: ${numDays} days, ${numPasti} meals, variety: ${varieta}`);
+    console.log(`🏋️‍♂️ Creating FITNESS-based fallback plan: ${numDays} days, ${numPasti} meals`);
+    console.log(`🎯 Objective: ${obiettivo}, Allergies: ${allergie.join(', ')}`);
     
     const days = [];
-    
-    // 🎨 VARIETÀ PASTI - RICETTE DIVERSE PER GIORNO
-    const mealVariations = {
-      colazione: [
-        {
-          nome: 'Power Breakfast Bowl',
-          calorie: 420, proteine: 25, carboidrati: 35, grassi: 18,
-          ingredienti: ['60g avena', '25g proteine whey', '100g frutti di bosco', '15g mandorle'],
-          preparazione: 'Bowl proteico con avena, proteine e frutti di bosco per energia duratura'
-        },
-        {
-          nome: 'Pancakes Proteici',
-          calorie: 450, proteine: 28, carboidrati: 38, grassi: 16,
-          ingredienti: ['150g ricotta', '40g farina avena', '2 uova', '80g mirtilli'],
-          preparazione: 'Pancakes con ricotta e mirtilli, ricchi di proteine e gusto'
-        },
-        {
-          nome: 'Overnight Oats Fitness',
-          calorie: 390, proteine: 22, carboidrati: 42, grassi: 14,
-          ingredienti: ['50g avena', '30g proteine', '1 mela', '10g burro mandorle'],
-          preparazione: 'Overnight oats con mela e burro di mandorle, preparati la sera prima'
-        },
-        {
-          nome: 'Smoothie Energetico',
-          calorie: 380, proteine: 26, carboidrati: 35, grassi: 12,
-          ingredienti: ['30g proteine whey', '1 banana', '200ml latte mandorle', '20g spinaci', '15g mandorle'],
-          preparazione: 'Smoothie verde energetico con proteine e frutta fresca'
-        }
-      ],
-      pranzo: [
-        {
-          nome: 'Chicken Power Bowl',
-          calorie: 480, proteine: 40, carboidrati: 35, grassi: 18,
-          ingredienti: ['120g pollo', '80g quinoa', '100g verdure miste', '1/2 avocado'],
-          preparazione: 'Bowl completo con pollo grigliato, quinoa e verdure fresche'
-        },
-        {
-          nome: 'Risotto Fitness',
-          calorie: 520, proteine: 35, carboidrati: 45, grassi: 20,
-          ingredienti: ['90g riso integrale', '100g pollo', '80g zucchine', '30g parmigiano'],
-          preparazione: 'Risotto cremoso con pollo e zucchine, versione fitness'
-        },
-        {
-          nome: 'Salmone Teriyaki Bowl',
-          calorie: 460, proteine: 38, carboidrati: 32, grassi: 22,
-          ingredienti: ['130g salmone', '100g riso venere', '80g edamame', 'Salsa teriyaki'],
-          preparazione: 'Salmone teriyaki con riso venere ed edamame, sapori orientali'
-        },
-        {
-          nome: 'Buddha Bowl Proteico',
-          calorie: 440, proteine: 32, carboidrati: 38, grassi: 19,
-          ingredienti: ['100g tofu', '70g quinoa', '80g ceci', '100g verdure miste', 'Tahina'],
-          preparazione: 'Bowl vegetariano completo con tofu, quinoa e verdure colorate'
-        }
-      ],
-      cena: [
-        {
-          nome: 'Lean Salmon Plate',
-          calorie: 420, proteine: 35, carboidrati: 20, grassi: 20,
-          ingredienti: ['130g salmone', '100g broccoli', '80g patate dolci'],
-          preparazione: 'Salmone con verdure e carboidrati complessi per il recovery'
-        },
-        {
-          nome: 'Tagliata Fitness',
-          calorie: 390, proteine: 38, carboidrati: 15, grassi: 18,
-          ingredienti: ['120g tagliata manzo', '80g rucola', '60g pomodorini', '20g grana'],
-          preparazione: 'Tagliata su letto di rucola con pomodorini e grana'
-        },
-        {
-          nome: 'Curry di Pollo Light',
-          calorie: 410, proteine: 36, carboidrati: 25, grassi: 16,
-          ingredienti: ['120g pollo', '60g riso basmati', '100g verdure curry', 'Latte cocco light'],
-          preparazione: 'Curry leggero con pollo e verdure, ricco di sapore'
-        },
-        {
-          nome: 'Orata Mediterranean',
-          calorie: 380, proteine: 34, carboidrati: 18, grassi: 17,
-          ingredienti: ['140g orata', '80g verdure grigliate', '60g patate novelle', 'Erbe mediterrane'],
-          preparazione: 'Orata al forno con verdure mediterranee e patate novelle'
-        }
-      ]
-    };
-    
-    // 🎯 SPUNTINI VARIATI
-    const spuntiniVariations = [
-      {
-        nome: 'Protein Greek Yogurt',
-        calorie: 180, proteine: 20, carboidrati: 15, grassi: 3,
-        ingredienti: ['150g yogurt greco', '80g frutti di bosco', '15g granola proteica'],
-        preparazione: 'Yogurt greco con frutti di bosco e granola per uno spuntino proteico'
-      },
-      {
-        nome: 'Energy Balls',
-        calorie: 170, proteine: 12, carboidrati: 18, grassi: 8,
-        ingredienti: ['20g proteine', '30g datteri', '15g mandorle', '10g cacao'],
-        preparazione: 'Palline energetiche con proteine e frutta secca'
-      },
-      {
-        nome: 'Hummus Veggie',
-        calorie: 160, proteine: 8, carboidrati: 20, grassi: 6,
-        ingredienti: ['80g hummus', '100g verdure crude', '10g semi girasole'],
-        preparazione: 'Hummus cremoso con verdure croccanti e semi'
-      },
-      {
-        nome: 'Protein Smoothie',
-        calorie: 190, proteine: 18, carboidrati: 16, grassi: 5,
-        ingredienti: ['25g proteine whey', '1/2 banana', '200ml latte vegetale'],
-        preparazione: 'Smoothie proteico cremoso e rinfrescante'
-      }
-    ];
     
     for (let i = 0; i < numDays; i++) {
       const day = {
@@ -488,72 +382,91 @@ export default function HomePage() {
         meals: {} as any
       };
       
-      // 🎨 SELEZIONE VARIETÀ BASATA SU PREFERENZA UTENTE
-      if (varieta === 'diversi') {
-        // Pasti diversi per ogni giorno
+      // 🌅 COLAZIONE FITNESS
+      const colazioneOptions = selectFitnessRecipes('colazione', obiettivo, 1, preferenze, allergie);
+      if (colazioneOptions.length > 0) {
+        const selected = colazioneOptions[i % colazioneOptions.length];
         day.meals.colazione = {
-          ...mealVariations.colazione[i % mealVariations.colazione.length],
-          tempo: '15 min', porzioni: 1, fitnessScore: 88, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.5
+          ...selected,
+          recipeId: `fitness-col-${i}`,
+          categoria: 'colazione',
+          rating: 4.5
         };
-        day.meals.pranzo = {
-          ...mealVariations.pranzo[i % mealVariations.pranzo.length],
-          tempo: '20 min', porzioni: 1, fitnessScore: 92, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.7
-        };
-        day.meals.cena = {
-          ...mealVariations.cena[i % mealVariations.cena.length],
-          tempo: '25 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.3
-        };
-      } else {
-        // Stessi pasti per tutti i giorni (ripetuti)
-        day.meals.colazione = {
-          ...mealVariations.colazione[0],
-          tempo: '15 min', porzioni: 1, fitnessScore: 88, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.5
-        };
-        day.meals.pranzo = {
-          ...mealVariations.pranzo[0],
-          tempo: '20 min', porzioni: 1, fitnessScore: 92, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.7
-        };
-        day.meals.cena = {
-          ...mealVariations.cena[0],
-          tempo: '25 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'medio', rating: 4.3
-        };
+        console.log(`✅ Day ${i + 1} colazione: ${selected.nome} (Score: ${selected.fitnessScore})`);
       }
       
-      // Aggiungi spuntini FITNESS variati
-      if (numPasti >= 4) {
-        day.meals.spuntino1 = {
-          ...spuntiniVariations[i % spuntiniVariations.length],
-          tempo: '5 min', porzioni: 1, fitnessScore: 85, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.1
+      // ☀️ PRANZO FITNESS
+      const pranzoOptions = selectFitnessRecipes('pranzo', obiettivo, 1, preferenze, allergie);
+      if (pranzoOptions.length > 0) {
+        const selected = pranzoOptions[i % pranzoOptions.length];
+        day.meals.pranzo = {
+          ...selected,
+          recipeId: `fitness-pra-${i}`,
+          categoria: 'pranzo',
+          rating: 4.7
         };
+        console.log(`✅ Day ${i + 1} pranzo: ${selected.nome} (Score: ${selected.fitnessScore})`);
+      }
+      
+      // 🌙 CENA FITNESS
+      const cenaOptions = selectFitnessRecipes('cena', obiettivo, 1, preferenze, allergie);
+      if (cenaOptions.length > 0) {
+        const selected = cenaOptions[i % cenaOptions.length];
+        day.meals.cena = {
+          ...selected,
+          recipeId: `fitness-cen-${i}`,
+          categoria: 'cena',
+          rating: 4.3
+        };
+        console.log(`✅ Day ${i + 1} cena: ${selected.nome} (Score: ${selected.fitnessScore})`);
+      }
+      
+      // 🍎 SPUNTINI FITNESS
+      if (numPasti >= 4) {
+        const spuntinoOptions = selectFitnessRecipes('spuntino', obiettivo, 1, preferenze, allergie);
+        if (spuntinoOptions.length > 0) {
+          const selected = spuntinoOptions[i % spuntinoOptions.length];
+          day.meals.spuntino1 = {
+            ...selected,
+            recipeId: `fitness-spu1-${i}`,
+            categoria: 'spuntino',
+            rating: 4.1
+          };
+          console.log(`✅ Day ${i + 1} spuntino1: ${selected.nome} (Score: ${selected.fitnessScore})`);
+        }
       }
       
       if (numPasti >= 5) {
-        day.meals.spuntino2 = {
-          nome: 'Power Shake',
-          calorie: 250, proteine: 25, carboidrati: 20, grassi: 8,
-          tempo: '2 min', porzioni: 1,
-          ingredienti: ['30g proteine whey', '1 banana', '15g burro mandorle', '200ml acqua'],
-          preparazione: 'Shake proteico post-workout completo per il recovery',
-          fitnessScore: 90, tipoCucina: 'fitness', difficolta: 'facile', rating: 4.4
-        };
+        const spuntinoOptions = selectFitnessRecipes('spuntino', obiettivo, 1, preferenze, allergie);
+        if (spuntinoOptions.length > 0) {
+          const selected = spuntinoOptions[(i + 1) % spuntinoOptions.length];
+          day.meals.spuntino2 = {
+            ...selected,
+            recipeId: `fitness-spu2-${i}`,
+            categoria: 'spuntino',
+            rating: 4.4
+          };
+        }
       }
       
       if (numPasti >= 6) {
-        day.meals.spuntino3 = {
-          nome: 'Night Protein Snack',
-          calorie: 160, proteine: 15, carboidrati: 8, grassi: 6,
-          tempo: '5 min', porzioni: 1,
-          ingredienti: ['100g ricotta light', '10g noci', 'Cannella'],
-          preparazione: 'Ricotta con noci per proteine a lento rilascio durante la notte',
-          fitnessScore: 78, tipoCucina: 'italiana', difficolta: 'facile', rating: 4.0
-        };
+        const spuntinoOptions = selectFitnessRecipes('spuntino', obiettivo, 1, preferenze, allergie);
+        if (spuntinoOptions.length > 0) {
+          const selected = spuntinoOptions[(i + 2) % spuntinoOptions.length];
+          day.meals.spuntino3 = {
+            ...selected,
+            recipeId: `fitness-spu3-${i}`,
+            categoria: 'spuntino',
+            rating: 4.0
+          };
+        }
       }
       
-      console.log(`✅ Day ${i + 1} meals created:`, Object.keys(day.meals));
+      console.log(`✅ Day ${i + 1} FITNESS meals created:`, Object.keys(day.meals));
       days.push(day);
     }
     
-    console.log(`🎉 Fallback plan created with ${days.length} days and variety: ${varieta}`);
+    console.log(`🎉 FITNESS fallback plan created with ${days.length} days using Italian recipes!`);
     return { days };
   };
 
@@ -646,15 +559,15 @@ export default function HomePage() {
     }
   };
 
-  // 🚀 FUNZIONE PRINCIPALE - SISTEMA IBRIDO AI + DATABASE + FITNESS PRIORITY
+  // 🚀 FUNZIONE PRINCIPALE - SISTEMA FITNESS API-FIRST
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 FORM SUBMIT STARTED (AI + Database + FITNESS Hybrid)');
+    console.log('🚀 FORM SUBMIT STARTED (FITNESS API-FIRST)');
     console.log('📝 Form Data:', formData);
     e.preventDefault();
     setIsGenerating(true);
     
     try {
-      // 🤖 STEP 1: Genera ricette con AI FITNESS-OTTIMIZZATO
+      // 🤖 STEP 1: USA SEMPRE L'API FITNESS INTEGRATA
       console.log('🧠 Generating FITNESS-OPTIMIZED meal plan with AI...');
 
       const response = await fetch('/api/generate-meal-plan', {
@@ -668,66 +581,60 @@ export default function HomePage() {
       if (result.success) {
         console.log('✅ AI generated FITNESS plan successfully');
         console.log('🔥 Backend calculated calories:', result.metadata?.dailyTarget);
+        console.log('🇮🇹 FITNESS optimized:', result.metadata?.fitnessOptimized);
+        console.log('📊 Total recipes used:', result.metadata?.totalRecipes);
         
-        // 🔄 STEP 2: Usa il piano fallback con varietà
-        let enrichedPlan = createFallbackPlan(formData);
+        // 🎯 USA IL PIANO DALL'API (NON IL FALLBACK!)
+        let apiGeneratedPlan;
         
-        // 🔥 FIX CALORIE: FORZA LE CALORIE DAL BACKEND - VERSIONE CORRETTA
-        if (result.metadata?.dailyTarget && enrichedPlan?.days) {
+        try {
+          // Prova a parsare il piano dall'AI
+          apiGeneratedPlan = parseAIPlanToStructured(result.piano, formData);
+          console.log('✅ API plan parsed successfully');
+        } catch (parseError) {
+          console.log('⚠️ API plan parsing failed, using FITNESS fallback');
+          apiGeneratedPlan = createFitnessBasedFallback(formData);
+        }
+        
+        // 🔥 APPLICA CALORIE DAL BACKEND SEMPRE
+        if (result.metadata?.dailyTarget && apiGeneratedPlan?.days) {
           const targetCalories = result.metadata.dailyTarget;
-          console.log('🔧 FORCING frontend calories to match backend:', targetCalories);
+          console.log('🔧 Applying backend calories to plan:', targetCalories);
           
-          enrichedPlan.days.forEach((day: any) => {
-            // Calcola il totale attuale
+          apiGeneratedPlan.days.forEach((day: any) => {
             let currentTotal = 0;
             Object.values(day.meals).forEach((meal: any) => {
               currentTotal += meal.calorie || 0;
             });
             
-            console.log(`📊 Day ${day.day}: Current ${currentTotal} kcal, Target ${targetCalories} kcal`);
+            const scaleFactor = targetCalories / Math.max(currentTotal, 1);
+            console.log(`🔧 Scaling ${day.day} by factor: ${scaleFactor.toFixed(2)}`);
             
-            // 🔧 FIX: SCALA SEMPRE SE DIVERSO DAL TARGET (non solo se < 50%)
-            if (Math.abs(currentTotal - targetCalories) > 100) {
-              const scaleFactor = targetCalories / Math.max(currentTotal, 1);
-              console.log(`🔧 Scaling day ${day.day} calories by factor:`, scaleFactor.toFixed(2));
-              
-              Object.values(day.meals).forEach((meal: any) => {
-                if (meal) {
-                  const oldCalories = meal.calorie;
-                  meal.calorie = Math.round(meal.calorie * scaleFactor);
-                  meal.proteine = Math.round(meal.proteine * scaleFactor);
-                  meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
-                  meal.grassi = Math.round(meal.grassi * scaleFactor);
-                  console.log(`  📈 ${meal.nome}: ${oldCalories} → ${meal.calorie} kcal`);
-                }
-              });
-              
-              // Verifica finale
-              let newTotal = 0;
-              Object.values(day.meals).forEach((meal: any) => {
-                newTotal += meal.calorie || 0;
-              });
-              console.log(`✅ Day ${day.day} final total: ${newTotal} kcal`);
-            } else {
-              console.log(`✅ Day ${day.day} calories already correct: ${currentTotal} kcal`);
-            }
+            Object.values(day.meals).forEach((meal: any) => {
+              if (meal) {
+                meal.calorie = Math.round(meal.calorie * scaleFactor);
+                meal.proteine = Math.round(meal.proteine * scaleFactor);
+                meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
+                meal.grassi = Math.round(meal.grassi * scaleFactor);
+              }
+            });
           });
         }
         
-        setParsedPlan(enrichedPlan);
+        setParsedPlan(apiGeneratedPlan);
         
-        const completeDocument = generateCompleteDocument(enrichedPlan, formData);
+        const completeDocument = generateCompleteDocument(apiGeneratedPlan, formData);
         setGeneratedPlan(completeDocument);
 
-        // 💾 SALVATAGGIO AUTOMATICO - AGGIUNTO QUI!
-        saveGeneratedPlan(enrichedPlan, formData);
+        // 💾 SALVATAGGIO AUTOMATICO
+        saveGeneratedPlan(apiGeneratedPlan, formData);
         
         setShowPreview(true);
         
-        // 🔧 STEP 3: SALVA IN AIRTABLE CON MAPPING CORRETTO
+        // 🔧 SALVA IN AIRTABLE
         console.log('💾 Saving to Airtable with correct mapping...');
         try {
-          const saveResult = await saveToAirtable(enrichedPlan, formData);
+          const saveResult = await saveToAirtable(apiGeneratedPlan, formData);
           if (saveResult.success) {
             console.log('✅ Successfully saved to Airtable:', saveResult.recordId);
           } else {
@@ -749,21 +656,22 @@ export default function HomePage() {
     } catch (error) {
       console.error('❌ Error in meal plan generation:', error);
       
-      // 🔄 FALLBACK: Piano con ricette FITNESS CON VARIETÀ
-      const fallbackPlan = createFallbackPlan(formData);
-      setParsedPlan(fallbackPlan);
+      // 🇮🇹 FALLBACK: FITNESS DATABASE ITALIANO (NON INGLESE!)
+      console.log('🔄 Using FITNESS database fallback with Italian recipes');
+      const fitnessFallback = createFitnessBasedFallback(formData);
+      setParsedPlan(fitnessFallback);
       
-      const completeDocument = generateCompleteDocument(fallbackPlan, formData);
+      const completeDocument = generateCompleteDocument(fitnessFallback, formData);
       setGeneratedPlan(completeDocument);
 
       // 💾 SALVATAGGIO AUTOMATICO ANCHE PER FALLBACK
-      saveGeneratedPlan(fallbackPlan, formData);
+      saveGeneratedPlan(fitnessFallback, formData);
       
       setShowPreview(true);
       
       // 🔧 SALVA ANCHE IL FALLBACK
       try {
-        const saveResult = await saveToAirtable(fallbackPlan, formData);
+        const saveResult = await saveToAirtable(fitnessFallback, formData);
         if (saveResult.success) {
           console.log('✅ Fallback plan saved to Airtable:', saveResult.recordId);
         }
@@ -778,6 +686,60 @@ export default function HomePage() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // 🤖 PARSER AI PLAN TO STRUCTURED
+  const parseAIPlanToStructured = (aiPlan: string, formData: any) => {
+    console.log('🤖 Parsing AI plan to structured format...');
+    
+    const days = [];
+    const dayRegex = /🗓️ GIORNO (\d+):([\s\S]*?)(?=🗓️ GIORNO \d+:|$)/g;
+    let dayMatch;
+    
+    while ((dayMatch = dayRegex.exec(aiPlan)) !== null) {
+      const dayNumber = dayMatch[1];
+      const dayContent = dayMatch[2];
+      
+      const day = {
+        day: `Giorno ${dayNumber}`,
+        meals: {} as any
+      };
+      
+      // Parse meals from AI plan
+      const mealRegex = /(🌅|☀️|🌙|🍎) (COLAZIONE|PRANZO|CENA|SPUNTINO) \((\d+) kcal\):\s*Nome: ([^\n]+)\s*Ingredienti: ([^\n]+)\s*Preparazione: ([^\n]+)\s*Macro: P: (\d+)g \| C: (\d+)g \| G: (\d+)g/g;
+      let mealMatch;
+      
+      while ((mealMatch = mealRegex.exec(dayContent)) !== null) {
+        const [, emoji, mealTypeUpper, calories, nome, ingredienti, preparazione, proteine, carboidrati, grassi] = mealMatch;
+        
+        const mealType = mealTypeUpper.toLowerCase();
+        const mealKey = mealType === 'spuntino' ? 'spuntino1' : mealType;
+        
+        day.meals[mealKey] = {
+          nome: nome.trim(),
+          calorie: parseInt(calories),
+          proteine: parseInt(proteine),
+          carboidrati: parseInt(carboidrati),
+          grassi: parseInt(grassi),
+          ingredienti: ingredienti.split(',').map(i => i.trim()),
+          preparazione: preparazione.trim(),
+          tempo: '20 min',
+          porzioni: 1,
+          fitnessScore: 85,
+          categoria: mealType,
+          rating: 4.5
+        };
+      }
+      
+      days.push(day);
+    }
+    
+    if (days.length === 0) {
+      throw new Error('No days parsed from AI plan');
+    }
+    
+    console.log(`✅ Parsed ${days.length} days from AI plan`);
+    return { days };
   };
 
   return (
@@ -801,7 +763,7 @@ export default function HomePage() {
           Rivoluziona la Tua Alimentazione con<br />Meal Prep Planner
         </h1>
         <p className="text-lg text-gray-800 mb-6 max-w-2xl mx-auto">
-          Generazione meal prep FITNESS-OTTIMIZZATA, Lista della Spesa Intelligente e Ricette con Priorità Fitness.
+          Generazione meal prep FITNESS-OTTIMIZZATA con Database Ricette Italiane, Lista della Spesa Intelligente e AI Avanzata.
         </p>
         <button 
           onClick={() => document.getElementById('meal-form')?.scrollIntoView({ behavior: 'smooth' })}
@@ -976,22 +938,22 @@ export default function HomePage() {
           <div className="space-y-6">
             <div className="bg-gray-700 rounded-lg p-6">
               <h3 className="text-xl font-bold mb-3">🏋️‍♂️ Come funziona la priorità fitness?</h3>
-              <p className="text-gray-300">Il sistema calcola un fitness score (0-100) per ogni ricetta basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
+              <p className="text-gray-300">Il sistema usa un database di ricette italiane fitness-ottimizzate con scoring 0-100 basato su proteine, calorie, ingredienti e obiettivo. Le ricette con score più alto vengono prioritizzate.</p>
             </div>
             
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">📊 Che cosa include il fitness score?</h3>
-              <p className="text-gray-300">Il sistema analizza: rapporto proteine/calorie, ingredienti fitness-friendly (avena, pollo, quinoa), tempo preparazione, categoria pasto e compatibilità con il tuo obiettivo.</p>
+              <h3 className="text-xl font-bold mb-3">🇮🇹 Sono tutte ricette italiane?</h3>
+              <p className="text-gray-300">Sì! Il database contiene ricette italiane e internazionali popolari nel fitness: da "Pancakes Proteici" a "Salmone alle Erbe", tutte ottimizzate per obiettivi fitness.</p>
             </div>
             
             <div className="bg-gray-700 rounded-lg p-6">
               <h3 className="text-xl font-bold mb-3">🎯 Le ricette cambiano per obiettivo?</h3>
-              <p className="text-gray-300">Sì! Per perdita peso: ricette sotto 400 cal, alto contenuto proteico. Per massa: ricette 500+ cal, surplus calorico. Per mantenimento: bilanciate.</p>
+              <p className="text-gray-300">Assolutamente! Per dimagrimento: ricette lean e high-protein. Per massa: ricette caloriche e bilanciate. Per mantenimento: ricette equilibrate.</p>
             </div>
 
             <div className="bg-gray-700 rounded-lg p-6">
-              <h3 className="text-xl font-bold mb-3">🖼️ Come vengono generate le immagini?</h3>
-              <p className="text-gray-300">Il sistema genera immagini food photography professionali per ogni ricetta, ottimizzate per mostrare ingredienti fitness e presentazione appetitosa.</p>
+              <h3 className="text-xl font-bold mb-3">🔄 Come viene garantita la varietà?</h3>
+              <p className="text-gray-300">Il sistema evita ripetizioni selezionando ricette diverse per ogni giorno dal database. Ogni pasto avrà una ricetta unica basata sul tuo obiettivo e preferenze.</p>
             </div>
           </div>
         </div>
@@ -1006,7 +968,7 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold">Meal Prep Planner 💪</h3>
           </div>
           <p className="text-gray-400 mb-6">
-            Semplificare la tua alimentazione con programmazione fitness-ottimizzata e ricette personalizzate per i tuoi obiettivi.
+            Semplificare la tua alimentazione con programmazione fitness-ottimizzata e ricette italiane personalizzate per i tuoi obiettivi.
           </p>
           <div className="flex justify-center gap-6">
             <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
