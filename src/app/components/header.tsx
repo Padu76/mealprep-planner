@@ -15,14 +15,16 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gray-900/90 backdrop-blur-md shadow-lg border-b border-gray-700 relative">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
-          {/* Logo Section */}
-          <div className="flex items-center gap-3">
-            <img src="/images/icon-192x192.png" alt="Meal Prep Logo" className="w-10 h-10 rounded-full" />
-            <h1 className="text-xl md:text-2xl font-bold text-white">Meal Prep Planner</h1>
-          </div>
+    <header className="bg-gray-900 text-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold">M</span>
+            </div>
+            <span className="text-xl font-bold">Meal Prep Planner</span>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex gap-6">
@@ -32,137 +34,86 @@ export default function Header() {
             <Link
               href="/dashboard"
               className="text-white hover:text-green-400 transition-colors font-medium"
-              onClick={(e) => {
-                console.log('🎯 Dashboard link clicked');
-              }}
             >
               📊 Dashboard
-            </Link>
-            <Link href="/analisi-grasso" className="text-white hover:text-green-400 transition-colors font-medium">
-              📊 Analisi Grasso
             </Link>
             <Link href="/pt-dashboard" className="text-white hover:text-green-400 transition-colors font-medium">
               🏋️‍♂️ PT Dashboard
             </Link>
-            <Link href="/ricette" className="text-white hover:text-green-400 transition-colors font-medium">
+            <Link
+              href="/ricette"
+              className="text-white hover:text-green-400 transition-colors font-medium"
+            >
               🍽️ Ricette
             </Link>
-            <Link href="/admin" className="text-white hover:text-green-400 transition-colors font-medium">
+            <Link
+              href="/admin"
+              className="text-white hover:text-green-400 transition-colors font-medium"
+            >
               👨‍💼 Admin
             </Link>
           </nav>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile menu button */}
           <button
             onClick={toggleMobileMenu}
-            className="md:hidden text-white hover:text-green-400 transition-colors p-2"
-            aria-label="Toggle mobile menu"
+            className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
+            <span className="sr-only">Apri menu principale</span>
+            {!isMobileMenuOpen ? (
+              <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+              </svg>
+            ) : (
+              <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            )}
           </button>
         </div>
-
-        {/* Mobile Navigation Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-gray-900/95 backdrop-blur-md border-b border-gray-700 shadow-lg z-50">
-            <nav className="px-4 py-4 space-y-4">
-              <Link
-                href="/"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={closeMobileMenu}
-              >
-                🏠 Home
-              </Link>
-              <Link
-                href="/dashboard"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={(e) => {
-                  console.log('🎯 Mobile Dashboard link clicked');
-                  closeMobileMenu();
-                }}
-              >
-                📊 Dashboard
-              </Link>
-              <Link
-                href="/analisi-grasso"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={closeMobileMenu}
-              >
-                📊 Analisi Grasso
-              </Link>
-              <Link
-                href="/pt-dashboard"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={closeMobileMenu}
-              >
-                🏋️‍♂️ PT Dashboard
-              </Link>
-              <Link
-                href="/ricette"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={closeMobileMenu}
-              >
-                🍽️ Ricette
-              </Link>
-              <Link
-                href="/admin"
-                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
-                onClick={closeMobileMenu}
-              >
-                👨‍💼 Admin
-              </Link>
-              
-              {/* Mobile Quick Actions */}
-              <div className="pt-4 border-t border-gray-700">
-                <div className="text-gray-400 text-sm font-medium mb-3">⚡ Azioni Rapide</div>
-                <Link
-                  href="/#meal-form"
-                  className="block text-green-400 hover:text-green-300 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800 text-sm"
-                  onClick={closeMobileMenu}
-                >
-                  🚀 Crea Piano Veloce
-                </Link>
-                <button
-                  onClick={() => {
-                    // Scroll to form section
-                    document.getElementById('meal-form')?.scrollIntoView({ behavior: 'smooth' });
-                    closeMobileMenu();
-                  }}
-                  className="block w-full text-left text-blue-400 hover:text-blue-300 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800 text-sm"
-                >
-                  📋 Vai al Form
-                </button>
-                <Link
-                  href="/pt-dashboard"
-                  className="block text-orange-400 hover:text-orange-300 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800 text-sm"
-                  onClick={closeMobileMenu}
-                >
-                  🏋️‍♂️ Modalità PT
-                </Link>
-              </div>
-            </nav>
-          </div>
-        )}
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={closeMobileMenu}
-        />
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-800">
+            <Link
+              href="/"
+              className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+              onClick={closeMobileMenu}
+            >
+              🏠 Home
+            </Link>
+            <Link
+              href="/dashboard"
+              className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+              onClick={closeMobileMenu}
+            >
+              📊 Dashboard
+            </Link>
+            <Link
+              href="/pt-dashboard"
+              className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+              onClick={closeMobileMenu}
+            >
+              🏋️‍♂️ PT Dashboard
+            </Link>
+            <Link
+              href="/ricette"
+              className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+              onClick={closeMobileMenu}
+            >
+              🍽️ Ricette
+            </Link>
+            <Link
+              href="/admin"
+              className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+              onClick={closeMobileMenu}
+            >
+              👨‍💼 Admin
+            </Link>
+          </div>
+        </div>
       )}
     </header>
   );
