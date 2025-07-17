@@ -74,6 +74,29 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
 
+  // FUNZIONE MIGRAZIONE DATI PLICHE VECCHI → NUOVI
+  const migrateOldPlicheData = (oldData: any): AnalisiGiorno => {
+    console.log('🔄 Migrating old pliche data:', oldData);
+    
+    // Se ha già la struttura nuova, ritorna così com'è
+    if (oldData.pliche && typeof oldData.pliche.addome === 'number') {
+      console.log('✅ Data already in new format');
+      return oldData;
+    }
+    
+    // Migrazione da struttura vecchia a nuova
+    const migratedData = {
+      ...oldData,
+      pliche: {
+        addome: oldData.pliche?.mattino_addome || 0,
+        fianchi: oldData.pliche?.mattino_fianchi || 0
+      }
+    };
+    
+    console.log('✅ Migrated data:', migratedData);
+    return migratedData;
+  };
+
   useEffect(() => {
     // Verifica modalità PT
     const urlParams = new URLSearchParams(window.location.search);
@@ -96,20 +119,41 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     }
   }, []);
 
-  // Carica dati esistenti
+  // Carica dati esistenti con migrazione
   useEffect(() => {
     if (existingData) {
+      console.log('📥 Loading existing data:', existingData);
+      
+      // Migra dati vecchi se necessario
+      const migratedData = migrateOldPlicheData(existingData);
+      
       // Assicurati che tutti i campi siano definiti
-      const safeData = {
-        ...existingData,
-        pliche: existingData.pliche || { addome: 0, fianchi: 0 },
-        peso: existingData.peso || 0,
-        idratazione: existingData.idratazione || 0,
-        sonno: existingData.sonno || 0,
-        stress: existingData.stress || 5,
-        digestione: existingData.digestione || '',
-        note: existingData.note || ''
+      const safeData: AnalisiGiorno = {
+        data: migratedData.data,
+        cliente_id: migratedData.cliente_id,
+        pasti: migratedData.pasti || {
+          colazione: [],
+          spuntino_mattina: [],
+          pranzo: [],
+          spuntino_pomeriggio: [],
+          cena: [],
+          spuntino_sera: [],
+          bevande_alcoliche: []
+        },
+        pliche: {
+          addome: migratedData.pliche?.addome || 0,
+          fianchi: migratedData.pliche?.fianchi || 0
+        },
+        peso: migratedData.peso || 0,
+        idratazione: migratedData.idratazione || 0,
+        sonno: migratedData.sonno || 0,
+        stress: migratedData.stress || 5,
+        digestione: migratedData.digestione || '',
+        note: migratedData.note || '',
+        foto: migratedData.foto || []
       };
+      
+      console.log('✅ Safe data loaded:', safeData);
       setFormData(safeData);
       setSaveStatus('saved');
     }
@@ -148,7 +192,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     return Math.round((completed / total) * 100);
   };
 
-  // FUNZIONE DI SALVATAGGIO SILENZIOSA - SENZA POPUP
+  // FUNZIONE DI SALVATAGGIO SILENZIOSA - COMPLETAMENTE SENZA POPUP
   const saveDataSilently = async (data: AnalisiGiorno) => {
     if (isSavingRef.current) return;
 
@@ -204,7 +248,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
 
       setSaveStatus('saved');
       
-      // Notifica parent SENZA POPUP
+      // Notifica parent SENZA POPUP O ALERT
       onSave(data);
 
     } catch (error) {
@@ -325,17 +369,23 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     triggerSave();
   };
 
-  // FUNZIONE PER PARSARE INPUT DECIMALI MIGLIORATA
+  // FUNZIONE PER PARSARE INPUT DECIMALI PERFEZIONATA
   const parseDecimalInput = (value: string): number => {
-    if (value === '') return 0;
+    if (!value || value === '') return 0;
     
-    // Sostituisci virgola con punto
-    const cleanValue = value.replace(',', '.');
+    // Rimuovi spazi e sostituisci virgola con punto
+    const cleanValue = value.trim().replace(',', '.');
     
     // Verifica che sia un numero valido
     const numValue = parseFloat(cleanValue);
     
-    return isNaN(numValue) ? 0 : numValue;
+    return isNaN(numValue) ? 0 : Math.round(numValue * 100) / 100; // Arrotonda a 2 decimali
+  };
+
+  // FUNZIONE PER FORMATTARE NUMERI CON VIRGOLA
+  const formatNumber = (num: number): string => {
+    if (num === 0) return '';
+    return num.toString().replace('.', ',');
   };
 
   const formatDate = (date: Date) => {
@@ -539,7 +589,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         type="text"
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
-                        value={formData.peso === 0 ? '' : formData.peso.toString().replace('.', ',')}
+                        value={formatNumber(formData.peso)}
                         onChange={(e) => {
                           const value = parseDecimalInput(e.target.value);
                           handleMisurazioneChange('peso', value);
@@ -559,7 +609,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         type="text"
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
-                        value={formData.pliche.addome === 0 ? '' : formData.pliche.addome.toString().replace('.', ',')}
+                        value={formatNumber(formData.pliche.addome)}
                         onChange={(e) => {
                           const value = parseDecimalInput(e.target.value);
                           handlePlicheChange('addome', value);
@@ -579,7 +629,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         type="text"
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
-                        value={formData.pliche.fianchi === 0 ? '' : formData.pliche.fianchi.toString().replace('.', ',')}
+                        value={formatNumber(formData.pliche.fianchi)}
                         onChange={(e) => {
                           const value = parseDecimalInput(e.target.value);
                           handlePlicheChange('fianchi', value);
@@ -607,7 +657,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       type="text"
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
-                      value={formData.idratazione === 0 ? '' : formData.idratazione.toString().replace('.', ',')}
+                      value={formatNumber(formData.idratazione)}
                       onChange={(e) => {
                         const value = parseDecimalInput(e.target.value);
                         handleExtraChange('idratazione', value);
@@ -627,7 +677,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       type="text"
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
-                      value={formData.sonno === 0 ? '' : (formData.sonno || 0).toString().replace('.', ',')}
+                      value={formatNumber(formData.sonno || 0)}
                       onChange={(e) => {
                         const value = parseDecimalInput(e.target.value);
                         handleExtraChange('sonno', value);
