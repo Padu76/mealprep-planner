@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare, Wine } from 'lucide-react';
 import Header from '@/components/header';
 import AnalisiGrassoForm from '@/components/AnalisiGrassoForm';
 
@@ -18,30 +18,28 @@ interface AnalisiGiorno {
   cliente_id?: string;
   pasti: {
     colazione: string[];
+    spuntino_mattina: string[];
     pranzo: string[];
+    spuntino_pomeriggio: string[];
     cena: string[];
+    spuntino_sera: string[];
+    bevande_alcoliche: string[];
   };
   pliche: {
     mattino_addome: number;
     mattino_fianchi: number;
-    colazione_1h30_addome: number;
-    colazione_1h30_fianchi: number;
-    colazione_1h45_addome: number;
-    colazione_1h45_fianchi: number;
-    colazione_2h_addome: number;
-    colazione_2h_fianchi: number;
-    pranzo_1h30_addome: number;
-    pranzo_1h30_fianchi: number;
-    pranzo_1h45_addome: number;
-    pranzo_1h45_fianchi: number;
-    pranzo_2h_addome: number;
-    pranzo_2h_fianchi: number;
-    cena_1h30_addome: number;
-    cena_1h30_fianchi: number;
-    cena_1h45_addome: number;
-    cena_1h45_fianchi: number;
-    cena_2h_addome: number;
-    cena_2h_fianchi: number;
+    colazione_post_addome: number;
+    colazione_post_fianchi: number;
+    spuntino_mattina_post_addome: number;
+    spuntino_mattina_post_fianchi: number;
+    pranzo_post_addome: number;
+    pranzo_post_fianchi: number;
+    spuntino_pomeriggio_post_addome: number;
+    spuntino_pomeriggio_post_fianchi: number;
+    cena_post_addome: number;
+    cena_post_fianchi: number;
+    spuntino_sera_post_addome: number;
+    spuntino_sera_post_fianchi: number;
   };
   idratazione: number;
   sonno?: number;
@@ -82,6 +80,17 @@ export default function AnalisiGrassoPTPage() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [clienti, setClienti] = useState<Cliente[]>([]);
   const [ptNotes, setPtNotes] = useState('');
+
+  // Configurazione pasti per la visualizzazione
+  const pastiConfig = [
+    { id: 'colazione', label: 'Colazione', emoji: '🌅', color: 'orange' },
+    { id: 'spuntino_mattina', label: 'Spuntino Mattina', emoji: '🍎', color: 'green' },
+    { id: 'pranzo', label: 'Pranzo', emoji: '☀️', color: 'yellow' },
+    { id: 'spuntino_pomeriggio', label: 'Spuntino Pomeriggio', emoji: '🥨', color: 'blue' },
+    { id: 'cena', label: 'Cena', emoji: '🌙', color: 'purple' },
+    { id: 'spuntino_sera', label: 'Spuntino Sera', emoji: '🍪', color: 'indigo' },
+    { id: 'bevande_alcoliche', label: 'Bevande Alcoliche', emoji: '🍷', color: 'red' }
+  ];
 
   useEffect(() => {
     // Controlla se siamo in modalità PT (parametro URL)
@@ -278,6 +287,23 @@ export default function AnalisiGrassoPTPage() {
     return days;
   };
 
+  const countTotalPasti = (pasti: AnalisiGiorno['pasti']) => {
+    return Object.values(pasti).reduce((total, pastoArray) => total + pastoArray.length, 0);
+  };
+
+  const getColorClass = (color: string) => {
+    const colors = {
+      orange: 'bg-orange-600',
+      green: 'bg-green-600',
+      yellow: 'bg-yellow-600',
+      blue: 'bg-blue-600',
+      purple: 'bg-purple-600',
+      indigo: 'bg-indigo-600',
+      red: 'bg-red-600'
+    };
+    return colors[color as keyof typeof colors] || 'bg-gray-600';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <Header />
@@ -463,24 +489,112 @@ export default function AnalisiGrassoPTPage() {
 
               {currentDayData ? (
                 <div className="space-y-6">
-                  {/* Contenuto uguale alla versione normale */}
+                  {/* Pasti & Bevande Consumate */}
                   <div className="bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-bold text-orange-400 mb-3">🍽️ Pasti Consumati</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(currentDayData.pasti).map(([tipo, alimenti]) => (
-                        <div key={tipo} className="bg-gray-600 rounded-lg p-3">
-                          <h4 className="font-semibold text-sm text-green-400 mb-2 capitalize">{tipo}</h4>
+                    <h3 className="font-bold text-orange-400 mb-3">🍽️ Pasti & Bevande Consumate</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {pastiConfig.map(pasto => (
+                        <div key={pasto.id} className="bg-gray-600 rounded-lg p-3">
+                          <h4 className="font-semibold text-sm text-white mb-2 flex items-center gap-2">
+                            <span className={`w-3 h-3 rounded-full ${getColorClass(pasto.color)}`}></span>
+                            {pasto.emoji} {pasto.label}
+                          </h4>
                           <ul className="text-sm text-gray-300 space-y-1">
-                            {alimenti.map((alimento, idx) => (
+                            {currentDayData.pasti[pasto.id as keyof typeof currentDayData.pasti].map((alimento, idx) => (
                               <li key={idx} className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
                                 {alimento}
                               </li>
                             ))}
+                            {currentDayData.pasti[pasto.id as keyof typeof currentDayData.pasti].length === 0 && (
+                              <li className="text-gray-500 italic">Nessun elemento</li>
+                            )}
                           </ul>
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Misurazioni Pliche */}
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-bold text-blue-400 mb-3">📏 Misurazioni Pliche</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
+                        <h4 className="font-semibold text-blue-400 mb-2">🌅 Mattutino</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Addome:</span>
+                            <span className="font-bold text-blue-300">{currentDayData.pliche.mattino_addome}mm</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Fianchi:</span>
+                            <span className="font-bold text-blue-300">{currentDayData.pliche.mattino_fianchi}mm</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {pastiConfig.slice(0, 6).map(pasto => {
+                        const addome = currentDayData.pliche[`${pasto.id}_post_addome` as keyof typeof currentDayData.pliche];
+                        const fianchi = currentDayData.pliche[`${pasto.id}_post_fianchi` as keyof typeof currentDayData.pliche];
+                        
+                        if (addome === 0 && fianchi === 0) return null;
+                        
+                        return (
+                          <div key={pasto.id} className="bg-gray-600 rounded-lg p-3">
+                            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                              <span className={`w-3 h-3 rounded-full ${getColorClass(pasto.color)}`}></span>
+                              {pasto.emoji} Post-{pasto.label}
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Addome:</span>
+                                <span className="font-bold text-white">{addome}mm</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Fianchi:</span>
+                                <span className="font-bold text-white">{fianchi}mm</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Dati Extra */}
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <h3 className="font-bold text-cyan-400 mb-3">📊 Dati Extra</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-gray-600 rounded-lg p-3">
+                        <div className="text-sm text-gray-300 mb-1">💧 Idratazione</div>
+                        <div className="text-lg font-bold text-cyan-400">{currentDayData.idratazione}L</div>
+                      </div>
+                      <div className="bg-gray-600 rounded-lg p-3">
+                        <div className="text-sm text-gray-300 mb-1">😴 Sonno</div>
+                        <div className="text-lg font-bold text-purple-400">{currentDayData.sonno || 0}h</div>
+                      </div>
+                      <div className="bg-gray-600 rounded-lg p-3">
+                        <div className="text-sm text-gray-300 mb-1">😰 Stress</div>
+                        <div className="text-lg font-bold text-red-400">{currentDayData.stress || 5}/10</div>
+                      </div>
+                    </div>
+                    
+                    {(currentDayData.digestione || currentDayData.note) && (
+                      <div className="mt-4 space-y-3">
+                        {currentDayData.digestione && (
+                          <div className="bg-gray-600 rounded-lg p-3">
+                            <div className="text-sm text-gray-300 mb-1">🤢 Digestione</div>
+                            <div className="text-sm text-white">{currentDayData.digestione}</div>
+                          </div>
+                        )}
+                        {currentDayData.note && (
+                          <div className="bg-gray-600 rounded-lg p-3">
+                            <div className="text-sm text-gray-300 mb-1">📝 Note</div>
+                            <div className="text-sm text-white">{currentDayData.note}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Note PT - Solo in modalità PT */}
@@ -517,8 +631,6 @@ export default function AnalisiGrassoPTPage() {
                       </div>
                     </div>
                   )}
-
-                  {/* Resto del contenuto uguale... */}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -578,66 +690,4 @@ export default function AnalisiGrassoPTPage() {
                 {/* Cibi Trigger */}
                 <div className="bg-gray-700 rounded-lg p-4">
                   <h3 className="font-bold text-red-400 mb-3">🚨 Cibi Trigger Identificati</h3>
-                  <div className="space-y-2">
-                    {aiAnalysis.cibi_trigger.map((trigger, idx) => (
-                      <div key={idx} className="bg-gray-600 rounded p-3">
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold text-white">{trigger.alimento}</span>
-                          <span className="text-red-400 text-sm">+{trigger.aumento_medio_pliche}mm</span>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Confidence: {trigger.confidence_score}% | Frequenza: {trigger.frequenza_problemi}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Consigli AI */}
-                <div className="bg-gray-700 rounded-lg p-4">
-                  <h3 className="font-bold text-green-400 mb-3">
-                    💡 Consigli{isPTMode ? ' per il Cliente' : ' Personalizzati'}
-                  </h3>
-                  <div className="space-y-3">
-                    {aiAnalysis.consigli.map((consiglio, idx) => (
-                      <div key={idx} className="bg-gray-600 rounded p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            consiglio.tipo === 'evitare' ? 'bg-red-600 text-white' :
-                            consiglio.tipo === 'limitare' ? 'bg-yellow-600 text-white' :
-                            'bg-green-600 text-white'
-                          }`}>
-                            {consiglio.tipo}
-                          </span>
-                          <span className="font-semibold text-white">{consiglio.alimento}</span>
-                        </div>
-                        <p className="text-sm text-gray-300">{consiglio.motivo}</p>
-                        <p className="text-xs text-gray-400">Evidenza: {consiglio.evidenza}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Brain className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <p className="text-lg text-gray-400">Pronto per l'analisi AI!</p>
-                <p className="text-sm text-gray-500">Clicca "Genera Analisi AI" per iniziare</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Form Modal */}
-      {showForm && (
-        <AnalisiGrassoForm
-          selectedDate={selectedDate}
-          existingData={currentDayData}
-          onSave={handleSaveData}
-          onClose={() => setShowForm(false)}
-        />
-      )}
-    </div>
-  );
-}
+                  <div className="
