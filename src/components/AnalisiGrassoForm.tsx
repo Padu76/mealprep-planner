@@ -385,7 +385,24 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   // FUNZIONE PER FORMATTARE NUMERI CON VIRGOLA
   const formatNumber = (num: number): string => {
     if (num === 0) return '';
+    // Mantieni precisione per decimali
     return num.toString().replace('.', ',');
+  };
+
+  // FUNZIONE PER GESTIRE INPUT SICURI
+  const handleNumericInput = (value: string, field: string, isPlica: boolean = false) => {
+    // Permetti solo numeri, virgola e punto
+    const cleanValue = value.replace(/[^0-9.,]/g, '');
+    
+    // Sostituisci virgola con punto per parsing
+    const numericValue = parseDecimalInput(cleanValue);
+    
+    if (isPlica) {
+      const plicheField = field as 'addome' | 'fianchi';
+      handlePlicheChange(plicheField, numericValue);
+    } else {
+      handleMisurazioneChange(field, numericValue);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -590,10 +607,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
                         value={formatNumber(formData.peso)}
-                        onChange={(e) => {
-                          const value = parseDecimalInput(e.target.value);
-                          handleMisurazioneChange('peso', value);
-                        }}
+                        onChange={(e) => handleNumericInput(e.target.value, 'peso')}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         placeholder="es. 70,5"
                       />
@@ -610,10 +624,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
                         value={formatNumber(formData.pliche.addome)}
-                        onChange={(e) => {
-                          const value = parseDecimalInput(e.target.value);
-                          handlePlicheChange('addome', value);
-                        }}
+                        onChange={(e) => handleNumericInput(e.target.value, 'addome', true)}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="es. 15,5"
                       />
@@ -630,10 +641,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                         inputMode="decimal"
                         pattern="[0-9]*[.,]?[0-9]*"
                         value={formatNumber(formData.pliche.fianchi)}
-                        onChange={(e) => {
-                          const value = parseDecimalInput(e.target.value);
-                          handlePlicheChange('fianchi', value);
-                        }}
+                        onChange={(e) => handleNumericInput(e.target.value, 'fianchi', true)}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                         placeholder="es. 18,2"
                       />
@@ -658,10 +666,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
                       value={formatNumber(formData.idratazione)}
-                      onChange={(e) => {
-                        const value = parseDecimalInput(e.target.value);
-                        handleExtraChange('idratazione', value);
-                      }}
+                      onChange={(e) => handleNumericInput(e.target.value, 'idratazione')}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       placeholder="es. 2,5"
                     />
@@ -678,10 +683,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       inputMode="decimal"
                       pattern="[0-9]*[.,]?[0-9]*"
                       value={formatNumber(formData.sonno || 0)}
-                      onChange={(e) => {
-                        const value = parseDecimalInput(e.target.value);
-                        handleExtraChange('sonno', value);
-                      }}
+                      onChange={(e) => handleNumericInput(e.target.value, 'sonno')}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="es. 7,5"
                     />
