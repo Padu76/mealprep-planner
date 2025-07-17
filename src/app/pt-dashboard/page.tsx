@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, Plus, Activity, TrendingUp, AlertTriangle, Calendar, Search, Filter, BarChart3 } from 'lucide-react';
+import { Users, Plus, Activity, TrendingUp, AlertTriangle, Calendar, Search, Filter, BarChart3, User, Mail, Phone } from 'lucide-react';
+import Header from '@/components/header';
 
 interface Cliente {
   id: string;
@@ -19,21 +20,19 @@ interface Cliente {
   trigger_count?: number;
 }
 
-interface AnalisiCliente {
-  cliente_id: string;
-  data: string;
-  food_score: number;
-  cibi_trigger: string[];
-  variazione_media: number;
-  note_pt?: string;
-}
-
 export default function PTDashboard() {
   const [clienti, setClienti] = useState<Cliente[]>([]);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'tutti' | 'attivo' | 'inattivo' | 'pausa'>('tutti');
+  const [newClient, setNewClient] = useState({
+    nome: '',
+    email: '',
+    telefono: '',
+    eta: '',
+    obiettivo: 'dimagrimento'
+  });
   const [stats, setStats] = useState({
     totale_clienti: 0,
     clienti_attivi: 0,
@@ -43,8 +42,11 @@ export default function PTDashboard() {
 
   useEffect(() => {
     loadClienti();
-    calculateStats();
   }, []);
+
+  useEffect(() => {
+    calculateStats();
+  }, [clienti]);
 
   const loadClienti = () => {
     try {
@@ -57,7 +59,9 @@ export default function PTDashboard() {
 
   const calculateStats = () => {
     const clientiAttivi = clienti.filter(c => c.status === 'attivo').length;
-    const mediaScore = clienti.reduce((acc, c) => acc + (c.food_score || 0), 0) / clienti.length;
+    const mediaScore = clienti.length > 0 
+      ? clienti.reduce((acc, c) => acc + (c.food_score || 0), 0) / clienti.length
+      : 0;
     const analisiRecenti = clienti.filter(c => {
       if (!c.ultimaAnalisi) return false;
       const week = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -70,6 +74,58 @@ export default function PTDashboard() {
       analisi_settimana: analisiRecenti,
       media_food_score: Math.round(mediaScore)
     });
+  };
+
+  const handleAddClient = () => {
+    if (!newClient.nome || !newClient.email) {
+      alert('⚠️ Nome e email sono obbligatori');
+      return;
+    }
+
+    const nuovoCliente: Cliente = {
+      id: `client_${Date.now()}`,
+      nome: newClient.nome,
+      email: newClient.email,
+      telefono: newClient.telefono,
+      eta: parseInt(newClient.eta) || 30,
+      obiettivo: newClient.obiettivo,
+      dataInizio: new Date().toISOString(),
+      status: 'attivo',
+      food_score: 0,
+      giorni_tracciati: 0,
+      trigger_count: 0
+    };
+
+    const updatedClienti = [...clienti, nuovoCliente];
+    setClienti(updatedClienti);
+    localStorage.setItem('pt_clienti', JSON.stringify(updatedClienti));
+
+    // Reset form
+    setNewClient({
+      nome: '',
+      email: '',
+      telefono: '',
+      eta: '',
+      obiettivo: 'dimagrimento'
+    });
+    setShowAddClient(false);
+
+    alert(`✅ Cliente ${nuovoCliente.nome} aggiunto con successo!`);
+  };
+
+  const deleteClient = (clienteId: string) => {
+    if (!confirm('Sei sicuro di voler eliminare questo cliente? Tutti i suoi dati saranno persi.')) {
+      return;
+    }
+
+    const updatedClienti = clienti.filter(c => c.id !== clienteId);
+    setClienti(updatedClienti);
+    localStorage.setItem('pt_clienti', JSON.stringify(updatedClienti));
+
+    // Rimuovi anche i dati analisi del cliente
+    localStorage.removeItem(`analisiGrassoData_${clienteId}`);
+
+    alert('🗑️ Cliente eliminato');
   };
 
   const filteredClienti = clienti.filter(cliente => {
@@ -99,6 +155,8 @@ export default function PTDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      <Header />
+      
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header PT */}
         <div className="mb-8">
@@ -267,16 +325,21 @@ export default function PTDashboard() {
                           onClick={() => setSelectedCliente(cliente)}
                           className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors"
                         >
-                          Visualizza
+                          Info
                         </button>
                         <button
                           onClick={() => {
-                            // Naviga alla pagina analisi per questo cliente
                             window.location.href = `/analisi-grasso?cliente=${cliente.id}`;
                           }}
                           className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition-colors"
                         >
                           Analizza
+                        </button>
+                        <button
+                          onClick={() => deleteClient(cliente.id)}
+                          className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          Elimina
                         </button>
                       </div>
                     </td>
@@ -322,7 +385,9 @@ export default function PTDashboard() {
                         </div>
                       </div>
                       <button
-                        onClick={() => setSelectedCliente(cliente)}
+                        onClick={() => {
+                          window.location.href = `/analisi-grasso?cliente=${cliente.id}`;
+                        }}
                         className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm transition-colors"
                       >
                         Intervieni
@@ -340,15 +405,82 @@ export default function PTDashboard() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full">
             <h3 className="text-xl font-bold text-green-400 mb-4">➕ Aggiungi Nuovo Cliente</h3>
-            <p className="text-gray-300 mb-6">
-              Form per aggiungere cliente sarà implementato nel prossimo step
-            </p>
-            <button
-              onClick={() => setShowAddClient(false)}
-              className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors w-full"
-            >
-              Chiudi
-            </button>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Nome *</label>
+                <input
+                  type="text"
+                  value={newClient.nome}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, nome: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Nome del cliente"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="email@esempio.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Telefono</label>
+                <input
+                  type="tel"
+                  value={newClient.telefono}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, telefono: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="+39 123 456 7890"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Età</label>
+                <input
+                  type="number"
+                  value={newClient.eta}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, eta: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Obiettivo</label>
+                <select
+                  value={newClient.obiettivo}
+                  onChange={(e) => setNewClient(prev => ({ ...prev, obiettivo: e.target.value }))}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="dimagrimento">Dimagrimento</option>
+                  <option value="aumento-massa">Aumento massa</option>
+                  <option value="mantenimento">Mantenimento</option>
+                  <option value="definizione">Definizione</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddClient(false)}
+                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleAddClient}
+                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Aggiungi
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -373,9 +505,21 @@ export default function PTDashboard() {
               <div>
                 <h4 className="font-semibold text-white mb-3">📋 Informazioni Base</h4>
                 <div className="space-y-2 text-sm">
-                  <div><span className="text-gray-400">Email:</span> {selectedCliente.email}</div>
-                  <div><span className="text-gray-400">Telefono:</span> {selectedCliente.telefono}</div>
-                  <div><span className="text-gray-400">Età:</span> {selectedCliente.eta} anni</div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-400">Email:</span> 
+                    <span>{selectedCliente.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-400">Telefono:</span> 
+                    <span>{selectedCliente.telefono || 'Non specificato'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-400">Età:</span> 
+                    <span>{selectedCliente.eta} anni</span>
+                  </div>
                   <div><span className="text-gray-400">Obiettivo:</span> {selectedCliente.obiettivo}</div>
                   <div><span className="text-gray-400">Data inizio:</span> {new Date(selectedCliente.dataInizio).toLocaleDateString('it-IT')}</div>
                 </div>
