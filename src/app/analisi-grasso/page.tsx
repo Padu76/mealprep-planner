@@ -46,7 +46,7 @@ interface AnalisiGiorno {
   stress?: number;
   digestione?: string;
   note?: string;
-  note_pt?: string; // Note del PT
+  note_pt?: string;
   foto?: string[];
 }
 
@@ -93,7 +93,6 @@ export default function AnalisiGrassoPTPage() {
   ];
 
   useEffect(() => {
-    // Controlla se siamo in modalità PT (parametro URL)
     const urlParams = new URLSearchParams(window.location.search);
     const clienteId = urlParams.get('cliente');
     
@@ -139,7 +138,6 @@ export default function AnalisiGrassoPTPage() {
       const data = JSON.parse(localStorage.getItem(storageKey) || '[]');
       setSavedData(data);
       
-      // Cerca dati per la data selezionata
       const dayData = data.find((d: any) => 
         new Date(d.data).toDateString() === selectedDate.toDateString()
       );
@@ -150,25 +148,21 @@ export default function AnalisiGrassoPTPage() {
   };
 
   const handleSaveData = (data: AnalisiGiorno) => {
-    // Aggiorna i dati salvati
     const updatedData = savedData.filter(d => 
       new Date(d.data).toDateString() !== selectedDate.toDateString()
     );
     
-    // Aggiungi ID cliente se in modalità PT
     if (isPTMode && selectedCliente) {
       data.cliente_id = selectedCliente.id;
     }
     
     updatedData.push(data);
     
-    // Salva con chiave specifica per il cliente
     const storageKey = isPTMode && selectedCliente 
       ? `analisiGrassoData_${selectedCliente.id}` 
       : 'analisiGrassoData';
     
     localStorage.setItem(storageKey, JSON.stringify(updatedData));
-    
     setSavedData(updatedData);
     setCurrentDayData(data);
   };
@@ -285,10 +279,6 @@ export default function AnalisiGrassoPTPage() {
     }
 
     return days;
-  };
-
-  const countTotalPasti = (pasti: AnalisiGiorno['pasti']) => {
-    return Object.values(pasti).reduce((total, pastoArray) => total + pastoArray.length, 0);
   };
 
   const getColorClass = (color: string) => {
@@ -415,7 +405,7 @@ export default function AnalisiGrassoPTPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Colonna 1: Calendario */}
+          {/* Calendario */}
           <div className="lg:col-span-1">
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <div className="flex items-center justify-between mb-6">
@@ -471,7 +461,7 @@ export default function AnalisiGrassoPTPage() {
             </div>
           </div>
 
-          {/* Colonna 2: Giorno Selezionato */}
+          {/* Giorno Selezionato */}
           <div className="lg:col-span-2">
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <div className="flex items-center justify-between mb-6">
@@ -489,7 +479,7 @@ export default function AnalisiGrassoPTPage() {
 
               {currentDayData ? (
                 <div className="space-y-6">
-                  {/* Pasti & Bevande Consumate */}
+                  {/* Pasti & Bevande */}
                   <div className="bg-gray-700 rounded-lg p-4">
                     <h3 className="font-bold text-orange-400 mb-3">🍽️ Pasti & Bevande Consumate</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -597,7 +587,7 @@ export default function AnalisiGrassoPTPage() {
                     )}
                   </div>
 
-                  {/* Note PT - Solo in modalità PT */}
+                  {/* Note PT */}
                   {isPTMode && (
                     <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
                       <h3 className="font-bold text-blue-400 mb-3">🏋️‍♂️ Note Personal Trainer</h3>
@@ -650,7 +640,7 @@ export default function AnalisiGrassoPTPage() {
           </div>
         </div>
 
-        {/* Sezione AI Analysis */}
+        {/* AI Analysis */}
         <div className="mt-8">
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
             <div className="flex items-center justify-between mb-6">
@@ -687,7 +677,67 @@ export default function AnalisiGrassoPTPage() {
               </div>
             ) : aiAnalysis ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Cibi Trigger */}
                 <div className="bg-gray-700 rounded-lg p-4">
                   <h3 className="font-bold text-red-400 mb-3">🚨 Cibi Trigger Identificati</h3>
-                  <div className="
+                  <div className="space-y-2">
+                    {aiAnalysis.cibi_trigger.map((trigger, idx) => (
+                      <div key={idx} className="bg-gray-600 rounded p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-white">{trigger.alimento}</span>
+                          <span className="text-red-400 text-sm">+{trigger.aumento_medio_pliche}mm</span>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Confidence: {trigger.confidence_score}% | Frequenza: {trigger.frequenza_problemi}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <h3 className="font-bold text-green-400 mb-3">
+                    💡 Consigli{isPTMode ? ' per il Cliente' : ' Personalizzati'}
+                  </h3>
+                  <div className="space-y-3">
+                    {aiAnalysis.consigli.map((consiglio, idx) => (
+                      <div key={idx} className="bg-gray-600 rounded p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            consiglio.tipo === 'evitare' ? 'bg-red-600 text-white' :
+                            consiglio.tipo === 'limitare' ? 'bg-yellow-600 text-white' :
+                            'bg-green-600 text-white'
+                          }`}>
+                            {consiglio.tipo}
+                          </span>
+                          <span className="font-semibold text-white">{consiglio.alimento}</span>
+                        </div>
+                        <p className="text-sm text-gray-300">{consiglio.motivo}</p>
+                        <p className="text-xs text-gray-400">Evidenza: {consiglio.evidenza}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Brain className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+                <p className="text-lg text-gray-400">Pronto per l'analisi AI!</p>
+                <p className="text-sm text-gray-500">Clicca "Genera Analisi AI" per iniziare</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <AnalisiGrassoForm
+          selectedDate={selectedDate}
+          existingData={currentDayData}
+          onSave={handleSaveData}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+    </div>
+  );
+}
