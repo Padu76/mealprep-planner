@@ -41,6 +41,9 @@ export default function Header() {
             <Link href="/analisi-grasso" className="text-white hover:text-green-400 transition-colors font-medium">
               📊 Analisi Grasso
             </Link>
+            <Link href="/pt-dashboard" className="text-white hover:text-green-400 transition-colors font-medium">
+              🏋️‍♂️ PT Dashboard
+            </Link>
             <Link href="/ricette" className="text-white hover:text-green-400 transition-colors font-medium">
               🍽️ Ricette
             </Link>
@@ -100,6 +103,13 @@ export default function Header() {
                 📊 Analisi Grasso
               </Link>
               <Link
+                href="/pt-dashboard"
+                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+                onClick={closeMobileMenu}
+              >
+                🏋️‍♂️ PT Dashboard
+              </Link>
+              <Link
                 href="/ricette"
                 className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
                 onClick={closeMobileMenu}
@@ -134,6 +144,13 @@ export default function Header() {
                 >
                   📋 Vai al Form
                 </button>
+                <Link
+                  href="/pt-dashboard"
+                  className="block text-orange-400 hover:text-orange-300 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800 text-sm"
+                  onClick={closeMobileMenu}
+                >
+                  🏋️‍♂️ Modalità PT
+                </Link>
               </div>
             </nav>
           </div>
