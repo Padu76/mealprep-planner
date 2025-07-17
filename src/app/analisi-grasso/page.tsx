@@ -97,7 +97,6 @@ export default function AnalisiGrassoPage() {
     loadSavedData();
   }, [selectedDate]);
 
-  // Genera analisi AI
   const handleSaveData = (data: AnalisiGiorno) => {
     // Aggiorna i dati salvati
     const updatedData = savedData.filter(d => 
@@ -107,6 +106,9 @@ export default function AnalisiGrassoPage() {
     setSavedData(updatedData);
     setCurrentDayData(data);
   };
+
+  // Genera analisi AI
+  const generateAIAnalysis = async () => {
     if (savedData.length < 3) {
       alert('⚠️ Servono almeno 3 giorni di dati per l\'analisi AI');
       return;
