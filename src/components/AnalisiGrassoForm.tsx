@@ -5,6 +5,7 @@ import { X, Plus, Trash2, Save, Camera, Clock, Scale, Droplets, Activity, Brain,
 
 interface AnalisiGiorno {
   data: Date;
+  cliente_id?: string;
   pasti: {
     colazione: string[];
     spuntino_mattina: string[];
@@ -86,9 +87,43 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   const [selectedPasto, setSelectedPasto] = useState<keyof AnalisiGiorno['pasti']>('colazione');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Debug: verifica modalità PT
+  const [isPTMode, setIsPTMode] = useState(false);
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clienteNome, setClienteNome] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Verifica se siamo in modalità PT
+    const urlParams = new URLSearchParams(window.location.search);
+    const cliente = urlParams.get('cliente');
+    
+    if (cliente) {
+      setIsPTMode(true);
+      setClienteId(cliente);
+      
+      // Carica info cliente
+      try {
+        const savedClienti = JSON.parse(localStorage.getItem('pt_clienti') || '[]');
+        const clienteData = savedClienti.find((c: any) => c.id === cliente);
+        if (clienteData) {
+          setClienteNome(clienteData.nome);
+        }
+      } catch (error) {
+        console.error('Errore caricamento cliente:', error);
+      }
+    }
+    
+    console.log('🔍 Form Debug:', {
+      isPTMode: cliente ? true : false,
+      clienteId: cliente,
+      selectedDate: selectedDate.toISOString()
+    });
+  }, []);
+
   // Carica dati esistenti se disponibili
   useEffect(() => {
     if (existingData) {
+      console.log('📝 Loading existing data:', existingData);
       setFormData(existingData);
     }
   }, [existingData]);
@@ -123,6 +158,8 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
 
   const handleAddAlimento = () => {
     if (newAlimento.trim()) {
+      console.log('➕ Adding alimento:', newAlimento, 'to', selectedPasto);
+      
       setFormData(prev => ({
         ...prev,
         pasti: {
@@ -135,6 +172,8 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   };
 
   const handleRemoveAlimento = (pasto: keyof AnalisiGiorno['pasti'], index: number) => {
+    console.log('➖ Removing alimento from', pasto, 'at index', index);
+    
     setFormData(prev => ({
       ...prev,
       pasti: {
@@ -159,51 +198,109 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     setIsLoading(true);
 
     try {
+      console.log('💾 Starting save process...', {
+        isPTMode,
+        clienteId,
+        clienteNome,
+        selectedDate: selectedDate.toISOString(),
+        formData
+      });
+
       // Validazione base
       if (formData.idratazione <= 0) {
         alert('⚠️ Inserisci l\'idratazione giornaliera');
+        setIsLoading(false);
         return;
       }
 
       if (formData.pliche.mattino_addome <= 0 || formData.pliche.mattino_fianchi <= 0) {
         alert('⚠️ Inserisci le misurazioni mattutine di riferimento');
+        setIsLoading(false);
         return;
       }
 
-      // Salva in localStorage
-      const existingData = JSON.parse(localStorage.getItem('analisiGrassoData') || '[]');
-      const dateString = selectedDate.toISOString().split('T')[0];
-      
-      const updatedData = existingData.filter((d: any) => 
-        new Date(d.data).toISOString().split('T')[0] !== dateString
-      );
-      
-      updatedData.push({
+      // Prepara i dati per il salvataggio
+      const dataToSave = {
         ...formData,
+        data: selectedDate,
+        cliente_id: isPTMode ? clienteId : undefined
+      };
+
+      console.log('📊 Data to save:', dataToSave);
+
+      // Determina la chiave di storage
+      let storageKey = 'analisiGrassoData';
+      if (isPTMode && clienteId) {
+        storageKey = `analisiGrassoData_${clienteId}`;
+      }
+
+      console.log('🔑 Storage key:', storageKey);
+
+      // Carica dati esistenti
+      const existingData = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      console.log('📋 Existing data:', existingData);
+
+      // Rimuovi dati per la stessa data
+      const dateString = selectedDate.toISOString().split('T')[0];
+      const filteredData = existingData.filter((d: any) => {
+        const existingDateString = new Date(d.data).toISOString().split('T')[0];
+        return existingDateString !== dateString;
+      });
+
+      console.log('🗑️ Filtered data (removed same date):', filteredData);
+
+      // Aggiungi nuovi dati
+      const dataWithISODate = {
+        ...dataToSave,
         data: selectedDate.toISOString()
-      });
+      };
 
-      localStorage.setItem('analisiGrassoData', JSON.stringify(updatedData));
+      filteredData.push(dataWithISODate);
 
-      // Salva anche su Airtable
-      await fetch('/api/analisi-grasso', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'saveData',
-          data: {
-            ...formData,
-            data: selectedDate.toISOString(),
-            user_email: 'user@example.com' // TODO: gestire utente reale
-          }
-        })
-      });
+      console.log('📦 Final data to save:', filteredData);
 
-      onSave(formData);
+      // Salva nel localStorage
+      localStorage.setItem(storageKey, JSON.stringify(filteredData));
+
+      console.log('✅ Data saved successfully to localStorage');
+
+      // Prova a salvare anche su Airtable
+      try {
+        const response = await fetch('/api/analisi-grasso', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveData',
+            data: {
+              ...dataToSave,
+              data: selectedDate.toISOString(),
+              user_email: isPTMode ? `pt_${clienteId}@example.com` : 'user@example.com'
+            }
+          })
+        });
+
+        const result = await response.json();
+        console.log('🌐 Airtable save result:', result);
+      } catch (airtableError) {
+        console.log('⚠️ Airtable save failed (localStorage saved):', airtableError);
+      }
+
+      // Chiama la funzione onSave del parent
+      onSave(dataToSave);
+
+      // Mostra messaggio di successo
+      const successMessage = isPTMode && clienteNome 
+        ? `✅ Dati salvati per ${clienteNome}!`
+        : '✅ Dati salvati!';
+      
+      alert(successMessage);
+
+      // Chiudi il form
       onClose();
+
     } catch (error) {
-      console.error('Errore salvataggio:', error);
-      alert('Errore nel salvataggio dei dati');
+      console.error('❌ Save error:', error);
+      alert('❌ Errore nel salvataggio dei dati');
     } finally {
       setIsLoading(false);
     }
@@ -237,7 +334,12 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 p-6 text-white">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">📝 Tracciamento Giornaliero</h2>
+            <div>
+              <h2 className="text-2xl font-bold">📝 Tracciamento Giornaliero</h2>
+              {isPTMode && clienteNome && (
+                <p className="text-sm text-green-100 mt-1">🏋️‍♂️ Cliente: {clienteNome}</p>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors"
@@ -246,6 +348,11 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
             </button>
           </div>
           <p className="text-green-100 mt-2">{formatDate(selectedDate)}</p>
+        </div>
+
+        {/* Debug Info (rimuovi in produzione) */}
+        <div className="bg-gray-900 p-2 text-xs text-gray-400 border-b border-gray-700">
+          Debug: PT Mode: {isPTMode ? 'YES' : 'NO'} | Cliente: {clienteNome || 'N/A'} | ID: {clienteId || 'N/A'}
         </div>
 
         {/* Tab Navigation */}
