@@ -5,30 +5,28 @@ interface AnalisiGiorno {
   user_email: string;
   pasti: {
     colazione: string[];
+    spuntino_mattina: string[];
     pranzo: string[];
+    spuntino_pomeriggio: string[];
     cena: string[];
+    spuntino_sera: string[];
+    bevande_alcoliche: string[];
   };
   pliche: {
     mattino_addome: number;
     mattino_fianchi: number;
-    colazione_1h30_addome: number;
-    colazione_1h30_fianchi: number;
-    colazione_1h45_addome: number;
-    colazione_1h45_fianchi: number;
-    colazione_2h_addome: number;
-    colazione_2h_fianchi: number;
-    pranzo_1h30_addome: number;
-    pranzo_1h30_fianchi: number;
-    pranzo_1h45_addome: number;
-    pranzo_1h45_fianchi: number;
-    pranzo_2h_addome: number;
-    pranzo_2h_fianchi: number;
-    cena_1h30_addome: number;
-    cena_1h30_fianchi: number;
-    cena_1h45_addome: number;
-    cena_1h45_fianchi: number;
-    cena_2h_addome: number;
-    cena_2h_fianchi: number;
+    colazione_post_addome: number;
+    colazione_post_fianchi: number;
+    spuntino_mattina_post_addome: number;
+    spuntino_mattina_post_fianchi: number;
+    pranzo_post_addome: number;
+    pranzo_post_fianchi: number;
+    spuntino_pomeriggio_post_addome: number;
+    spuntino_pomeriggio_post_fianchi: number;
+    cena_post_addome: number;
+    cena_post_fianchi: number;
+    spuntino_sera_post_addome: number;
+    spuntino_sera_post_fianchi: number;
   };
   idratazione: number;
   sonno?: number;
@@ -208,8 +206,12 @@ function analyzePatterns(data: AnalisiGiorno[]): AnalisiAI {
   data.forEach(day => {
     const allFoods = [
       ...day.pasti.colazione,
+      ...day.pasti.spuntino_mattina,
       ...day.pasti.pranzo,
-      ...day.pasti.cena
+      ...day.pasti.spuntino_pomeriggio,
+      ...day.pasti.cena,
+      ...day.pasti.spuntino_sera,
+      ...day.pasti.bevande_alcoliche
     ];
 
     // Calcola variazione media giornaliera
@@ -272,9 +274,12 @@ function analyzePatterns(data: AnalisiGiorno[]): AnalisiAI {
 function calculateAverageIncrease(pliche: any, zona: 'addome' | 'fianchi'): number {
   const baseValue = pliche[`mattino_${zona}`];
   const measurements = [
-    pliche[`colazione_2h_${zona}`],
-    pliche[`pranzo_2h_${zona}`],
-    pliche[`cena_2h_${zona}`]
+    pliche[`colazione_post_${zona}`],
+    pliche[`spuntino_mattina_post_${zona}`],
+    pliche[`pranzo_post_${zona}`],
+    pliche[`spuntino_pomeriggio_post_${zona}`],
+    pliche[`cena_post_${zona}`],
+    pliche[`spuntino_sera_post_${zona}`]
   ].filter(val => val > 0);
 
   if (measurements.length === 0) return 0;
@@ -286,25 +291,27 @@ function calculateAverageIncrease(pliche: any, zona: 'addome' | 'fianchi'): numb
 // Identifica pasti problematici
 function identifyProblematicMeals(day: AnalisiGiorno): string[] {
   const problematic = [];
+  const baseAddome = day.pliche.mattino_addome;
+  const baseFianchi = day.pliche.mattino_fianchi;
   
-  const colazioneIncrease = (
-    (day.pliche.colazione_2h_addome + day.pliche.colazione_2h_fianchi) - 
-    (day.pliche.mattino_addome + day.pliche.mattino_fianchi)
-  ) / 2;
-  
-  const pranzoIncrease = (
-    (day.pliche.pranzo_2h_addome + day.pliche.pranzo_2h_fianchi) - 
-    (day.pliche.mattino_addome + day.pliche.mattino_fianchi)
-  ) / 2;
-  
-  const cenaIncrease = (
-    (day.pliche.cena_2h_addome + day.pliche.cena_2h_fianchi) - 
-    (day.pliche.mattino_addome + day.pliche.mattino_fianchi)
-  ) / 2;
+  const pastiToCheck = [
+    { name: 'colazione', addome: 'colazione_post_addome', fianchi: 'colazione_post_fianchi' },
+    { name: 'spuntino_mattina', addome: 'spuntino_mattina_post_addome', fianchi: 'spuntino_mattina_post_fianchi' },
+    { name: 'pranzo', addome: 'pranzo_post_addome', fianchi: 'pranzo_post_fianchi' },
+    { name: 'spuntino_pomeriggio', addome: 'spuntino_pomeriggio_post_addome', fianchi: 'spuntino_pomeriggio_post_fianchi' },
+    { name: 'cena', addome: 'cena_post_addome', fianchi: 'cena_post_fianchi' },
+    { name: 'spuntino_sera', addome: 'spuntino_sera_post_addome', fianchi: 'spuntino_sera_post_fianchi' }
+  ];
 
-  if (colazioneIncrease > 3) problematic.push('colazione');
-  if (pranzoIncrease > 3) problematic.push('pranzo');
-  if (cenaIncrease > 3) problematic.push('cena');
+  pastiToCheck.forEach(pasto => {
+    const addomeIncrease = (day.pliche[pasto.addome as keyof typeof day.pliche] as number) - baseAddome;
+    const fianchiIncrease = (day.pliche[pasto.fianchi as keyof typeof day.pliche] as number) - baseFianchi;
+    const avgIncrease = (addomeIncrease + fianchiIncrease) / 2;
+    
+    if (avgIncrease > 3) {
+      problematic.push(pasto.name);
+    }
+  });
 
   return problematic;
 }
