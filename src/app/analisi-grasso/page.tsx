@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare, Wine, Clock, Activity } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare, Wine, Clock, Activity, Scale } from 'lucide-react';
 import Header from '@/components/header';
 import AnalisiGrassoForm from '@/components/AnalisiGrassoForm';
 
