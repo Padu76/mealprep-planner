@@ -38,6 +38,9 @@ export default function Header() {
             >
               📊 Dashboard
             </Link>
+            <Link href="/analisi-grasso" className="text-white hover:text-green-400 transition-colors font-medium">
+              📊 Analisi Grasso
+            </Link>
             <Link href="/ricette" className="text-white hover:text-green-400 transition-colors font-medium">
               🍽️ Ricette
             </Link>
@@ -88,6 +91,13 @@ export default function Header() {
                 }}
               >
                 📊 Dashboard
+              </Link>
+              <Link
+                href="/analisi-grasso"
+                className="block text-white hover:text-green-400 transition-colors font-medium py-2 px-3 rounded-lg hover:bg-gray-800"
+                onClick={closeMobileMenu}
+              >
+                📊 Analisi Grasso
               </Link>
               <Link
                 href="/ricette"
