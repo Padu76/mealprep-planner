@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Save, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Plus, Trash2, Check, AlertCircle, RefreshCw, Scale } from 'lucide-react';
 
 interface AnalisiGiorno {
   data: Date;
@@ -16,21 +16,10 @@ interface AnalisiGiorno {
     bevande_alcoliche: string[];
   };
   pliche: {
-    mattino_addome: number;
-    mattino_fianchi: number;
-    colazione_post_addome: number;
-    colazione_post_fianchi: number;
-    spuntino_mattina_post_addome: number;
-    spuntino_mattina_post_fianchi: number;
-    pranzo_post_addome: number;
-    pranzo_post_fianchi: number;
-    spuntino_pomeriggio_post_addome: number;
-    spuntino_pomeriggio_post_fianchi: number;
-    cena_post_addome: number;
-    cena_post_fianchi: number;
-    spuntino_sera_post_addome: number;
-    spuntino_sera_post_fianchi: number;
+    addome: number;
+    fianchi: number;
   };
+  peso: number;
   idratazione: number;
   sonno?: number;
   stress?: number;
@@ -59,21 +48,10 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
       bevande_alcoliche: []
     },
     pliche: {
-      mattino_addome: 0,
-      mattino_fianchi: 0,
-      colazione_post_addome: 0,
-      colazione_post_fianchi: 0,
-      spuntino_mattina_post_addome: 0,
-      spuntino_mattina_post_fianchi: 0,
-      pranzo_post_addome: 0,
-      pranzo_post_fianchi: 0,
-      spuntino_pomeriggio_post_addome: 0,
-      spuntino_pomeriggio_post_fianchi: 0,
-      cena_post_addome: 0,
-      cena_post_fianchi: 0,
-      spuntino_sera_post_addome: 0,
-      spuntino_sera_post_fianchi: 0
+      addome: 0,
+      fianchi: 0
     },
+    peso: 0,
     idratazione: 0,
     sonno: 0,
     stress: 5,
@@ -82,7 +60,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     foto: []
   });
 
-  const [activeTab, setActiveTab] = useState<'pasti' | 'pliche' | 'extra'>('pasti');
+  const [activeTab, setActiveTab] = useState<'pasti' | 'misurazioni' | 'extra'>('pasti');
   const [newAlimento, setNewAlimento] = useState('');
   const [selectedPasto, setSelectedPasto] = useState<keyof AnalisiGiorno['pasti']>('colazione');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -125,6 +103,39 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
       setSaveStatus('saved');
     }
   }, [existingData]);
+
+  // CALCOLO PERCENTUALE COMPLETAMENTO
+  const calculateCompletionPercentage = () => {
+    let completed = 0;
+    let total = 0;
+
+    // Pasti (30% del totale)
+    const totalPasti = Object.values(formData.pasti).reduce((sum, pasto) => sum + pasto.length, 0);
+    if (totalPasti > 0) completed += 30;
+    total += 30;
+
+    // Peso (15% del totale)
+    if (formData.peso > 0) completed += 15;
+    total += 15;
+
+    // Pliche (25% del totale)
+    if (formData.pliche.addome > 0 && formData.pliche.fianchi > 0) completed += 25;
+    total += 25;
+
+    // Idratazione (15% del totale)
+    if (formData.idratazione > 0) completed += 15;
+    total += 15;
+
+    // Sonno (10% del totale)
+    if (formData.sonno && formData.sonno > 0) completed += 10;
+    total += 10;
+
+    // Stress (5% del totale)
+    if (formData.stress !== 5) completed += 5; // Se ha modificato dal default
+    total += 5;
+
+    return Math.round((completed / total) * 100);
+  };
 
   // FUNZIONE DI SALVATAGGIO SILENZIOSA
   const saveDataSilently = async (data: AnalisiGiorno) => {
@@ -182,7 +193,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
 
       setSaveStatus('saved');
       
-      // Notifica parent
+      // Notifica parent SENZA POPUP
       onSave(data);
 
     } catch (error) {
@@ -270,7 +281,17 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     setTimeout(() => saveDataSilently(newFormData), 100);
   };
 
-  const handlePlicheChange = (field: keyof AnalisiGiorno['pliche'], value: number) => {
+  const handleMisurazioneChange = (field: string, value: number) => {
+    const newFormData = {
+      ...formData,
+      [field]: field === 'pliche' ? { ...formData.pliche, ...value } : value
+    };
+    
+    setFormData(newFormData);
+    triggerSave();
+  };
+
+  const handlePlicheChange = (field: 'addome' | 'fianchi', value: number) => {
     const newFormData = {
       ...formData,
       pliche: {
@@ -315,6 +336,8 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     }
   };
 
+  const completionPercentage = calculateCompletionPercentage();
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
@@ -349,6 +372,20 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
           </div>
         </div>
 
+        {/* Progress Bar */}
+        <div className="bg-gray-700 px-6 py-3 border-b border-gray-600">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-300">Completamento giornaliero</span>
+            <span className="text-sm font-bold text-green-400">{completionPercentage}%</span>
+          </div>
+          <div className="w-full bg-gray-600 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${completionPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+
         {/* Status Bar */}
         <div className="bg-green-900/20 border-b border-green-700 px-6 py-2">
           <p className="text-green-400 text-sm">
@@ -361,7 +398,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
           <nav className="flex">
             {[
               { id: 'pasti', label: '🍽️ Pasti' },
-              { id: 'pliche', label: '📏 Pliche' },
+              { id: 'misurazioni', label: '📏 Misurazioni' },
               { id: 'extra', label: '📊 Extra' }
             ].map(tab => (
               <button
@@ -380,7 +417,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
         </div>
 
         {/* Form Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
           {/* TAB PASTI */}
           {activeTab === 'pasti' && (
             <div className="space-y-6">
@@ -472,80 +509,82 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
             </div>
           )}
 
-          {/* TAB PLICHE */}
-          {activeTab === 'pliche' && (
+          {/* TAB MISURAZIONI */}
+          {activeTab === 'misurazioni' && (
             <div className="space-y-6">
               <div className="bg-gray-700 rounded-lg p-4">
-                <h3 className="text-lg font-bold text-blue-400 mb-4">📏 Misurazioni Pliche</h3>
+                <h3 className="text-lg font-bold text-blue-400 mb-4">📏 Misurazioni Giornaliere</h3>
+                <p className="text-sm text-gray-400 mb-6">⏰ Una misurazione al giorno - mattina appena svegli o sera prima di dormire</p>
                 
-                {/* Riferimento Mattutino */}
-                <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-blue-400 mb-3">🌅 Riferimento Mattutino</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Peso */}
+                  <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                      <Scale className="w-4 h-4" />
+                      Peso Corporeo
+                    </h4>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Addome (mm)</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Peso (kg)</label>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={formData.pliche.mattino_addome || ''}
-                        onChange={(e) => handlePlicheChange('mattino_addome', parseFloat(e.target.value) || 0)}
-                        className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.0"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Fianchi (mm)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={formData.pliche.mattino_fianchi || ''}
-                        onChange={(e) => handlePlicheChange('mattino_fianchi', parseFloat(e.target.value) || 0)}
-                        className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.0"
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.peso === 0 ? '' : formData.peso.toString()}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(',', '.');
+                          const numValue = value === '' ? 0 : parseFloat(value);
+                          if (!isNaN(numValue)) {
+                            handleMisurazioneChange('peso', numValue);
+                          }
+                        }}
+                        className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="es. 70.5"
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* Post-Pasto */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pastiConfig.slice(0, 6).map(pasto => (
-                    <div key={pasto.id} className="bg-gray-600 rounded-lg p-4">
-                      <h4 className="font-semibold text-white mb-3">
-                        {pasto.emoji} Post-{pasto.label}
-                      </h4>
-                      <p className="text-xs text-gray-400 mb-3">⏱️ 90-120 min dopo</p>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs text-gray-300 mb-1">Addome (mm)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={formData.pliche[`${pasto.id}_post_addome` as keyof typeof formData.pliche] || ''}
-                            onChange={(e) => handlePlicheChange(`${pasto.id}_post_addome` as any, parseFloat(e.target.value) || 0)}
-                            className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="0.0"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-300 mb-1">Fianchi (mm)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={formData.pliche[`${pasto.id}_post_fianchi` as keyof typeof formData.pliche] || ''}
-                            onChange={(e) => handlePlicheChange(`${pasto.id}_post_fianchi` as any, parseFloat(e.target.value) || 0)}
-                            className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="0.0"
-                          />
-                        </div>
-                      </div>
+                  {/* Pliche Addome */}
+                  <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-400 mb-3">📏 Plica Addome</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Addome (mm)</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.pliche.addome === 0 ? '' : formData.pliche.addome.toString()}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(',', '.');
+                          const numValue = value === '' ? 0 : parseFloat(value);
+                          if (!isNaN(numValue)) {
+                            handlePlicheChange('addome', numValue);
+                          }
+                        }}
+                        className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="es. 15.5"
+                      />
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Pliche Fianchi */}
+                  <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-green-400 mb-3">📏 Plica Fianchi</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Fianchi (mm)</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={formData.pliche.fianchi === 0 ? '' : formData.pliche.fianchi.toString()}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(',', '.');
+                          const numValue = value === '' ? 0 : parseFloat(value);
+                          if (!isNaN(numValue)) {
+                            handlePlicheChange('fianchi', numValue);
+                          }
+                        }}
+                        className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="es. 18.2"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -561,13 +600,15 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">Litri bevuti oggi</label>
                     <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={formData.idratazione === 0 ? '' : formData.idratazione}
+                      type="text"
+                      inputMode="decimal"
+                      value={formData.idratazione === 0 ? '' : formData.idratazione.toString()}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                        handleExtraChange('idratazione', value);
+                        const value = e.target.value.replace(',', '.');
+                        const numValue = value === '' ? 0 : parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          handleExtraChange('idratazione', numValue);
+                        }
                       }}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       placeholder="es. 2.5"
@@ -581,14 +622,15 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-300">Ore dormite</label>
                     <input
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.5"
-                      value={formData.sonno === 0 ? '' : formData.sonno}
+                      type="text"
+                      inputMode="decimal"
+                      value={formData.sonno === 0 ? '' : formData.sonno?.toString()}
                       onChange={(e) => {
-                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                        handleExtraChange('sonno', value);
+                        const value = e.target.value.replace(',', '.');
+                        const numValue = value === '' ? 0 : parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          handleExtraChange('sonno', numValue);
+                        }
                       }}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="es. 7.5"
@@ -644,14 +686,20 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
         {/* Footer */}
         <div className="border-t border-gray-700 p-4 bg-gray-800">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2 text-sm">
-              {getSaveStatusIcon()}
-              <span className={saveStatus === 'saved' ? 'text-green-400' : 'text-gray-400'}>
-                {saveStatus === 'saved' && 'Tutti i dati sono salvati'}
-                {saveStatus === 'saving' && 'Salvataggio in corso...'}
-                {saveStatus === 'error' && 'Errore nel salvataggio'}
-                {saveStatus === 'idle' && 'Inserisci i dati'}
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                {getSaveStatusIcon()}
+                <span className={saveStatus === 'saved' ? 'text-green-400' : 'text-gray-400'}>
+                  {saveStatus === 'saved' && 'Tutti i dati sono salvati'}
+                  {saveStatus === 'saving' && 'Salvataggio in corso...'}
+                  {saveStatus === 'error' && 'Errore nel salvataggio'}
+                  {saveStatus === 'idle' && 'Inserisci i dati'}
+                </span>
+              </div>
+              
+              <div className="text-sm text-gray-400">
+                Completamento: <span className="font-bold text-green-400">{completionPercentage}%</span>
+              </div>
             </div>
             
             <button
