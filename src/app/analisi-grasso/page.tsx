@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Plus, TrendingUp, Brain, BarChart3, Clock, User, Scale, Droplets, Activity, BrainCircuit } from 'lucide-react';
-import Header from '../components/header';
-import AnalisiGrassoForm from '../components/AnalisiGrassoForm';
+import Header from '@/components/header';
+import AnalisiGrassoForm from '@/components/AnalisiGrassoForm';
 
 interface AnalisiGiorno {
   data: Date;
