@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare, Wine } from 'lucide-react';
+import { Calendar, Plus, TrendingUp, Brain, BarChart3, User, ArrowLeft, MessageSquare, Wine, Clock, Activity } from 'lucide-react';
 import Header from '@/components/header';
 import AnalisiGrassoForm from '@/components/AnalisiGrassoForm';
 
@@ -26,21 +26,10 @@ interface AnalisiGiorno {
     bevande_alcoliche: string[];
   };
   pliche: {
-    mattino_addome: number;
-    mattino_fianchi: number;
-    colazione_post_addome: number;
-    colazione_post_fianchi: number;
-    spuntino_mattina_post_addome: number;
-    spuntino_mattina_post_fianchi: number;
-    pranzo_post_addome: number;
-    pranzo_post_fianchi: number;
-    spuntino_pomeriggio_post_addome: number;
-    spuntino_pomeriggio_post_fianchi: number;
-    cena_post_addome: number;
-    cena_post_fianchi: number;
-    spuntino_sera_post_addome: number;
-    spuntino_sera_post_fianchi: number;
+    addome: number;
+    fianchi: number;
   };
+  peso: number;
   idratazione: number;
   sonno?: number;
   stress?: number;
@@ -91,6 +80,64 @@ export default function AnalisiGrassoPTPage() {
     { id: 'spuntino_sera', label: 'Spuntino Sera', emoji: '🍪', color: 'indigo' },
     { id: 'bevande_alcoliche', label: 'Bevande Alcoliche', emoji: '🍷', color: 'red' }
   ];
+
+  // FUNZIONE MIGRAZIONE DATI PLICHE VECCHI → NUOVI
+  const migrateOldData = (data: any[]): AnalisiGiorno[] => {
+    return data.map(item => {
+      // Se ha già la struttura nuova, ritorna così com'è
+      if (item.pliche && typeof item.pliche.addome === 'number') {
+        return {
+          ...item,
+          data: new Date(item.data)
+        };
+      }
+      
+      // Migrazione da struttura vecchia a nuova
+      return {
+        ...item,
+        data: new Date(item.data),
+        pliche: {
+          addome: item.pliche?.mattino_addome || 0,
+          fianchi: item.pliche?.mattino_fianchi || 0
+        }
+      };
+    });
+  };
+
+  // CALCOLO PERCENTUALE COMPLETAMENTO PER GIORNO
+  const calculateDayCompletionPercentage = (dayData: AnalisiGiorno): number => {
+    if (!dayData) return 0;
+    
+    let completed = 0;
+    let total = 0;
+
+    // Pasti (30% del totale)
+    const totalPasti = Object.values(dayData.pasti).reduce((sum, pasto) => sum + pasto.length, 0);
+    if (totalPasti > 0) completed += 30;
+    total += 30;
+
+    // Peso (15% del totale)
+    if (dayData.peso > 0) completed += 15;
+    total += 15;
+
+    // Pliche (25% del totale)
+    if (dayData.pliche.addome > 0 && dayData.pliche.fianchi > 0) completed += 25;
+    total += 25;
+
+    // Idratazione (15% del totale)
+    if (dayData.idratazione > 0) completed += 15;
+    total += 15;
+
+    // Sonno (10% del totale)
+    if (dayData.sonno && dayData.sonno > 0) completed += 10;
+    total += 10;
+
+    // Stress (5% del totale)
+    if (dayData.stress !== 5) completed += 5;
+    total += 5;
+
+    return Math.round((completed / total) * 100);
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -170,11 +217,8 @@ export default function AnalisiGrassoPTPage() {
         const data = JSON.parse(dataString);
         console.log('📊 Parsed data:', data);
         
-        // Converti le stringhe date in oggetti Date
-        const processedData = data.map((item: any) => ({
-          ...item,
-          data: new Date(item.data)
-        }));
+        // Migra e processa i dati
+        const processedData = migrateOldData(data);
         
         setSavedData(processedData);
         console.log('✅ Loaded', processedData.length, 'days of data');
@@ -242,22 +286,16 @@ export default function AnalisiGrassoPTPage() {
       setSavedData(updatedData);
       setCurrentDayData(data);
       
-      // Mostra conferma
-      if (isPTMode && selectedCliente) {
-        alert(`✅ Dati salvati per ${selectedCliente.nome}!`);
-      } else {
-        alert('✅ Dati salvati!');
-      }
+      // NESSUN ALERT O POPUP - SALVATAGGIO SILENZIOSO
+      console.log('💾 Data saved silently');
       
     } catch (error) {
       console.error('❌ Error saving data:', error);
-      alert('❌ Errore nel salvataggio dei dati');
     }
   };
 
   const handleSavePTNotes = () => {
     if (!currentDayData) {
-      alert('❌ Nessun dato da modificare');
       return;
     }
     
@@ -276,17 +314,14 @@ export default function AnalisiGrassoPTPage() {
       localStorage.setItem(storageKey, JSON.stringify(allData));
       setCurrentDayData(updatedData);
       setSavedData(allData);
-      alert('✅ Note PT salvate!');
       console.log('✅ PT notes saved successfully');
     } catch (error) {
       console.error('❌ Error saving PT notes:', error);
-      alert('❌ Errore nel salvataggio delle note');
     }
   };
 
   const generateAIAnalysis = async () => {
     if (savedData.length < 3) {
-      alert('⚠️ Servono almeno 3 giorni di dati per l\'analisi AI');
       return;
     }
 
@@ -306,12 +341,9 @@ export default function AnalisiGrassoPTPage() {
       const result = await response.json();
       if (result.success) {
         setAiAnalysis(result.analysis);
-      } else {
-        alert('Errore nell\'analisi AI: ' + result.error);
       }
     } catch (error) {
       console.error('Errore analisi AI:', error);
-      alert('Errore connessione AI');
     } finally {
       setIsLoading(false);
     }
@@ -392,16 +424,8 @@ export default function AnalisiGrassoPTPage() {
     return colors[color as keyof typeof colors] || 'bg-gray-600';
   };
 
-  // Debug info (rimuovi in produzione)
-  if (typeof window !== 'undefined') {
-    console.log('🔍 Debug Info:', {
-      isPTMode,
-      selectedCliente: selectedCliente?.nome,
-      savedDataLength: savedData.length,
-      currentDayData: currentDayData ? 'present' : 'null',
-      selectedDate: selectedDate.toDateString()
-    });
-  }
+  // Progress bar per giorno selezionato
+  const selectedDayCompletion = currentDayData ? calculateDayCompletionPercentage(currentDayData) : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -599,6 +623,31 @@ export default function AnalisiGrassoPTPage() {
                 </button>
               </div>
 
+              {/* PROGRESS BAR PER GIORNO SELEZIONATO */}
+              {currentDayData && (
+                <div className="mb-6 p-4 bg-gray-700 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                      <Activity className="w-4 h-4" />
+                      Completamento giornaliero
+                    </span>
+                    <span className="text-sm font-bold text-green-400">{selectedDayCompletion}%</span>
+                  </div>
+                  <div className="w-full bg-gray-600 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${selectedDayCompletion}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs text-gray-400">
+                    <span>Pasti: {Object.values(currentDayData.pasti).reduce((sum, pasto) => sum + pasto.length, 0)} elementi</span>
+                    <span>Peso: {currentDayData.peso > 0 ? '✓' : '○'}</span>
+                    <span>Pliche: {currentDayData.pliche.addome > 0 && currentDayData.pliche.fianchi > 0 ? '✓' : '○'}</span>
+                    <span>Acqua: {currentDayData.idratazione > 0 ? '✓' : '○'}</span>
+                  </div>
+                </div>
+              )}
+
               {currentDayData ? (
                 <div className="space-y-6">
                   {/* Pasti & Bevande */}
@@ -627,49 +676,36 @@ export default function AnalisiGrassoPTPage() {
                     </div>
                   </div>
 
-                  {/* Misurazioni Pliche */}
+                  {/* Misurazioni */}
                   <div className="bg-gray-700 rounded-lg p-4">
-                    <h3 className="font-bold text-blue-400 mb-3">📏 Misurazioni Pliche</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
-                        <h4 className="font-semibold text-blue-400 mb-2">🌅 Mattutino</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Addome:</span>
-                            <span className="font-bold text-blue-300">{currentDayData.pliche.mattino_addome}mm</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Fianchi:</span>
-                            <span className="font-bold text-blue-300">{currentDayData.pliche.mattino_fianchi}mm</span>
-                          </div>
+                    <h3 className="font-bold text-blue-400 mb-3">📏 Misurazioni</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Peso */}
+                      <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-3">
+                        <h4 className="font-semibold text-purple-400 mb-2 flex items-center gap-2">
+                          <Scale className="w-4 h-4" />
+                          Peso
+                        </h4>
+                        <div className="text-2xl font-bold text-purple-300">
+                          {currentDayData.peso > 0 ? `${currentDayData.peso}kg` : 'Non inserito'}
                         </div>
                       </div>
                       
-                      {pastiConfig.slice(0, 6).map(pasto => {
-                        const addome = currentDayData.pliche[`${pasto.id}_post_addome` as keyof typeof currentDayData.pliche];
-                        const fianchi = currentDayData.pliche[`${pasto.id}_post_fianchi` as keyof typeof currentDayData.pliche];
-                        
-                        if (addome === 0 && fianchi === 0) return null;
-                        
-                        return (
-                          <div key={pasto.id} className="bg-gray-600 rounded-lg p-3">
-                            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                              <span className={`w-3 h-3 rounded-full ${getColorClass(pasto.color)}`}></span>
-                              {pasto.emoji} Post-{pasto.label}
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Addome:</span>
-                                <span className="font-bold text-white">{addome}mm</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Fianchi:</span>
-                                <span className="font-bold text-white">{fianchi}mm</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {/* Pliche Addome */}
+                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
+                        <h4 className="font-semibold text-blue-400 mb-2">📏 Addome</h4>
+                        <div className="text-2xl font-bold text-blue-300">
+                          {currentDayData.pliche.addome > 0 ? `${currentDayData.pliche.addome}mm` : 'Non inserito'}
+                        </div>
+                      </div>
+                      
+                      {/* Pliche Fianchi */}
+                      <div className="bg-green-900/20 border border-green-700 rounded-lg p-3">
+                        <h4 className="font-semibold text-green-400 mb-2">📏 Fianchi</h4>
+                        <div className="text-2xl font-bold text-green-300">
+                          {currentDayData.pliche.fianchi > 0 ? `${currentDayData.pliche.fianchi}mm` : 'Non inserito'}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -679,11 +715,15 @@ export default function AnalisiGrassoPTPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="bg-gray-600 rounded-lg p-3">
                         <div className="text-sm text-gray-300 mb-1">💧 Idratazione</div>
-                        <div className="text-lg font-bold text-cyan-400">{currentDayData.idratazione}L</div>
+                        <div className="text-lg font-bold text-cyan-400">
+                          {currentDayData.idratazione > 0 ? `${currentDayData.idratazione}L` : 'Non inserito'}
+                        </div>
                       </div>
                       <div className="bg-gray-600 rounded-lg p-3">
                         <div className="text-sm text-gray-300 mb-1">😴 Sonno</div>
-                        <div className="text-lg font-bold text-purple-400">{currentDayData.sonno || 0}h</div>
+                        <div className="text-lg font-bold text-purple-400">
+                          {currentDayData.sonno && currentDayData.sonno > 0 ? `${currentDayData.sonno}h` : 'Non inserito'}
+                        </div>
                       </div>
                       <div className="bg-gray-600 rounded-lg p-3">
                         <div className="text-sm text-gray-300 mb-1">😰 Stress</div>
