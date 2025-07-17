@@ -99,7 +99,18 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   // Carica dati esistenti
   useEffect(() => {
     if (existingData) {
-      setFormData(existingData);
+      // Assicurati che tutti i campi siano definiti
+      const safeData = {
+        ...existingData,
+        pliche: existingData.pliche || { addome: 0, fianchi: 0 },
+        peso: existingData.peso || 0,
+        idratazione: existingData.idratazione || 0,
+        sonno: existingData.sonno || 0,
+        stress: existingData.stress || 5,
+        digestione: existingData.digestione || '',
+        note: existingData.note || ''
+      };
+      setFormData(safeData);
       setSaveStatus('saved');
     }
   }, [existingData]);
@@ -137,7 +148,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     return Math.round((completed / total) * 100);
   };
 
-  // FUNZIONE DI SALVATAGGIO SILENZIOSA
+  // FUNZIONE DI SALVATAGGIO SILENZIOSA - SENZA POPUP
   const saveDataSilently = async (data: AnalisiGiorno) => {
     if (isSavingRef.current) return;
 
@@ -284,7 +295,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
   const handleMisurazioneChange = (field: string, value: number) => {
     const newFormData = {
       ...formData,
-      [field]: field === 'pliche' ? { ...formData.pliche, ...value } : value
+      [field]: value
     };
     
     setFormData(newFormData);
@@ -312,6 +323,19 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     
     setFormData(newFormData);
     triggerSave();
+  };
+
+  // FUNZIONE PER PARSARE INPUT DECIMALI MIGLIORATA
+  const parseDecimalInput = (value: string): number => {
+    if (value === '') return 0;
+    
+    // Sostituisci virgola con punto
+    const cleanValue = value.replace(',', '.');
+    
+    // Verifica che sia un numero valido
+    const numValue = parseFloat(cleanValue);
+    
+    return isNaN(numValue) ? 0 : numValue;
   };
 
   const formatDate = (date: Date) => {
@@ -372,20 +396,6 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="bg-gray-700 px-6 py-3 border-b border-gray-600">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-300">Completamento giornaliero</span>
-            <span className="text-sm font-bold text-green-400">{completionPercentage}%</span>
-          </div>
-          <div className="w-full bg-gray-600 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${completionPercentage}%` }}
-            ></div>
-          </div>
-        </div>
-
         {/* Status Bar */}
         <div className="bg-green-900/20 border-b border-green-700 px-6 py-2">
           <p className="text-green-400 text-sm">
@@ -417,7 +427,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
         </div>
 
         {/* Form Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-240px)]">
           {/* TAB PASTI */}
           {activeTab === 'pasti' && (
             <div className="space-y-6">
@@ -528,16 +538,14 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={formData.peso === 0 ? '' : formData.peso.toString()}
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={formData.peso === 0 ? '' : formData.peso.toString().replace('.', ',')}
                         onChange={(e) => {
-                          const value = e.target.value.replace(',', '.');
-                          const numValue = value === '' ? 0 : parseFloat(value);
-                          if (!isNaN(numValue)) {
-                            handleMisurazioneChange('peso', numValue);
-                          }
+                          const value = parseDecimalInput(e.target.value);
+                          handleMisurazioneChange('peso', value);
                         }}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="es. 70.5"
+                        placeholder="es. 70,5"
                       />
                     </div>
                   </div>
@@ -550,16 +558,14 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={formData.pliche.addome === 0 ? '' : formData.pliche.addome.toString()}
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={formData.pliche.addome === 0 ? '' : formData.pliche.addome.toString().replace('.', ',')}
                         onChange={(e) => {
-                          const value = e.target.value.replace(',', '.');
-                          const numValue = value === '' ? 0 : parseFloat(value);
-                          if (!isNaN(numValue)) {
-                            handlePlicheChange('addome', numValue);
-                          }
+                          const value = parseDecimalInput(e.target.value);
+                          handlePlicheChange('addome', value);
                         }}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="es. 15.5"
+                        placeholder="es. 15,5"
                       />
                     </div>
                   </div>
@@ -572,16 +578,14 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={formData.pliche.fianchi === 0 ? '' : formData.pliche.fianchi.toString()}
+                        pattern="[0-9]*[.,]?[0-9]*"
+                        value={formData.pliche.fianchi === 0 ? '' : formData.pliche.fianchi.toString().replace('.', ',')}
                         onChange={(e) => {
-                          const value = e.target.value.replace(',', '.');
-                          const numValue = value === '' ? 0 : parseFloat(value);
-                          if (!isNaN(numValue)) {
-                            handlePlicheChange('fianchi', numValue);
-                          }
+                          const value = parseDecimalInput(e.target.value);
+                          handlePlicheChange('fianchi', value);
                         }}
                         className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                        placeholder="es. 18.2"
+                        placeholder="es. 18,2"
                       />
                     </div>
                   </div>
@@ -602,16 +606,14 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={formData.idratazione === 0 ? '' : formData.idratazione.toString()}
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      value={formData.idratazione === 0 ? '' : formData.idratazione.toString().replace('.', ',')}
                       onChange={(e) => {
-                        const value = e.target.value.replace(',', '.');
-                        const numValue = value === '' ? 0 : parseFloat(value);
-                        if (!isNaN(numValue)) {
-                          handleExtraChange('idratazione', numValue);
-                        }
+                        const value = parseDecimalInput(e.target.value);
+                        handleExtraChange('idratazione', value);
                       }}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      placeholder="es. 2.5"
+                      placeholder="es. 2,5"
                     />
                   </div>
                 </div>
@@ -624,16 +626,14 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={formData.sonno === 0 ? '' : formData.sonno?.toString()}
+                      pattern="[0-9]*[.,]?[0-9]*"
+                      value={formData.sonno === 0 ? '' : (formData.sonno || 0).toString().replace('.', ',')}
                       onChange={(e) => {
-                        const value = e.target.value.replace(',', '.');
-                        const numValue = value === '' ? 0 : parseFloat(value);
-                        if (!isNaN(numValue)) {
-                          handleExtraChange('sonno', numValue);
-                        }
+                        const value = parseDecimalInput(e.target.value);
+                        handleExtraChange('sonno', value);
                       }}
                       className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="es. 7.5"
+                      placeholder="es. 7,5"
                     />
                   </div>
                 </div>
@@ -683,23 +683,31 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer con Progress Bar */}
         <div className="border-t border-gray-700 p-4 bg-gray-800">
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">Completamento giornaliero</span>
+              <span className="text-sm font-bold text-green-400">{completionPercentage}%</span>
+            </div>
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${completionPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                {getSaveStatusIcon()}
-                <span className={saveStatus === 'saved' ? 'text-green-400' : 'text-gray-400'}>
-                  {saveStatus === 'saved' && 'Tutti i dati sono salvati'}
-                  {saveStatus === 'saving' && 'Salvataggio in corso...'}
-                  {saveStatus === 'error' && 'Errore nel salvataggio'}
-                  {saveStatus === 'idle' && 'Inserisci i dati'}
-                </span>
-              </div>
-              
-              <div className="text-sm text-gray-400">
-                Completamento: <span className="font-bold text-green-400">{completionPercentage}%</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm">
+              {getSaveStatusIcon()}
+              <span className={saveStatus === 'saved' ? 'text-green-400' : 'text-gray-400'}>
+                {saveStatus === 'saved' && 'Tutti i dati sono salvati'}
+                {saveStatus === 'saving' && 'Salvataggio in corso...'}
+                {saveStatus === 'error' && 'Errore nel salvataggio'}
+                {saveStatus === 'idle' && 'Inserisci i dati'}
+              </span>
             </div>
             
             <button
