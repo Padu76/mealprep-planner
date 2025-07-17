@@ -96,27 +96,48 @@ export default function AnalisiGrassoPTPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const clienteId = urlParams.get('cliente');
     
+    console.log('🔍 URL Params - Cliente ID:', clienteId);
+    
     if (clienteId) {
       setIsPTMode(true);
       loadCliente(clienteId);
     } else {
       setIsPTMode(false);
+      setSelectedCliente(null);
     }
 
     loadClienti();
   }, []);
 
   useEffect(() => {
-    loadSavedData();
-  }, [selectedDate, selectedCliente]);
+    if (isPTMode && selectedCliente) {
+      console.log('📊 Loading data for cliente:', selectedCliente.nome);
+      loadSavedData();
+    } else if (!isPTMode) {
+      console.log('👤 Loading personal data');
+      loadSavedData();
+    }
+  }, [selectedDate, selectedCliente, isPTMode]);
 
   const loadCliente = (clienteId: string) => {
     try {
+      console.log('👤 Loading cliente:', clienteId);
       const savedClienti = JSON.parse(localStorage.getItem('pt_clienti') || '[]');
+      console.log('📋 All clients:', savedClienti);
+      
       const cliente = savedClienti.find((c: Cliente) => c.id === clienteId);
-      setSelectedCliente(cliente || null);
+      console.log('✅ Found cliente:', cliente);
+      
+      if (cliente) {
+        setSelectedCliente(cliente);
+        console.log('🎯 Cliente set:', cliente.nome);
+      } else {
+        console.error('❌ Cliente not found for ID:', clienteId);
+        setSelectedCliente(null);
+      }
     } catch (error) {
-      console.error('Errore caricamento cliente:', error);
+      console.error('❌ Error loading cliente:', error);
+      setSelectedCliente(null);
     }
   };
 
@@ -124,51 +145,123 @@ export default function AnalisiGrassoPTPage() {
     try {
       const savedClienti = JSON.parse(localStorage.getItem('pt_clienti') || '[]');
       setClienti(savedClienti);
+      console.log('📋 Loaded', savedClienti.length, 'clients');
     } catch (error) {
-      console.error('Errore caricamento clienti:', error);
+      console.error('❌ Error loading clients:', error);
     }
   };
 
   const loadSavedData = () => {
     try {
-      const storageKey = isPTMode && selectedCliente 
-        ? `analisiGrassoData_${selectedCliente.id}` 
-        : 'analisiGrassoData';
+      // Determina la chiave di storage
+      let storageKey = 'analisiGrassoData'; // Default per uso personale
       
-      const data = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      setSavedData(data);
+      if (isPTMode && selectedCliente) {
+        storageKey = `analisiGrassoData_${selectedCliente.id}`;
+        console.log('🔑 Using PT storage key:', storageKey);
+      } else {
+        console.log('🔑 Using personal storage key:', storageKey);
+      }
       
-      const dayData = data.find((d: any) => 
-        new Date(d.data).toDateString() === selectedDate.toDateString()
-      );
-      setCurrentDayData(dayData || null);
+      const dataString = localStorage.getItem(storageKey);
+      console.log('💾 Raw data from localStorage:', dataString);
+      
+      if (dataString) {
+        const data = JSON.parse(dataString);
+        console.log('📊 Parsed data:', data);
+        
+        // Converti le stringhe date in oggetti Date
+        const processedData = data.map((item: any) => ({
+          ...item,
+          data: new Date(item.data)
+        }));
+        
+        setSavedData(processedData);
+        console.log('✅ Loaded', processedData.length, 'days of data');
+        
+        // Cerca dati per la data selezionata
+        const dayData = processedData.find((d: any) => 
+          new Date(d.data).toDateString() === selectedDate.toDateString()
+        );
+        
+        if (dayData) {
+          setCurrentDayData(dayData);
+          setPtNotes(dayData.note_pt || '');
+          console.log('📅 Found data for selected date:', dayData);
+        } else {
+          setCurrentDayData(null);
+          setPtNotes('');
+          console.log('📅 No data for selected date');
+        }
+      } else {
+        console.log('💾 No data found in localStorage');
+        setSavedData([]);
+        setCurrentDayData(null);
+        setPtNotes('');
+      }
     } catch (error) {
-      console.error('Errore caricamento dati:', error);
+      console.error('❌ Error loading saved data:', error);
+      setSavedData([]);
+      setCurrentDayData(null);
+      setPtNotes('');
     }
   };
 
   const handleSaveData = (data: AnalisiGiorno) => {
+    console.log('💾 Saving data:', data);
+    
+    // Rimuovi dati esistenti per questa data
     const updatedData = savedData.filter(d => 
       new Date(d.data).toDateString() !== selectedDate.toDateString()
     );
     
+    // Aggiungi ID cliente se in modalità PT
     if (isPTMode && selectedCliente) {
       data.cliente_id = selectedCliente.id;
+      console.log('🏋️‍♂️ Adding cliente_id:', selectedCliente.id);
     }
     
+    // Aggiungi i nuovi dati
     updatedData.push(data);
     
-    const storageKey = isPTMode && selectedCliente 
-      ? `analisiGrassoData_${selectedCliente.id}` 
-      : 'analisiGrassoData';
+    // Determina la chiave di storage
+    let storageKey = 'analisiGrassoData';
+    if (isPTMode && selectedCliente) {
+      storageKey = `analisiGrassoData_${selectedCliente.id}`;
+    }
     
-    localStorage.setItem(storageKey, JSON.stringify(updatedData));
-    setSavedData(updatedData);
-    setCurrentDayData(data);
+    console.log('🔑 Saving to storage key:', storageKey);
+    console.log('📊 Data to save:', updatedData);
+    
+    try {
+      // Salva nel localStorage
+      localStorage.setItem(storageKey, JSON.stringify(updatedData));
+      console.log('✅ Data saved successfully');
+      
+      // Aggiorna lo stato
+      setSavedData(updatedData);
+      setCurrentDayData(data);
+      
+      // Mostra conferma
+      if (isPTMode && selectedCliente) {
+        alert(`✅ Dati salvati per ${selectedCliente.nome}!`);
+      } else {
+        alert('✅ Dati salvati!');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error saving data:', error);
+      alert('❌ Errore nel salvataggio dei dati');
+    }
   };
 
   const handleSavePTNotes = () => {
-    if (!currentDayData) return;
+    if (!currentDayData) {
+      alert('❌ Nessun dato da modificare');
+      return;
+    }
+    
+    console.log('📝 Saving PT notes:', ptNotes);
     
     const updatedData = { ...currentDayData, note_pt: ptNotes };
     const allData = savedData.map(d => 
@@ -179,11 +272,16 @@ export default function AnalisiGrassoPTPage() {
       ? `analisiGrassoData_${selectedCliente.id}` 
       : 'analisiGrassoData';
     
-    localStorage.setItem(storageKey, JSON.stringify(allData));
-    setCurrentDayData(updatedData);
-    setSavedData(allData);
-    
-    alert('Note PT salvate!');
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(allData));
+      setCurrentDayData(updatedData);
+      setSavedData(allData);
+      alert('✅ Note PT salvate!');
+      console.log('✅ PT notes saved successfully');
+    } catch (error) {
+      console.error('❌ Error saving PT notes:', error);
+      alert('❌ Errore nel salvataggio delle note');
+    }
   };
 
   const generateAIAnalysis = async () => {
@@ -294,6 +392,17 @@ export default function AnalisiGrassoPTPage() {
     return colors[color as keyof typeof colors] || 'bg-gray-600';
   };
 
+  // Debug info (rimuovi in produzione)
+  if (typeof window !== 'undefined') {
+    console.log('🔍 Debug Info:', {
+      isPTMode,
+      selectedCliente: selectedCliente?.nome,
+      savedDataLength: savedData.length,
+      currentDayData: currentDayData ? 'present' : 'null',
+      selectedDate: selectedDate.toDateString()
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       <Header />
@@ -312,14 +421,16 @@ export default function AnalisiGrassoPTPage() {
                 </button>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                    {selectedCliente?.nome.charAt(0)}
+                    {selectedCliente?.nome.charAt(0) || '?'}
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-blue-400">
                       🏋️‍♂️ Modalità Personal Trainer
                     </h2>
                     <p className="text-gray-300">
-                      Monitoraggio per: <span className="font-semibold text-white">{selectedCliente?.nome}</span>
+                      Monitoraggio per: <span className="font-semibold text-white">
+                        {selectedCliente?.nome || 'Cliente non trovato'}
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -343,7 +454,9 @@ export default function AnalisiGrassoPTPage() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             📊 Analisi del Grasso
-            {isPTMode && <span className="text-2xl block mt-2">Cliente: {selectedCliente?.nome}</span>}
+            {isPTMode && selectedCliente && (
+              <span className="text-2xl block mt-2">Cliente: {selectedCliente.nome}</span>
+            )}
           </h1>
           <p className="text-lg text-gray-200 mb-6">
             {isPTMode 
@@ -351,6 +464,14 @@ export default function AnalisiGrassoPTPage() {
               : 'Identifica gli alimenti che causano gonfiore e ritenzione attraverso il tracciamento giornaliero di pasti e misurazioni pliche'
             }
           </p>
+          
+          {/* Debug info in development */}
+          {isPTMode && !selectedCliente && (
+            <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mt-4">
+              <p className="text-red-400">⚠️ Cliente non trovato o non selezionato</p>
+              <p className="text-sm text-red-300">Verifica che il link contenga l'ID cliente corretto</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -470,7 +591,8 @@ export default function AnalisiGrassoPTPage() {
                 </h2>
                 <button
                   onClick={() => setShowForm(!showForm)}
-                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                  disabled={isPTMode && !selectedCliente}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   {currentDayData ? 'Modifica' : 'Aggiungi'} Dati
@@ -627,12 +749,21 @@ export default function AnalisiGrassoPTPage() {
                   <div className="text-gray-400 mb-4">
                     <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg">
-                      {isPTMode 
-                        ? `Nessun dato per ${selectedCliente?.nome} in questa giornata`
+                      {isPTMode && selectedCliente
+                        ? `Nessun dato per ${selectedCliente.nome} in questa giornata`
+                        : isPTMode && !selectedCliente
+                        ? 'Cliente non selezionato'
                         : 'Nessun dato per questa giornata'
                       }
                     </p>
-                    <p className="text-sm">Clicca "Aggiungi Dati" per iniziare il tracciamento</p>
+                    <p className="text-sm">
+                      {isPTMode && selectedCliente
+                        ? 'Clicca "Aggiungi Dati" per iniziare il tracciamento'
+                        : isPTMode && !selectedCliente
+                        ? 'Verifica il link o torna alla dashboard PT'
+                        : 'Clicca "Aggiungi Dati" per iniziare il tracciamento'
+                      }
+                    </p>
                   </div>
                 </div>
               )}
@@ -646,7 +777,9 @@ export default function AnalisiGrassoPTPage() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-green-400">
                 🧠 AI Analysis Engine
-                {isPTMode && <span className="text-lg block text-blue-400">Cliente: {selectedCliente?.nome}</span>}
+                {isPTMode && selectedCliente && (
+                  <span className="text-lg block text-blue-400">Cliente: {selectedCliente.nome}</span>
+                )}
               </h2>
               <button
                 onClick={generateAIAnalysis}
@@ -666,8 +799,8 @@ export default function AnalisiGrassoPTPage() {
               <div className="text-center py-8">
                 <Brain className="w-16 h-16 mx-auto mb-4 text-gray-600" />
                 <p className="text-lg text-gray-400 mb-2">
-                  {isPTMode 
-                    ? `Analisi AI per ${selectedCliente?.nome} disponibile con 3+ giorni di dati`
+                  {isPTMode && selectedCliente
+                    ? `Analisi AI per ${selectedCliente.nome} disponibile con 3+ giorni di dati`
                     : 'Analisi AI disponibile con 3+ giorni di dati'
                   }
                 </p>
