@@ -1,36 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, Camera, Clock, Scale, Droplets, Activity, Brain, Utensils } from 'lucide-react';
+import { X, Plus, Trash2, Save, Camera, Clock, Scale, Droplets, Activity, Brain, Utensils, Wine } from 'lucide-react';
 
 interface AnalisiGiorno {
   data: Date;
   pasti: {
     colazione: string[];
+    spuntino_mattina: string[];
     pranzo: string[];
+    spuntino_pomeriggio: string[];
     cena: string[];
+    spuntino_sera: string[];
+    bevande_alcoliche: string[];
   };
   pliche: {
     mattino_addome: number;
     mattino_fianchi: number;
-    colazione_1h30_addome: number;
-    colazione_1h30_fianchi: number;
-    colazione_1h45_addome: number;
-    colazione_1h45_fianchi: number;
-    colazione_2h_addome: number;
-    colazione_2h_fianchi: number;
-    pranzo_1h30_addome: number;
-    pranzo_1h30_fianchi: number;
-    pranzo_1h45_addome: number;
-    pranzo_1h45_fianchi: number;
-    pranzo_2h_addome: number;
-    pranzo_2h_fianchi: number;
-    cena_1h30_addome: number;
-    cena_1h30_fianchi: number;
-    cena_1h45_addome: number;
-    cena_1h45_fianchi: number;
-    cena_2h_addome: number;
-    cena_2h_fianchi: number;
+    colazione_post_addome: number;
+    colazione_post_fianchi: number;
+    spuntino_mattina_post_addome: number;
+    spuntino_mattina_post_fianchi: number;
+    pranzo_post_addome: number;
+    pranzo_post_fianchi: number;
+    spuntino_pomeriggio_post_addome: number;
+    spuntino_pomeriggio_post_fianchi: number;
+    cena_post_addome: number;
+    cena_post_fianchi: number;
+    spuntino_sera_post_addome: number;
+    spuntino_sera_post_fianchi: number;
   };
   idratazione: number;
   sonno?: number;
@@ -52,30 +50,28 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     data: selectedDate,
     pasti: {
       colazione: [],
+      spuntino_mattina: [],
       pranzo: [],
-      cena: []
+      spuntino_pomeriggio: [],
+      cena: [],
+      spuntino_sera: [],
+      bevande_alcoliche: []
     },
     pliche: {
       mattino_addome: 0,
       mattino_fianchi: 0,
-      colazione_1h30_addome: 0,
-      colazione_1h30_fianchi: 0,
-      colazione_1h45_addome: 0,
-      colazione_1h45_fianchi: 0,
-      colazione_2h_addome: 0,
-      colazione_2h_fianchi: 0,
-      pranzo_1h30_addome: 0,
-      pranzo_1h30_fianchi: 0,
-      pranzo_1h45_addome: 0,
-      pranzo_1h45_fianchi: 0,
-      pranzo_2h_addome: 0,
-      pranzo_2h_fianchi: 0,
-      cena_1h30_addome: 0,
-      cena_1h30_fianchi: 0,
-      cena_1h45_addome: 0,
-      cena_1h45_fianchi: 0,
-      cena_2h_addome: 0,
-      cena_2h_fianchi: 0
+      colazione_post_addome: 0,
+      colazione_post_fianchi: 0,
+      spuntino_mattina_post_addome: 0,
+      spuntino_mattina_post_fianchi: 0,
+      pranzo_post_addome: 0,
+      pranzo_post_fianchi: 0,
+      spuntino_pomeriggio_post_addome: 0,
+      spuntino_pomeriggio_post_fianchi: 0,
+      cena_post_addome: 0,
+      cena_post_fianchi: 0,
+      spuntino_sera_post_addome: 0,
+      spuntino_sera_post_fianchi: 0
     },
     idratazione: 0,
     sonno: 0,
@@ -87,7 +83,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
 
   const [activeTab, setActiveTab] = useState<'pasti' | 'pliche' | 'extra'>('pasti');
   const [newAlimento, setNewAlimento] = useState('');
-  const [selectedPasto, setSelectedPasto] = useState<'colazione' | 'pranzo' | 'cena'>('colazione');
+  const [selectedPasto, setSelectedPasto] = useState<keyof AnalisiGiorno['pasti']>('colazione');
   const [isLoading, setIsLoading] = useState(false);
 
   // Carica dati esistenti se disponibili
@@ -107,6 +103,24 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     'Olio oliva', 'Burro', 'Noci', 'Mandorle', 'Semi'
   ];
 
+  // Bevande alcoliche comuni
+  const bevandeAlcoliche = [
+    'Vino rosso', 'Vino bianco', 'Birra', 'Prosecco', 'Champagne',
+    'Whisky', 'Vodka', 'Gin', 'Rum', 'Aperitivo', 'Liquore',
+    'Cocktail', 'Spritz', 'Negroni', 'Mojito'
+  ];
+
+  // Configurazione pasti
+  const pastiConfig = [
+    { id: 'colazione', label: 'Colazione', emoji: '🌅', color: 'orange' },
+    { id: 'spuntino_mattina', label: 'Spuntino Mattina', emoji: '🍎', color: 'green' },
+    { id: 'pranzo', label: 'Pranzo', emoji: '☀️', color: 'yellow' },
+    { id: 'spuntino_pomeriggio', label: 'Spuntino Pomeriggio', emoji: '🥨', color: 'blue' },
+    { id: 'cena', label: 'Cena', emoji: '🌙', color: 'purple' },
+    { id: 'spuntino_sera', label: 'Spuntino Sera', emoji: '🍪', color: 'indigo' },
+    { id: 'bevande_alcoliche', label: 'Bevande Alcoliche', emoji: '🍷', color: 'red' }
+  ];
+
   const handleAddAlimento = () => {
     if (newAlimento.trim()) {
       setFormData(prev => ({
@@ -120,7 +134,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     }
   };
 
-  const handleRemoveAlimento = (pasto: 'colazione' | 'pranzo' | 'cena', index: number) => {
+  const handleRemoveAlimento = (pasto: keyof AnalisiGiorno['pasti'], index: number) => {
     setFormData(prev => ({
       ...prev,
       pasti: {
@@ -204,9 +218,22 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
     });
   };
 
+  const getColorClass = (color: string) => {
+    const colors = {
+      orange: 'bg-orange-600',
+      green: 'bg-green-600',
+      yellow: 'bg-yellow-600',
+      blue: 'bg-blue-600',
+      purple: 'bg-purple-600',
+      indigo: 'bg-indigo-600',
+      red: 'bg-red-600'
+    };
+    return colors[color as keyof typeof colors] || 'bg-gray-600';
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 p-6 text-white">
           <div className="flex items-center justify-between">
@@ -252,22 +279,22 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
             {activeTab === 'pasti' && (
               <div className="space-y-6">
                 <div className="bg-gray-700 rounded-lg p-4">
-                  <h3 className="text-lg font-bold text-orange-400 mb-4">🍽️ Pasti Consumati</h3>
+                  <h3 className="text-lg font-bold text-orange-400 mb-4">🍽️ Pasti & Bevande Consumate</h3>
                   
                   {/* Selettore Pasto */}
-                  <div className="flex gap-2 mb-4">
-                    {['colazione', 'pranzo', 'cena'].map(pasto => (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                    {pastiConfig.map(pasto => (
                       <button
-                        key={pasto}
+                        key={pasto.id}
                         type="button"
-                        onClick={() => setSelectedPasto(pasto as any)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
-                          selectedPasto === pasto
-                            ? 'bg-green-600 text-white'
+                        onClick={() => setSelectedPasto(pasto.id as any)}
+                        className={`px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
+                          selectedPasto === pasto.id
+                            ? `${getColorClass(pasto.color)} text-white`
                             : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
                         }`}
                       >
-                        {pasto}
+                        {pasto.emoji} {pasto.label}
                       </button>
                     ))}
                   </div>
@@ -278,7 +305,7 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                       type="text"
                       value={newAlimento}
                       onChange={(e) => setNewAlimento(e.target.value)}
-                      placeholder="Aggiungi alimento..."
+                      placeholder={`Aggiungi ${pastiConfig.find(p => p.id === selectedPasto)?.label.toLowerCase()}...`}
                       className="flex-1 bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                       onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddAlimento())}
                     />
@@ -295,39 +322,42 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                   <div className="mb-4">
                     <p className="text-sm text-gray-400 mb-2">Suggerimenti:</p>
                     <div className="flex flex-wrap gap-2">
-                      {alimentiComuni.slice(0, 12).map(alimento => (
+                      {(selectedPasto === 'bevande_alcoliche' ? bevandeAlcoliche : alimentiComuni).slice(0, 12).map(item => (
                         <button
-                          key={alimento}
+                          key={item}
                           type="button"
-                          onClick={() => setNewAlimento(alimento)}
+                          onClick={() => setNewAlimento(item)}
                           className="bg-gray-600 hover:bg-gray-500 px-3 py-1 rounded text-sm transition-colors"
                         >
-                          {alimento}
+                          {item}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   {/* Lista Alimenti per Pasto */}
-                  <div className="space-y-4">
-                    {['colazione', 'pranzo', 'cena'].map(pasto => (
-                      <div key={pasto} className="bg-gray-600 rounded-lg p-4">
-                        <h4 className="font-semibold text-green-400 mb-2 capitalize">{pasto}</h4>
-                        <div className="space-y-2">
-                          {formData.pasti[pasto as keyof typeof formData.pasti].map((alimento, index) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pastiConfig.map(pasto => (
+                      <div key={pasto.id} className="bg-gray-600 rounded-lg p-4">
+                        <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                          <span className={`w-3 h-3 rounded-full ${getColorClass(pasto.color)}`}></span>
+                          {pasto.emoji} {pasto.label}
+                        </h4>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {formData.pasti[pasto.id as keyof typeof formData.pasti].map((alimento, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-700 rounded px-3 py-2">
-                              <span className="text-white">{alimento}</span>
+                              <span className="text-white text-sm">{alimento}</span>
                               <button
                                 type="button"
-                                onClick={() => handleRemoveAlimento(pasto as any, index)}
+                                onClick={() => handleRemoveAlimento(pasto.id as any, index)}
                                 className="text-red-400 hover:text-red-300 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           ))}
-                          {formData.pasti[pasto as keyof typeof formData.pasti].length === 0 && (
-                            <p className="text-gray-400 text-sm italic">Nessun alimento aggiunto</p>
+                          {formData.pasti[pasto.id as keyof typeof formData.pasti].length === 0 && (
+                            <p className="text-gray-400 text-sm italic">Nessun elemento aggiunto</p>
                           )}
                         </div>
                       </div>
@@ -375,45 +405,42 @@ export default function AnalisiGrassoForm({ selectedDate, existingData, onSave, 
                   </div>
 
                   {/* Misurazioni Post-Pasto */}
-                  {['colazione', 'pranzo', 'cena'].map(pasto => (
-                    <div key={pasto} className="bg-gray-600 rounded-lg p-4 mb-4">
-                      <h4 className="font-semibold text-green-400 mb-3 capitalize">
-                        {pasto === 'colazione' ? '🌅' : pasto === 'pranzo' ? '☀️' : '🌙'} Post-{pasto}
-                      </h4>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {['1h30', '1h45', '2h'].map(tempo => (
-                          <div key={tempo} className="space-y-3">
-                            <h5 className="text-sm font-medium text-yellow-400">⏱️ {tempo}</h5>
-                            <div className="space-y-2">
-                              <div>
-                                <label className="block text-xs text-gray-300 mb-1">Addome (mm)</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.1"
-                                  value={formData.pliche[`${pasto}_${tempo}_addome` as keyof typeof formData.pliche]}
-                                  onChange={(e) => handlePlicheChange(`${pasto}_${tempo}_addome` as any, parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-300 mb-1">Fianchi (mm)</label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.1"
-                                  value={formData.pliche[`${pasto}_${tempo}_fianchi` as keyof typeof formData.pliche]}
-                                  onChange={(e) => handlePlicheChange(`${pasto}_${tempo}_fianchi` as any, parseFloat(e.target.value) || 0)}
-                                  className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                />
-                              </div>
-                            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pastiConfig.slice(0, 6).map(pasto => (
+                      <div key={pasto.id} className="bg-gray-600 rounded-lg p-4">
+                        <h4 className="font-semibold text-white mb-3 flex items-center gap-2">
+                          <span className={`w-3 h-3 rounded-full ${getColorClass(pasto.color)}`}></span>
+                          {pasto.emoji} Post-{pasto.label}
+                        </h4>
+                        <p className="text-xs text-gray-400 mb-3">⏱️ Misurazione a 90-120 min</p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-gray-300 mb-1">Addome (mm)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              value={formData.pliche[`${pasto.id}_post_addome` as keyof typeof formData.pliche]}
+                              onChange={(e) => handlePlicheChange(`${pasto.id}_post_addome` as any, parseFloat(e.target.value) || 0)}
+                              className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
                           </div>
-                        ))}
+                          <div>
+                            <label className="block text-xs text-gray-300 mb-1">Fianchi (mm)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              value={formData.pliche[`${pasto.id}_post_fianchi` as keyof typeof formData.pliche]}
+                              onChange={(e) => handlePlicheChange(`${pasto.id}_post_fianchi` as any, parseFloat(e.target.value) || 0)}
+                              className="w-full bg-gray-700 border border-gray-500 rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
