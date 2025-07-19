@@ -1,857 +1,1127 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Header from '../components/header';
+import Header from './components/header';
+import Features from '../components/Features';
+import MealForm from '../components/MealForm';
+import MealPreview from '../components/MealPreview';
+import MealPlanComplete from '../components/MealPlanComplete';
+import AISubstituteModal from '../components/AiSubstituteModal';
+import HowItWorksSection from '../components/HowItWorksSection';
+import { generateCompleteDocument } from '../utils/documentGenerator';
+import { useFormData } from '../hooks/useFormData';
+// 🍳 IMPORT DEFINITIVO - DATABASE MASSICCIO 420+ RICETTE
+import { RecipeDatabase, Recipe } from '../utils/recipeDatabase';
 
-// Interfaccia Recipe locale - COMPLETA CON TUTTI I FILTRI
-interface Recipe {
-  id: string;
-  nome: string;
-  categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino';
-  tipoCucina: 'italiana' | 'mediterranea' | 'asiatica' | 'americana' | 'messicana' | 'internazionale' | 'ricette_fit';
-  difficolta: 'facile' | 'medio' | 'difficile';
-  tempoPreparazione: number;
-  porzioni: number;
-  calorie: number;
-  proteine: number;
-  carboidrati: number;
-  grassi: number;
-  ingredienti: string[];
-  preparazione: string;
-  tipoDieta: ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea' | 'low_carb' | 'chetogenica' | 'bilanciata')[];
-  allergie: string[];
-  stagione: ('primavera' | 'estate' | 'autunno' | 'inverno' | 'tutto_anno')[];
-  tags: string[];
-  imageUrl?: string;
-  createdAt: Date;
-  rating?: number;
-  reviewCount?: number;
-}
+export default function HomePage() {
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPlan, setGeneratedPlan] = useState<any>(null);
+  const [parsedPlan, setParsedPlan] = useState<any>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
+  const [isReplacing, setIsReplacing] = useState<string | null>(null);
+  
+  // Stati per sostituzione ingredienti AI
+  const [showSubstituteModal, setShowSubstituteModal] = useState(false);
+  const [selectedIngredient, setSelectedIngredient] = useState<{
+    ingredient: string;
+    dayIndex: number;
+    mealType: string;
+    ingredientIndex: number;
+  } | null>(null);
+  const [isLoadingSubstitutes, setIsLoadingSubstitutes] = useState(false);
+  const [substitutes, setSubstitutes] = useState<any[]>([]);
 
-// 🖼️ COMPONENTE IMMAGINE RICETTA SEMPLIFICATO
-const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe, className = '' }) => {
-  // 📸 USA SEMPRE IMMAGINI STATICHE PER ORA (no API Unsplash)
-  const imageUrl = recipe.imageUrl || getStaticImageUrl(recipe.nome, recipe.categoria);
-  
-  return (
-    <img 
-      src={imageUrl}
-      alt={recipe.nome}
-      className={`object-cover ${className}`}
-      loading="lazy"
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
-      }}
-    />
-  );
-};
+  // 🍳 INIZIALIZZA DATABASE MASSICCIO
+  const [recipeDb, setRecipeDb] = useState<RecipeDatabase | null>(null);
 
-// 🎯 FUNZIONE PER IMMAGINI STATICHE
-function getStaticImageUrl(nome: string, categoria: string): string {
-  const nomeLC = nome.toLowerCase();
-  
-  // 🍳 MAPPING SPECIFICO RICETTE → IMMAGINI
-  if (nomeLC.includes('porridge') || nomeLC.includes('avena')) {
-    return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('pancakes')) {
-    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('power') && nomeLC.includes('bowl')) {
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('protein') && nomeLC.includes('shake')) {
-    return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('salmone')) {
-    return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('chicken') || nomeLC.includes('pollo')) {
-    return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('insalata') || nomeLC.includes('salad')) {
-    return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🥗 FALLBACK PER CATEGORIA
-  const categoryImages = {
-    'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
-    'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
-    'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
-    'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
-  };
-  
-  return categoryImages[categoria] || categoryImages['pranzo'];
-}
-
-// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE
-function generateSteps(preparazione: string, nomeRicetta: string): string[] {
-  if (!preparazione) return ['Preparazione non disponibile'];
-  
-  if (preparazione.includes('1.') || preparazione.includes('Step')) {
-    return preparazione.split(/\d+\.|\n/).filter(step => step.trim());
-  }
-  
-  const frasi = preparazione.split(/[.!]/).filter(f => f.trim().length > 10);
-  
-  if (frasi.length <= 1) {
-    const nomeLC = nomeRicetta.toLowerCase();
-    if (nomeLC.includes('smoothie')) {
-      return [
-        'Lava e prepara tutti gli ingredienti freschi',
-        'Aggiungi gli ingredienti nel frullatore nell\'ordine indicato',
-        'Frulla per 1-2 minuti fino ad ottenere consistenza cremosa',
-        'Versa nel bicchiere e servi immediatamente'
-      ];
-    } else if (nomeLC.includes('insalata') || nomeLC.includes('bowl')) {
-      return [
-        'Lava e taglia tutte le verdure e ingredienti freschi',
-        'Prepara la base della bowl o insalata',
-        'Aggiungi le proteine e i condimenti',
-        'Mescola delicatamente e servi fresco'
-      ];
-    } else {
-      return [
-        'Prepara e pulisci tutti gli ingredienti necessari',
-        preparazione.trim(),
-        'Controlla la cottura e aggiusta di sale e pepe',
-        'Servi nel piatto e guarnisci a piacere'
-      ];
-    }
-  }
-  
-  return frasi.map(frase => frase.trim()).filter(f => f.length > 0);
-}
-
-// 🔄 FUNZIONE ORDINAMENTO RICETTE
-const sortRecipes = (recipes: Recipe[], sortBy: string): Recipe[] => {
-  let sorted = [...recipes];
-  switch (sortBy) {
-    case 'rating':
-      return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    case 'time':
-      return sorted.sort((a, b) => a.tempoPreparazione - b.tempoPreparazione);
-    case 'calories':
-      return sorted.sort((a, b) => a.calorie - b.calorie);
-    default:
-      return sorted;
-  }
-};
-
-const RicettePage = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [selectedFilters, setSelectedFilters] = useState({
-    categoria: '',
-    tipoCucina: '',
-    difficolta: '',
-    maxTempo: '',
-    tipoDieta: [] as string[],
-    allergie: [] as string[]
-  });
-  const [showAIRecommendations, setShowAIRecommendations] = useState(false);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  
-  // 🎛️ OPZIONI FILTRI FISSE GARANTITE
-  const [filterOptions] = useState({
-    categories: ['colazione', 'pranzo', 'cena', 'spuntino'],
-    cuisines: ['italiana', 'mediterranea', 'asiatica', 'americana', 'messicana', 'internazionale', 'ricette_fit'],
-    difficulties: ['facile', 'medio', 'difficile'],
-    diets: ['vegetariana', 'vegana', 'senza_glutine', 'keto', 'paleo', 'mediterranea', 'low_carb', 'chetogenica', 'bilanciata'],
-    allergies: ['latte', 'uova', 'frutta_secca', 'pesce', 'glutine']
-  });
-  
-  const [isLoading, setIsLoading] = useState(true);
-  const [recipeDB, setRecipeDB] = useState<any>(null);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [showRecipeModal, setShowRecipeModal] = useState(false);
-
-  // 🏗️ INIZIALIZZA DATABASE
   useEffect(() => {
-    const initializeDatabase = async () => {
-      try {
-        console.log('🚀 [UI FIX] Starting database initialization...');
-        
-        const { RecipeDatabase } = await import('../utils/recipeDatabase');
-        const db = RecipeDatabase.getInstance();
-        setRecipeDB(db);
-        
-        // Carica ricette
-        const allRecipes = db.searchRecipes({});
-        console.log(`📚 [UI FIX] Loaded ${allRecipes.length} recipes from database`);
-        setRecipes(allRecipes);
-        setFilteredRecipes(allRecipes);
-        
-        // Carica preferiti
-        const favoriteRecipes = db.getFavoriteRecipes();
-        setFavorites(new Set(favoriteRecipes.map((r: Recipe) => r.id)));
-        
-        // ✅ LOG FILTRI CARICATI
-        const dbOptions = db.getFilterOptions();
-        console.log('🎛️ [UI FIX] Database filter options:', dbOptions);
-        console.log('🎛️ [UI FIX] UI filter options (fixed):', filterOptions);
-        
-        setIsLoading(false);
-        console.log('✅ [UI FIX] Database initialization completed successfully');
-        
-      } catch (error) {
-        console.error('🚨 [UI FIX] Database initialization error:', error);
-        setIsLoading(false);
-      }
-    };
-
-    initializeDatabase();
+    // Inizializza il database massiccio
+    console.log('🍳 [PAGE] Initializing MASSIVE Recipe Database...');
+    const db = RecipeDatabase.getInstance();
+    setRecipeDb(db);
+    
+    // Log delle statistiche
+    const stats = db.getStats();
+    console.log('📊 [PAGE] Database stats:', stats);
+    
+    // Test rapido filtri
+    const ketoRecipes = db.searchRecipes({ tipoDieta: ['chetogenica'] });
+    const fitRecipes = db.searchRecipes({ tipoCucina: 'ricette_fit' });
+    console.log(`🥑 [PAGE] Keto recipes available: ${ketoRecipes.length}`);
+    console.log(`🏋️‍♂️ [PAGE] Fit recipes available: ${fitRecipes.length}`);
   }, []);
 
-  // 🔍 FILTRI INTELLIGENTI
+  // Usa il hook useFormData
+  const { formData, hasSavedData, handleInputChange, handleArrayChange, clearSavedData, resetFormData } = useFormData();
+
+  // Test connessione API all'avvio
   useEffect(() => {
-    if (!recipeDB || recipes.length === 0) return;
+    const testAPI = async () => {
+      try {
+        const response = await fetch('/api/test-connection');
+        if (response.ok) {
+          setApiStatus('connected');
+        } else {
+          setApiStatus('error');
+        }
+      } catch (error) {
+        setApiStatus('error');
+      }
+    };
+    testAPI();
+  }, []);
+
+  // 💾 SALVATAGGIO AUTOMATICO PIANO GENERATO
+  const saveGeneratedPlan = (plan: any, formData: any) => {
+    try {
+      const savedPlan = {
+        id: `plan-${Date.now()}`,
+        nome: formData.nome || 'Utente',
+        createdAt: new Date().toISOString().split('T')[0],
+        obiettivo: getDisplayObjective(formData.obiettivo),
+        durata: formData.durata || '2',
+        pasti: formData.pasti || '3',
+        calorie: calculateDailyCalories(plan),
+        totalCalories: calculateTotalCalories(plan),
+        totalProteins: calculateTotalProteins(plan),
+        allergie: formData.allergie || [],
+        preferenze: formData.preferenze || [],
+        formData: formData,
+        days: plan.days,
+        generatedPlan: generatedPlan // Testo completo del piano
+      };
+
+      // Carica piani esistenti
+      const existingPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
+      
+      // Aggiungi nuovo piano
+      existingPlans.unshift(savedPlan);
+      
+      // Mantieni solo ultimi 50 piani
+      if (existingPlans.length > 50) {
+        existingPlans.splice(50);
+      }
+      
+      // Salva in localStorage
+      localStorage.setItem('mealPrepSavedPlans', JSON.stringify(existingPlans));
+      
+      // Salva anche in sessionStorage per backup
+      sessionStorage.setItem('lastGeneratedPlan', JSON.stringify(savedPlan));
+      
+      console.log('💾 Piano salvato automaticamente:', savedPlan.id);
+      
+      // Mostra notifica di salvataggio
+      showSaveNotification();
+      
+    } catch (error) {
+      console.error('❌ Errore salvataggio piano:', error);
+    }
+  };
+
+  // 🔔 NOTIFICA SALVATAGGIO
+  const showSaveNotification = () => {
+    // Crea elemento notifica
+    const notification = document.createElement('div');
+    notification.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10B981;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9999;
+        font-family: Inter, sans-serif;
+        font-weight: 500;
+      ">
+        ✅ Piano salvato nella Dashboard!
+      </div>
+    `;
     
-    console.log(`🔍 [UI FIX] Applying filters:`, selectedFilters);
+    document.body.appendChild(notification);
     
-    const filters = {
-      query: searchTerm,
-      categoria: selectedFilters.categoria || undefined,
-      tipoCucina: selectedFilters.tipoCucina || undefined,
-      difficolta: selectedFilters.difficolta || undefined,
-      maxTempo: selectedFilters.maxTempo ? parseInt(selectedFilters.maxTempo) : undefined,
-      tipoDieta: selectedFilters.tipoDieta.length > 0 ? selectedFilters.tipoDieta : undefined,
-      allergie: selectedFilters.allergie.length > 0 ? selectedFilters.allergie : undefined
+    // Rimuovi dopo 3 secondi
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+  };
+
+  // 🧮 FUNZIONI DI CALCOLO
+  const calculateDailyCalories = (plan: any) => {
+    if (!plan?.days?.[0]?.meals) return 0;
+    
+    const firstDay = plan.days[0].meals;
+    return Object.values(firstDay).reduce((total: number, meal: any) => {
+      return total + (meal?.calorie || 0);
+    }, 0);
+  };
+
+  const calculateTotalCalories = (plan: any) => {
+    if (!plan?.days) return 0;
+    
+    return plan.days.reduce((total: number, day: any) => {
+      const dayCalories = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
+        return dayTotal + (meal?.calorie || 0);
+      }, 0);
+      return total + dayCalories;
+    }, 0);
+  };
+
+  const calculateTotalProteins = (plan: any) => {
+    if (!plan?.days) return 0;
+    
+    return plan.days.reduce((total: number, day: any) => {
+      const dayProteins = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
+        return dayTotal + (meal?.proteine || 0);
+      }, 0);
+      return total + dayProteins;
+    }, 0);
+  };
+
+  // 🧮 CALCOLA BMR (Basal Metabolic Rate)
+  const calculateBMR = (formData: any) => {
+    const weight = parseInt(formData.peso) || 70;
+    const height = parseInt(formData.altezza) || 170;
+    const age = parseInt(formData.eta) || 30;
+    const gender = formData.sesso;
+    
+    // Formula Mifflin-St Jeor
+    if (gender === 'maschio') {
+      return (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else {
+      return (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+  };
+
+  const getDisplayObjective = (obiettivo: string) => {
+    const map: { [key: string]: string } = {
+      'dimagrimento': 'Perdita peso',
+      'mantenimento': 'Mantenimento', 
+      'aumento-massa': 'Aumento massa'
+    };
+    return map[obiettivo] || obiettivo;
+  };
+
+  // Funzione per richiedere sostituzione ingrediente AI
+  const handleIngredientSubstitution = async (ingredient: string, dayIndex: number, mealType: string, ingredientIndex: number) => {
+    setSelectedIngredient({ ingredient, dayIndex, mealType, ingredientIndex });
+    setShowSubstituteModal(true);
+    setIsLoadingSubstitutes(true);
+    setSubstitutes([]);
+
+    try {
+      const response = await fetch('/api/substitute-ingredient', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredient,
+          userPreferences: formData.preferenze || [],
+          allergies: formData.allergie || [],
+          mealContext: `${mealType} del ${parsedPlan.days[dayIndex].day}`
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSubstitutes(result.substitutes);
+      } else {
+        console.log('Substitute ingredient error:', result.error);
+        setShowSubstituteModal(false);
+      }
+    } catch (error) {
+      console.log('Substitute ingredient connection error:', error);
+      setShowSubstituteModal(false);
+    } finally {
+      setIsLoadingSubstitutes(false);
+    }
+  };
+
+  // Funzione per applicare la sostituzione
+  const applySubstitution = (newIngredient: string) => {
+    if (!selectedIngredient || !parsedPlan) return;
+
+    const { dayIndex, mealType, ingredientIndex } = selectedIngredient;
+    
+    // Crea una copia del piano parsed
+    const updatedPlan = { ...parsedPlan };
+    updatedPlan.days = [...parsedPlan.days];
+    updatedPlan.days[dayIndex] = { ...parsedPlan.days[dayIndex] };
+    updatedPlan.days[dayIndex].meals = { ...parsedPlan.days[dayIndex].meals };
+    updatedPlan.days[dayIndex].meals[mealType] = { ...parsedPlan.days[dayIndex].meals[mealType] };
+    updatedPlan.days[dayIndex].meals[mealType].ingredienti = [...parsedPlan.days[dayIndex].meals[mealType].ingredienti];
+    
+    // Sostituisci l'ingrediente
+    updatedPlan.days[dayIndex].meals[mealType].ingredienti[ingredientIndex] = newIngredient;
+    
+    // Aggiorna lo stato
+    setParsedPlan(updatedPlan);
+    
+    const completeDocument = generateCompleteDocument(updatedPlan, formData);
+    setGeneratedPlan(completeDocument);
+    
+    // Chiudi il modal
+    setShowSubstituteModal(false);
+    setSelectedIngredient(null);
+    setSubstitutes([]);
+  };
+
+  const closeSubstituteModal = () => {
+    setShowSubstituteModal(false);
+    setSelectedIngredient(null);
+    setSubstitutes([]);
+  };
+
+  // 🔄 SOSTITUZIONE RICETTA CON CLAUDE AI
+  const handleReplacement = async (mealType: string, dayNumber: string) => {
+    console.log('🔄 REPLACEMENT STARTED (Claude AI):', { mealType, dayNumber });
+    setIsReplacing(`${dayNumber}-${mealType}`);
+    
+    try {
+      const dayIndex = parseInt(dayNumber.replace('Giorno ', '')) - 1;
+      
+      // 🤖 STEP 1: Chiama la tua API Claude AI esistente
+      const response = await fetch('/api/replace-meal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          formData: formData,
+          mealType: mealType,
+          dayNumber: dayNumber,
+          currentPlan: parsedPlan
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success && result.newMeal) {
+          // 🎯 Usa la ricetta generata da Claude AI
+          const newMeal = result.newMeal;
+          
+          // 🏋️‍♂️ Calcola fitness score per la nuova ricetta
+          let fitnessScore = 75; // Score base
+          const proteinRatio = newMeal.proteine / newMeal.calorie * 4;
+          
+          // Bonus proteine
+          if (proteinRatio >= 0.20 && proteinRatio <= 0.35) {
+            fitnessScore += 15;
+          }
+          
+          // Bonus per obiettivo
+          if (formData.obiettivo === 'dimagrimento' && newMeal.calorie <= 400) {
+            fitnessScore += 10;
+          } else if (formData.obiettivo === 'aumento-massa' && newMeal.calorie >= 500) {
+            fitnessScore += 10;
+          }
+          
+          // 🔄 Aggiorna il piano con la nuova ricetta Claude AI
+          const updatedParsedPlan = { ...parsedPlan };
+          updatedParsedPlan.days[dayIndex].meals[mealType] = {
+            nome: newMeal.nome,
+            calorie: newMeal.calorie,
+            proteine: newMeal.proteine,
+            carboidrati: newMeal.carboidrati,
+            grassi: newMeal.grassi,
+            tempo: newMeal.tempo,
+            porzioni: newMeal.porzioni,
+            ingredienti: newMeal.ingredienti,
+            preparazione: newMeal.preparazione,
+            fitnessScore: Math.min(100, fitnessScore),
+            fitnessReasons: [
+              `Fitness Score: ${Math.min(100, fitnessScore)}/100`,
+              `Proteine: ${newMeal.proteine}g (${(proteinRatio * 100).toFixed(1)}%)`,
+              `Calorie ottimizzate per ${formData.obiettivo}`
+            ],
+            recipeId: `recipe-${Date.now()}`,
+            rating: 4.5,
+            categoria: mealType,
+            tipoCucina: 'italiana',
+            difficolta: 'facile'
+          };
+          
+          setParsedPlan(updatedParsedPlan);
+          
+          // Rigenera il documento completo
+          const completeDocument = generateCompleteDocument(updatedParsedPlan, formData);
+          setGeneratedPlan(completeDocument);
+          
+          console.log('✅ Meal replaced with Claude AI:', newMeal.nome, 'Score:', Math.min(100, fitnessScore));
+        } else {
+          throw new Error('No meal generated');
+        }
+      } else {
+        throw new Error('API replacement failed');
+      }
+      
+    } catch (error) {
+      console.error('❌ Claude AI replacement failed:', error);
+    } finally {
+      setIsReplacing(null);
+    }
+  };
+
+  const confirmPlan = () => {
+    setShowPreview(false);
+    setShowComplete(true);
+    setTimeout(() => {
+      document.getElementById('complete-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleGenerateNewPlan = () => {
+    setShowPreview(false);
+    setShowComplete(false);
+    setGeneratedPlan(null);
+    setParsedPlan(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 🍳 NUOVA FUNZIONE: SELEZIONA RICETTE DAL DATABASE MASSICCIO
+  const selectMassiveRecipes = (
+    categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino',
+    obiettivo: string,
+    count: number,
+    preferenze: string[] = [],
+    allergie: string[] = []
+  ): Recipe[] => {
+    if (!recipeDb) {
+      console.warn('🚨 Recipe database not initialized');
+      return [];
+    }
+
+    console.log(`🍳 [MASSIVE] Selecting ${count} ${categoria} recipes for ${obiettivo}`);
+    
+    // Mappa obiettivi alle diete appropriate
+    const obiettivoToDiet: { [key: string]: string[] } = {
+      'dimagrimento': ['low_carb', 'chetogenica', 'bilanciata'],
+      'aumento-massa': ['bilanciata'],
+      'mantenimento': ['bilanciata', 'mediterranea'],
+      'definizione': ['low_carb', 'chetogenica']
     };
 
-    let filtered = recipeDB.searchRecipes(filters);
-
-    // Filtro solo preferiti
-    if (showFavoritesOnly) {
-      filtered = filtered.filter((recipe: Recipe) => favorites.has(recipe.id));
-    }
-
-    console.log(`🎯 [UI FIX] Filtered results: ${filtered.length} recipes`);
-    setFilteredRecipes(filtered);
-  }, [searchTerm, selectedFilters, showFavoritesOnly, recipeDB, favorites, recipes]);
-
-  // 🤖 AI RECOMMENDATIONS (placeholder)
-  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-
-  const getAIRecommendations = () => {
-    if (!recipeDB) return [];
+    const targetDiets = obiettivoToDiet[obiettivo] || ['bilanciata'];
     
-    const favoriteRecipes = recipeDB.getFavoriteRecipes();
-    const recommendedRecipes = recipeDB.getRecommendedRecipes(4);
-    const seasonalRecipes = recipeDB.getSeasonalRecipes('inverno');
-    
-    return [
-      {
-        type: 'Basato sui tuoi preferiti',
-        recipes: favoriteRecipes.slice(0, 4),
-        reason: 'Ti piacciono i piatti mediterranei leggeri'
-      },
-      {
-        type: 'Ricette più votate',
-        recipes: recommendedRecipes,
-        reason: 'Le ricette con rating più alto della community'
-      },
-      {
-        type: 'Ricette stagionali',
-        recipes: seasonalRecipes.slice(0, 4),
-        reason: 'Ricette perfette per questa stagione'
-      }
-    ];
-  };
-
-  // 🎛️ GESTIONE FILTRI
-  const toggleFavorite = (recipeId: string) => {
-    if (!recipeDB) return;
-    
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(recipeId)) {
-      newFavorites.delete(recipeId);
-      recipeDB.removeFromFavorites(recipeId);
-    } else {
-      newFavorites.add(recipeId);
-      recipeDB.addToFavorites(recipeId);
-    }
-    setFavorites(newFavorites);
-  };
-
-  const handleFilterChange = (filterType: string, value: string) => {
-    console.log(`🎛️ [UI FIX] Filter change: ${filterType} = ${value}`);
-    
-    if (filterType === 'tipoDieta') {
-      setSelectedFilters(prev => ({
-        ...prev,
-        tipoDieta: value ? [value] : []
-      }));
-    } else if (filterType === 'allergie') {
-      setSelectedFilters(prev => ({
-        ...prev,
-        allergie: value ? [value] : []
-      }));
-    } else {
-      setSelectedFilters(prev => ({
-        ...prev,
-        [filterType]: value
-      }));
-    }
-  };
-
-  const clearFilters = () => {
-    console.log('🧹 [UI FIX] Clearing all filters');
-    setSelectedFilters({
-      categoria: '',
-      tipoCucina: '',
-      difficolta: '',
-      maxTempo: '',
-      tipoDieta: [],
-      allergie: []
+    // Cerca ricette appropriate
+    let recipes = recipeDb.searchRecipes({
+      categoria: categoria,
+      tipoDieta: targetDiets,
+      allergie: allergie
     });
-    setSearchTerm('');
-    setShowFavoritesOnly(false);
+
+    console.log(`🔍 [MASSIVE] Found ${recipes.length} recipes for ${categoria}/${obiettivo}`);
+
+    // Filtra per preferenze se specificate
+    if (preferenze.length > 0) {
+      const filteredByPreferences = recipes.filter(recipe =>
+        preferenze.some(pref => 
+          recipe.ingredienti.some(ing => 
+            ing.toLowerCase().includes(pref.toLowerCase())
+          ) ||
+          recipe.nome.toLowerCase().includes(pref.toLowerCase())
+        )
+      );
+
+      if (filteredByPreferences.length > 0) {
+        recipes = filteredByPreferences;
+        console.log(`✅ [MASSIVE] Filtered to ${recipes.length} recipes by preferences`);
+      }
+    }
+
+    // Prioritizza ricette "ricette_fit" se disponibili
+    const fitRecipes = recipes.filter(r => r.tipoCucina === 'ricette_fit');
+    if (fitRecipes.length > 0) {
+      recipes = [...fitRecipes, ...recipes.filter(r => r.tipoCucina !== 'ricette_fit')];
+      console.log(`🏋️‍♂️ [MASSIVE] Prioritized ${fitRecipes.length} fit recipes`);
+    }
+
+    // Seleziona le migliori ricette (ordinate per rating)
+    const selectedRecipes = recipes
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, count);
+
+    console.log(`🎯 [MASSIVE] Selected ${selectedRecipes.length} top recipes:`, 
+      selectedRecipes.map(r => r.nome));
+
+    return selectedRecipes;
   };
 
-  // 📖 MODAL RICETTA
-  const openRecipeModal = (recipe: Recipe) => {
-    setSelectedRecipe(recipe);
-    setShowRecipeModal(true);
+  // 🇮🇹 PIANO FALLBACK CON DATABASE MASSICCIO
+  const createMassiveFallback = (formData: any) => {
+    const numDays = parseInt(formData.durata) || 2;
+    const numPasti = parseInt(formData.pasti) || 3;
+    const obiettivo = formData.obiettivo || 'mantenimento';
+    const allergie = formData.allergie || [];
+    const preferenze = formData.preferenze || [];
+    
+    console.log(`🍳 [MASSIVE] Creating fallback plan: ${numDays} days, ${numPasti} meals`);
+    console.log(`🎯 [MASSIVE] Objective: ${obiettivo}, Allergies: ${allergie.join(', ')}`);
+    
+    const days = [];
+    
+    for (let i = 0; i < numDays; i++) {
+      const day = {
+        day: `Giorno ${i + 1}`,
+        meals: {} as any
+      };
+      
+      // 🌅 COLAZIONE
+      const colazioneRecipes = selectMassiveRecipes('colazione', obiettivo, numDays, preferenze, allergie);
+      if (colazioneRecipes.length > 0) {
+        const selected = colazioneRecipes[i % colazioneRecipes.length];
+        day.meals.colazione = {
+          nome: selected.nome,
+          calorie: selected.calorie,
+          proteine: selected.proteine,
+          carboidrati: selected.carboidrati,
+          grassi: selected.grassi,
+          tempo: `${selected.tempoPreparazione} min`,
+          porzioni: selected.porzioni,
+          ingredienti: selected.ingredienti,
+          preparazione: selected.preparazione,
+          fitnessScore: 90, // Score alto per ricette dal database
+          recipeId: selected.id,
+          categoria: 'colazione',
+          rating: selected.rating || 4.5
+        };
+        console.log(`✅ [MASSIVE] Day ${i + 1} colazione: ${selected.nome}`);
+      }
+      
+      // ☀️ PRANZO
+      const pranzoRecipes = selectMassiveRecipes('pranzo', obiettivo, numDays, preferenze, allergie);
+      if (pranzoRecipes.length > 0) {
+        const selected = pranzoRecipes[i % pranzoRecipes.length];
+        day.meals.pranzo = {
+          nome: selected.nome,
+          calorie: selected.calorie,
+          proteine: selected.proteine,
+          carboidrati: selected.carboidrati,
+          grassi: selected.grassi,
+          tempo: `${selected.tempoPreparazione} min`,
+          porzioni: selected.porzioni,
+          ingredienti: selected.ingredienti,
+          preparazione: selected.preparazione,
+          fitnessScore: 88,
+          recipeId: selected.id,
+          categoria: 'pranzo',
+          rating: selected.rating || 4.7
+        };
+        console.log(`✅ [MASSIVE] Day ${i + 1} pranzo: ${selected.nome}`);
+      }
+      
+      // 🌙 CENA
+      const cenaRecipes = selectMassiveRecipes('cena', obiettivo, numDays, preferenze, allergie);
+      if (cenaRecipes.length > 0) {
+        const selected = cenaRecipes[i % cenaRecipes.length];
+        day.meals.cena = {
+          nome: selected.nome,
+          calorie: selected.calorie,
+          proteine: selected.proteine,
+          carboidrati: selected.carboidrati,
+          grassi: selected.grassi,
+          tempo: `${selected.tempoPreparazione} min`,
+          porzioni: selected.porzioni,
+          ingredienti: selected.ingredienti,
+          preparazione: selected.preparazione,
+          fitnessScore: 85,
+          recipeId: selected.id,
+          categoria: 'cena',
+          rating: selected.rating || 4.3
+        };
+        console.log(`✅ [MASSIVE] Day ${i + 1} cena: ${selected.nome}`);
+      }
+      
+      // 🍎 SPUNTINI
+      if (numPasti >= 4) {
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
+        if (spuntinoRecipes.length > 0) {
+          const selected = spuntinoRecipes[i % spuntinoRecipes.length];
+          day.meals.spuntino1 = {
+            nome: selected.nome,
+            calorie: selected.calorie,
+            proteine: selected.proteine,
+            carboidrati: selected.carboidrati,
+            grassi: selected.grassi,
+            tempo: `${selected.tempoPreparazione} min`,
+            porzioni: selected.porzioni,
+            ingredienti: selected.ingredienti,
+            preparazione: selected.preparazione,
+            fitnessScore: 82,
+            recipeId: selected.id,
+            categoria: 'spuntino',
+            rating: selected.rating || 4.1
+          };
+          console.log(`✅ [MASSIVE] Day ${i + 1} spuntino1: ${selected.nome}`);
+        }
+      }
+      
+      if (numPasti >= 5) {
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
+        if (spuntinoRecipes.length > 0) {
+          const selected = spuntinoRecipes[(i + 1) % spuntinoRecipes.length];
+          day.meals.spuntino2 = {
+            nome: selected.nome,
+            calorie: selected.calorie,
+            proteine: selected.proteine,
+            carboidrati: selected.carboidrati,
+            grassi: selected.grassi,
+            tempo: `${selected.tempoPreparazione} min`,
+            porzioni: selected.porzioni,
+            ingredienti: selected.ingredienti,
+            preparazione: selected.preparazione,
+            fitnessScore: 80,
+            recipeId: selected.id,
+            categoria: 'spuntino',
+            rating: selected.rating || 4.4
+          };
+        }
+      }
+      
+      if (numPasti >= 6) {
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
+        if (spuntinoRecipes.length > 0) {
+          const selected = spuntinoRecipes[(i + 2) % spuntinoRecipes.length];
+          day.meals.spuntino3 = {
+            nome: selected.nome,
+            calorie: selected.calorie,
+            proteine: selected.proteine,
+            carboidrati: selected.carboidrati,
+            grassi: selected.grassi,
+            tempo: `${selected.tempoPreparazione} min`,
+            porzioni: selected.porzioni,
+            ingredienti: selected.ingredienti,
+            preparazione: selected.preparazione,
+            fitnessScore: 78,
+            recipeId: selected.id,
+            categoria: 'spuntino',
+            rating: selected.rating || 4.0
+          };
+        }
+      }
+      
+      console.log(`✅ [MASSIVE] Day ${i + 1} meals created:`, Object.keys(day.meals));
+      days.push(day);
+    }
+    
+    console.log(`🎉 [MASSIVE] Fallback plan created with ${days.length} days using 420+ recipes!`);
+    return { days };
   };
 
-  const closeRecipeModal = () => {
-    setSelectedRecipe(null);
-    setShowRecipeModal(false);
+  // 💾 SALVA IN AIRTABLE - MAPPING CORRETTO CON CAMPI REALI
+  const saveToAirtable = async (plan: any, formData: any) => {
+    console.log('💾 Attempting to save to Airtable...');
+    console.log('📝 Form data for save:', formData);
+    
+    try {
+      // 🔧 MAPPING CORRETTO BASATO SU CAMPI AIRTABLE REALI
+      const goalMapping: { [key: string]: string } = {
+        'dimagrimento': 'dimagrimento', // ESATTO come in Airtable
+        'aumento-massa': 'aumento massa', // ESATTO come in Airtable  
+        'mantenimento': 'mantenimento', // ESATTO come in Airtable
+        'definizione': 'Perdita peso' // Fallback su opzione esistente
+      };
+
+      // Diet_Type mapping - nuovo campo
+      const dietTypeMapping: { [key: string]: string } = {
+        'dimagrimento': 'low_carb', // Dimagrimento → low carb
+        'aumento-massa': 'bilanciata', // Massa → bilanciata
+        'mantenimento': 'bilanciata', // Mantenimento → bilanciata
+        'definizione': 'low_carb' // Definizione → low carb
+      };
+
+      const activityMapping: { [key: string]: string } = {
+        'sedentario': 'sedentario',
+        'leggero': 'leggero', 
+        'moderato': 'moderato',
+        'intenso': 'intenso',
+        'molto_intenso': 'molto intenso'
+      };
+
+      const genderMapping: { [key: string]: string } = {
+        'maschio': 'maschio',
+        'femmina': 'femmina',
+        'uomo': 'maschio',
+        'donna': 'femmina'
+      };
+
+      // 🔧 DATI MAPPATI CON CAMPI CORRETTI
+      const mappedData = {
+        nome: formData.nome || '',
+        email: formData.email || 'noemail@test.com',
+        age: parseInt(formData.eta) || 0,
+        weight: parseInt(formData.peso) || 0, 
+        height: parseInt(formData.altezza) || 0,
+        gender: genderMapping[formData.sesso] || '',
+        activity_level: activityMapping[formData.attivita] || '',
+        goal: goalMapping[formData.obiettivo] || 'mantenimento', // Usa Goal corretto
+        diet_type: dietTypeMapping[formData.obiettivo] || 'bilanciata', // Nuovo campo Diet_Type
+        duration: parseInt(formData.durata) || 0,
+        meals_per_day: parseInt(formData.pasti) || 3,
+        exclusions: Array.isArray(formData.allergie) ? formData.allergie.join(', ') : formData.allergie || '',
+        foods_at_home: Array.isArray(formData.preferenze) ? formData.preferenze.join(', ') : formData.preferenze || '',
+        phone: formData.telefono || '',
+        // DATI PIANO
+        plan_details: JSON.stringify(plan),
+        total_calories: calculateTotalCalories(plan) || 0,
+        daily_calories: calculateDailyCalories(plan) || 0,
+        bmr: Math.round(calculateBMR(formData)) || 1800
+      };
+
+      console.log('📤 Mapped data for Airtable:', mappedData);
+
+      const response = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'saveMealPlan',
+          data: mappedData
+        })
+      });
+      
+      console.log('📡 Airtable response status:', response.status);
+      const result = await response.json();
+      console.log('📊 Airtable response data:', result);
+      
+      if (response.ok && result.success) {
+        console.log('✅ Saved to Airtable successfully:', result.recordId);
+        return { success: true, recordId: result.recordId };
+      } else {
+        console.error('❌ Airtable save failed:', result.error);
+        console.error('❌ Error details:', result.details);
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error('❌ Airtable save error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   };
 
-  // 🔄 ORDINAMENTO
-  const handleSort = (sortBy: string) => {
-    console.log(`🔄 [UI FIX] Sorting by: ${sortBy}`);
-    const sorted = sortRecipes(filteredRecipes, sortBy);
-    setFilteredRecipes(sorted);
+  // 🚀 FUNZIONE PRINCIPALE - SISTEMA MASSIVE DATABASE
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log('🚀 FORM SUBMIT STARTED (MASSIVE DATABASE SYSTEM)');
+    console.log('📝 Form Data:', formData);
+    e.preventDefault();
+    setIsGenerating(true);
+    
+    try {
+      // 🤖 STEP 1: USA SEMPRE L'API FITNESS INTEGRATA
+      console.log('🧠 Generating MASSIVE DATABASE meal plan with AI...');
+
+      const response = await fetch('/api/generate-meal-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ AI generated MASSIVE plan successfully');
+        console.log('🔥 Backend calculated calories:', result.metadata?.dailyTarget);
+        console.log('🇮🇹 MASSIVE optimized:', result.metadata?.fitnessOptimized);
+        console.log('📊 Total recipes used:', result.metadata?.totalRecipes);
+        
+        // 🎯 USA IL PIANO DALL'API (NON IL FALLBACK!)
+        let apiGeneratedPlan;
+        
+        try {
+          // Prova a parsare il piano dall'AI
+          apiGeneratedPlan = parseAIPlanToStructured(result.piano, formData);
+          console.log('✅ API plan parsed successfully with MASSIVE database');
+        } catch (parseError) {
+          console.log('⚠️ API plan parsing failed, using MASSIVE database fallback');
+          apiGeneratedPlan = createMassiveFallback(formData);
+        }
+        
+        // 🔥 APPLICA CALORIE DAL BACKEND SEMPRE
+        if (result.metadata?.dailyTarget && apiGeneratedPlan?.days) {
+          const targetCalories = result.metadata.dailyTarget;
+          console.log('🔧 Applying backend calories to MASSIVE plan:', targetCalories);
+          
+          apiGeneratedPlan.days.forEach((day: any) => {
+            let currentTotal = 0;
+            Object.values(day.meals).forEach((meal: any) => {
+              currentTotal += meal.calorie || 0;
+            });
+            
+            const scaleFactor = targetCalories / Math.max(currentTotal, 1);
+            console.log(`🔧 Scaling ${day.day} by factor: ${scaleFactor.toFixed(2)}`);
+            
+            Object.values(day.meals).forEach((meal: any) => {
+              if (meal) {
+                meal.calorie = Math.round(meal.calorie * scaleFactor);
+                meal.proteine = Math.round(meal.proteine * scaleFactor);
+                meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
+                meal.grassi = Math.round(meal.grassi * scaleFactor);
+              }
+            });
+          });
+        }
+        
+        setParsedPlan(apiGeneratedPlan);
+        
+        const completeDocument = generateCompleteDocument(apiGeneratedPlan, formData);
+        setGeneratedPlan(completeDocument);
+
+        // 💾 SALVATAGGIO AUTOMATICO
+        saveGeneratedPlan(apiGeneratedPlan, formData);
+        
+        setShowPreview(true);
+        
+        // 🔧 SALVA IN AIRTABLE
+        console.log('💾 Saving MASSIVE plan to Airtable...');
+        try {
+          const saveResult = await saveToAirtable(apiGeneratedPlan, formData);
+          if (saveResult.success) {
+            console.log('✅ Successfully saved MASSIVE plan to Airtable:', saveResult.recordId);
+          } else {
+            console.log('❌ Failed to save MASSIVE plan to Airtable:', saveResult.error);
+          }
+        } catch (airtableError) {
+          console.log('⚠️ Airtable save error (non-blocking):', airtableError);
+        }
+        
+        setTimeout(() => {
+          document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        
+      } else {
+        console.log('❌ AI generation failed, using MASSIVE DATABASE fallback');
+        throw new Error(result.error || 'AI generation failed');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in meal plan generation:', error);
+      
+      // 🍳 FALLBACK: MASSIVE DATABASE (420+ RICETTE!)
+      console.log('🔄 Using MASSIVE DATABASE fallback with 420+ recipes');
+      const massiveFallback = createMassiveFallback(formData);
+      setParsedPlan(massiveFallback);
+      
+      const completeDocument = generateCompleteDocument(massiveFallback, formData);
+      setGeneratedPlan(completeDocument);
+
+      // 💾 SALVATAGGIO AUTOMATICO ANCHE PER FALLBACK
+      saveGeneratedPlan(massiveFallback, formData);
+      
+      setShowPreview(true);
+      
+      // 🔧 SALVA ANCHE IL FALLBACK MASSIVE
+      try {
+        const saveResult = await saveToAirtable(massiveFallback, formData);
+        if (saveResult.success) {
+          console.log('✅ MASSIVE fallback plan saved to Airtable:', saveResult.recordId);
+        }
+      } catch (airtableError) {
+        console.log('⚠️ MASSIVE fallback save error:', airtableError);
+      }
+      
+      setTimeout(() => {
+        document.getElementById('preview-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+      
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  // 📱 LOADING STATE
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-        <Header />
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <div className="text-center">
-            <ChefHat className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
-            <h2 className="text-2xl font-bold mb-2">Caricamento Database Ricette...</h2>
-            <p className="text-gray-400">Preparando ricette deliziose per te!</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 🤖 PARSER AI PLAN TO STRUCTURED
+  const parseAIPlanToStructured = (aiPlan: string, formData: any) => {
+    console.log('🤖 Parsing AI plan to structured format with MASSIVE database...');
+    
+    const days = [];
+    const dayRegex = /🗓️ GIORNO (\d+):([\s\S]*?)(?=🗓️ GIORNO \d+:|$)/g;
+    let dayMatch;
+    
+    while ((dayMatch = dayRegex.exec(aiPlan)) !== null) {
+      const dayNumber = dayMatch[1];
+      const dayContent = dayMatch[2];
+      
+      const day = {
+        day: `Giorno ${dayNumber}`,
+        meals: {} as any
+      };
+      
+      // Parse meals from AI plan
+      const mealRegex = /(🌅|☀️|🌙|🍎) (COLAZIONE|PRANZO|CENA|SPUNTINO) \((\d+) kcal\):\s*Nome: ([^\n]+)\s*Ingredienti: ([^\n]+)\s*Preparazione: ([^\n]+)\s*Macro: P: (\d+)g \| C: (\d+)g \| G: (\d+)g/g;
+      let mealMatch;
+      
+      while ((mealMatch = mealRegex.exec(dayContent)) !== null) {
+        const [, emoji, mealTypeUpper, calories, nome, ingredienti, preparazione, proteine, carboidrati, grassi] = mealMatch;
+        
+        const mealType = mealTypeUpper.toLowerCase();
+        const mealKey = mealType === 'spuntino' ? 'spuntino1' : mealType;
+        
+        day.meals[mealKey] = {
+          nome: nome.trim(),
+          calorie: parseInt(calories),
+          proteine: parseInt(proteine),
+          carboidrati: parseInt(carboidrati),
+          grassi: parseInt(grassi),
+          ingredienti: ingredienti.split(',').map(i => i.trim()),
+          preparazione: preparazione.trim(),
+          tempo: '20 min',
+          porzioni: 1,
+          fitnessScore: 85,
+          categoria: mealType,
+          rating: 4.5,
+          recipeId: `ai_${mealType}_${dayNumber}`
+        };
+      }
+      
+      days.push(day);
+    }
+    
+    if (days.length === 0) {
+      throw new Error('No days parsed from AI plan');
+    }
+    
+    console.log(`✅ Parsed ${days.length} days from AI plan with MASSIVE database integration`);
+    return { days };
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      {/* AI Substitute Modal Component */}
+      <AISubstituteModal 
+        showModal={showSubstituteModal}
+        selectedIngredient={selectedIngredient}
+        isLoadingSubstitutes={isLoadingSubstitutes}
+        substitutes={substitutes}
+        onApplySubstitution={applySubstitution}
+        onCloseModal={closeSubstituteModal}
+      />
+
+      {/* Header Component */}
       <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 mb-6">
-          <Link href="/" className="text-gray-400 hover:text-green-400 flex items-center space-x-1">
-            <ArrowLeft className="w-4 h-4" />
-            <span>Torna alla Home</span>
-          </Link>
-          <span className="text-gray-500">/</span>
-          <span className="text-green-400">Database Ricette</span>
-        </div>
 
-        {/* Page Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4" style={{color: '#8FBC8F'}}>
-            🍳 Database Ricette
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Esplora ricette selezionate per il tuo meal prep. Filtra per categoria, dieta e difficoltà.
-          </p>
-        </div>
+      {/* Hero Section */}
+      <section className="text-center py-12 px-4" style={{background: 'linear-gradient(to right, #8FBC8F, #9ACD32)'}}>
+        <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">
+          Rivoluziona la Tua Alimentazione con<br />Meal Prep Planner
+        </h1>
+        <p className="text-lg text-gray-800 mb-6 max-w-2xl mx-auto">
+          Generazione meal prep FITNESS-OTTIMIZZATA con Database Massiccio 420+ Ricette Italiane, Lista della Spesa Intelligente e AI Avanzata.
+        </p>
+        <button 
+          onClick={() => document.getElementById('meal-form')?.scrollIntoView({ behavior: 'smooth' })}
+          className="bg-black text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-105"
+        >
+          🍳 Inizia il Tuo Piano con 420+ Ricette!
+        </button>
+      </section>
 
-        {/* AI Recommendations */}
-        {showAIRecommendations && (
-          <div className="mb-8 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 border border-purple-500/30">
-            <div className="flex items-center space-x-2 mb-4">
-              <Sparkles className="w-6 h-6 text-purple-400" />
-              <h2 className="text-xl font-semibold">Suggerimenti AI Personalizzati</h2>
-              {isLoadingAI && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>}
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              {getAIRecommendations().map((rec, index) => (
-                <div key={index} className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h3 className="font-medium text-white mb-2">{rec.type}</h3>
-                  <p className="text-sm text-gray-400 mb-3">{rec.reason}</p>
-                  <div className="flex space-x-2">
-                    {rec.recipes.slice(0, 3).map((recipe: any, i: number) => (
-                      <div key={recipe.id || i} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                        <ChefHat className="w-6 h-6 text-green-400" />
-                      </div>
-                    ))}
-                    {rec.recipes.length > 3 && (
-                      <div className="w-12 h-12 bg-gray-700/50 rounded-lg flex items-center justify-center text-xs text-gray-400">
-                        +{rec.recipes.length - 3}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Features Component */}
+      <Features />
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Cerca ricette, ingredienti..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-white placeholder-gray-400"
-            />
-          </div>
-        </div>
+      {/* How it Works - SOSTITUITO CON COMPONENTE PULITO */}
+      <HowItWorksSection />
 
-        {/* 🎛️ FILTRI GARANTITI */}
-        <div className="mb-6 bg-gray-800/50 rounded-lg border border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <h3 className="text-lg font-medium">Filtri Intelligenti</h3>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => setShowAIRecommendations(!showAIRecommendations)}
-                className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>AI Suggerimenti</span>
-              </button>
-              <button 
-                onClick={clearFilters}
-                className="text-green-400 hover:text-green-300 text-sm font-medium"
-              >
-                Cancella tutto
-              </button>
-            </div>
-          </div>
+      {/* MealForm Component */}
+      <MealForm 
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleArrayChange={handleArrayChange}
+        handleSubmit={handleSubmit}
+        isGenerating={isGenerating}
+        hasSavedData={hasSavedData}
+        clearSavedData={clearSavedData}
+      />
 
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            {/* 📂 CATEGORIA */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
-              <select 
-                value={selectedFilters.categoria}
-                onChange={(e) => handleFilterChange('categoria', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Tutte</option>
-                {filterOptions.categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 🍳 CUCINA (CON RICETTE FIT) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Cucina</label>
-              <select 
-                value={selectedFilters.tipoCucina}
-                onChange={(e) => handleFilterChange('tipoCucina', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Tutte</option>
-                {filterOptions.cuisines.map(cuisine => (
-                  <option key={cuisine} value={cuisine}>
-                    {cuisine === 'ricette_fit' ? 'Ricette Fit' : 
-                     cuisine.charAt(0).toUpperCase() + cuisine.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* ⚙️ DIFFICOLTÀ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Difficoltà</label>
-              <select 
-                value={selectedFilters.difficolta}
-                onChange={(e) => handleFilterChange('difficolta', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Tutte</option>
-                {filterOptions.difficulties.map(diff => (
-                  <option key={diff} value={diff}>
-                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* ⏱️ TEMPO MAX */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tempo Max</label>
-              <select 
-                value={selectedFilters.maxTempo}
-                onChange={(e) => handleFilterChange('maxTempo', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Qualsiasi</option>
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
-              </select>
-            </div>
-
-            {/* 🥗 DIETA (CON NUOVI FILTRI) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Dieta</label>
-              <select 
-                value={selectedFilters.tipoDieta[0] || ''}
-                onChange={(e) => handleFilterChange('tipoDieta', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Tutte</option>
-                {filterOptions.diets.map(diet => (
-                  <option key={diet} value={diet}>
-                    {diet === 'low_carb' ? 'Low Carb' :
-                     diet === 'senza_glutine' ? 'Senza Glutine' :
-                     diet.charAt(0).toUpperCase() + diet.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 🚫 ALLERGIE */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Evita</label>
-              <select 
-                value={selectedFilters.allergie[0] || ''}
-                onChange={(e) => handleFilterChange('allergie', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">Nessuna</option>
-                {filterOptions.allergies.map(allergy => (
-                  <option key={allergy} value={allergy}>
-                    {allergy === 'frutta_secca' ? 'Frutta Secca' :
-                     allergy.charAt(0).toUpperCase() + allergy.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Results Summary */}
-        <div className="mb-4 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-          <p className="text-gray-400">
-            Trovate <span className="font-semibold text-white">{filteredRecipes.length}</span> ricette
-          </p>
-          <div className="flex flex-wrap items-center gap-4">
-            <button 
-              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                showFavoritesOnly 
-                  ? 'bg-red-600 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
-              <span>Solo preferiti ({favorites.size})</span>
-            </button>
-            <select 
-              onChange={(e) => handleSort(e.target.value)}
-              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-green-500"
-            >
-              <option value="relevance">Ordina per: Rilevanza</option>
-              <option value="time">Tempo di preparazione</option>
-              <option value="rating">Valutazione</option>
-              <option value="calories">Calorie</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Recipe Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredRecipes.slice(0, 20).map((recipe) => (
-            <div 
-              key={recipe.id} 
-              className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 cursor-pointer"
-              onClick={() => openRecipeModal(recipe)}
-            >
-              <div className="relative">
-                <RecipeImage 
-                  recipe={recipe}
-                  className="w-full h-48"
-                />
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(recipe.id);
-                  }}
-                  className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-                    favorites.has(recipe.id) 
-                      ? 'bg-red-500 text-white' 
-                      : 'bg-black/50 text-gray-300 hover:text-red-400'
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${favorites.has(recipe.id) ? 'fill-current' : ''}`} />
-                </button>
-                <div className="absolute bottom-3 left-3 flex space-x-2">
-                  <span className="bg-black/70 text-green-400 px-2 py-1 rounded text-xs font-medium">
-                    {recipe.categoria}
-                  </span>
-                  <span className="bg-black/70 text-blue-400 px-2 py-1 rounded text-xs font-medium">
-                    {recipe.tipoCucina === 'ricette_fit' ? 'Fit' : recipe.tipoCucina}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="p-4">
-                <h3 className="font-semibold text-white mb-2 line-clamp-1">{recipe.nome}</h3>
-                <p className="text-sm text-gray-400 mb-3 line-clamp-2">
-                  {recipe.ingredienti.slice(0, 3).join(', ')}...
-                </p>
-                
-                <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{recipe.tempoPreparazione} min</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Users className="w-4 h-4" />
-                    <span>{recipe.porzioni} porz.</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-white">{recipe.rating?.toFixed(1) || 'N/A'}</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-white">{recipe.calorie}</span>
-                    <span className="text-xs text-gray-400">cal</span>
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    recipe.difficolta === 'facile' ? 'bg-green-900/50 text-green-400 border border-green-500/30' :
-                    recipe.difficolta === 'medio' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
-                    'bg-red-900/50 text-red-400 border border-red-500/30'
-                  }`}>
-                    {recipe.difficolta}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Load More */}
-        {filteredRecipes.length > 20 && (
-          <div className="text-center mt-8">
-            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors">
-              Carica altre ricette ({filteredRecipes.length - 20} rimanenti)
-            </button>
-          </div>
-        )}
-
-        {/* No Results */}
-        {filteredRecipes.length === 0 && (
-          <div className="text-center py-12">
-            <ChefHat className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">Nessuna ricetta trovata</h3>
-            <p className="text-gray-500 mb-4">Prova a modificare i filtri o la ricerca</p>
-            <button 
-              onClick={clearFilters}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors"
-            >
-              Cancella tutti i filtri
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* 📖 MODAL RICETTA COMPLETA */}
-      {showRecipeModal && selectedRecipe && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            {/* Header Modal */}
-            <div className="relative">
-              <RecipeImage 
-                recipe={selectedRecipe}
-                className="w-full h-64 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-              
-              <button
-                onClick={closeRecipeModal}
-                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <button
-                onClick={() => toggleFavorite(selectedRecipe.id)}
-                className={`absolute top-4 left-4 p-2 rounded-full transition-colors ${
-                  favorites.has(selectedRecipe.id) 
-                    ? 'bg-red-500 text-white' 
-                    : 'bg-black/50 text-gray-300 hover:text-red-400'
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${favorites.has(selectedRecipe.id) ? 'fill-current' : ''}`} />
-              </button>
-
-              <div className="absolute bottom-4 left-4 right-4">
-                <h2 className="text-2xl font-bold text-white mb-2">{selectedRecipe.nome}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-200">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{selectedRecipe.tempoPreparazione} min</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>{selectedRecipe.porzioni} porz.</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span>{selectedRecipe.rating?.toFixed(1) || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold">{selectedRecipe.calorie} cal</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Modal */}
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Ingredienti */}
-                <div>
-                  <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
-                    🥘 Ingredienti
-                  </h3>
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    <ul className="space-y-2">
-                      {selectedRecipe.ingredienti.map((ingrediente, index) => (
-                        <li key={index} className="flex items-center gap-3 text-gray-300">
-                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                          <span>{ingrediente}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Macro Nutrizionali */}
-                  <div className="mt-6">
-                    <h4 className="font-semibold text-white mb-3">📊 Valori Nutrizionali</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-blue-400">{selectedRecipe.proteine}g</div>
-                        <div className="text-xs text-gray-400">Proteine</div>
-                      </div>
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-purple-400">{selectedRecipe.carboidrati}g</div>
-                        <div className="text-xs text-gray-400">Carboidrati</div>
-                      </div>
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-yellow-400">{selectedRecipe.grassi}g</div>
-                        <div className="text-xs text-gray-400">Grassi</div>
-                      </div>
-                      <div className="bg-gray-700 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-green-400">{selectedRecipe.calorie}</div>
-                        <div className="text-xs text-gray-400">Calorie</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tag e Info */}
-                  <div className="mt-6">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">
-                        {selectedRecipe.categoria}
-                      </span>
-                      <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                        {selectedRecipe.tipoCucina === 'ricette_fit' ? 'Ricette Fit' : selectedRecipe.tipoCucina}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs text-white ${
-                        selectedRecipe.difficolta === 'facile' ? 'bg-green-600' :
-                        selectedRecipe.difficolta === 'medio' ? 'bg-yellow-600' : 'bg-red-600'
-                      }`}>
-                        {selectedRecipe.difficolta}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preparazione */}
-                <div>
-                  <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
-                    👨‍🍳 Preparazione
-                  </h3>
-                  <div className="bg-gray-700 rounded-lg p-4">
-                    {selectedRecipe.preparazione ? (
-                      <div className="space-y-3">
-                        {generateSteps(selectedRecipe.preparazione, selectedRecipe.nome).map((step, index) => (
-                          <div key={index} className="flex gap-3">
-                            <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                              {index + 1}
-                            </span>
-                            <p className="text-gray-300 flex-1">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-400 italic">Preparazione non disponibile</p>
-                    )}
-                  </div>
-
-                  {/* Consigli del Chef */}
-                  <div className="mt-6 bg-amber-900/20 border border-amber-700 rounded-lg p-4">
-                    <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
-                      👨‍🍳 Consigli del Chef
-                    </h4>
-                    <div className="text-sm text-gray-300 space-y-1">
-                      <p>• Prepara tutti gli ingredienti prima di iniziare</p>
-                      <p>• {selectedRecipe.categoria === 'colazione' ? 'Perfetto per iniziare la giornata con energia' :
-                          selectedRecipe.categoria === 'pranzo' ? 'Ideale per un pranzo nutriente e saziante' :
-                          selectedRecipe.categoria === 'cena' ? 'Ottimo per una cena leggera ma completa' :
-                          'Spuntino perfetto per ricaricare le energie'}</p>
-                      <p>• Conserva in frigorifero per max 2-3 giorni</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Modal */}
-            <div className="p-6 border-t border-gray-700 bg-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-400">
-                  Ricetta aggiunta il {selectedRecipe.createdAt.toLocaleDateString('it-IT')}
-                </div>
-                <button
-                  onClick={closeRecipeModal}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
-                >
-                  Chiudi Ricetta
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* MealPreview Component */}
+      {showPreview && parsedPlan && (
+        <MealPreview 
+          parsedPlan={parsedPlan}
+          handleReplacement={handleReplacement}
+          handleIngredientSubstitution={handleIngredientSubstitution}
+          isReplacing={isReplacing}
+          confirmPlan={confirmPlan}
+          onGenerateNewPlan={handleGenerateNewPlan}
+        />
       )}
+
+      {/* MealPlanComplete Component */}
+      {showComplete && parsedPlan && (
+        <MealPlanComplete 
+          parsedPlan={parsedPlan}
+          formData={formData}
+          generatedPlan={generatedPlan}
+          handleReplacement={handleReplacement}
+          handleIngredientSubstitution={handleIngredientSubstitution}
+          isReplacing={isReplacing}
+          onGenerateNewPlan={handleGenerateNewPlan}
+        />
+      )}
+
+      {/* Results Section */}
+      {!showPreview && !showComplete && generatedPlan && (
+        <section id="results-section" className="max-w-4xl mx-auto px-4 py-20">
+          <h2 className="text-4xl font-bold mb-8 text-center" style={{color: '#8FBC8F'}}>
+            🎉 Il Tuo Piano MASSICCIO è Pronto!
+          </h2>
+          
+          <div className="bg-gray-800 rounded-xl p-8 shadow-2xl mb-8">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold mb-4">📋 Piano Alimentare con 420+ Ricette</h3>
+              <div className="bg-gray-700 rounded-lg p-6 max-h-96 overflow-y-auto" style={{fontFamily: 'Georgia, serif'}}>
+                <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{generatedPlan}</div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 justify-center">
+              <button
+                onClick={() => {
+                  const text = `🍳 Ecco il mio piano alimentare MASSICCIO con 420+ ricette!\n\n${generatedPlan}`;
+                  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                  window.open(whatsappUrl, '_blank');
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                📱 Condividi Piano MASSICCIO
+              </button>
+
+              <button
+                onClick={() => {
+                  const printContent = `
+                    <!DOCTYPE html>
+                    <html>
+                      <head>
+                        <meta charset="utf-8">
+                        <title>Piano MASSICCIO - ${formData.nome || 'Utente'}</title>
+                        <style>
+                          @page { margin: 15mm; size: A4; }
+                          body { 
+                            font-family: 'Georgia', 'Times New Roman', serif; 
+                            line-height: 1.4; color: #333; font-size: 12px;
+                            margin: 0; padding: 0;
+                          }
+                          .header {
+                            text-align: center; margin-bottom: 20px;
+                            border-bottom: 2px solid #8FBC8F; padding-bottom: 10px;
+                          }
+                          .title { font-size: 20px; font-weight: bold; color: #2F4F4F; margin-bottom: 5px; }
+                          .subtitle { font-size: 14px; color: #666; }
+                          h2 {
+                            color: #8FBC8F; font-size: 16px; margin: 20px 0 10px 0;
+                            border-bottom: 1px solid #8FBC8F; padding-bottom: 5px;
+                          }
+                          pre { font-family: 'Georgia', serif; white-space: pre-wrap; font-size: 11px; line-height: 1.3; }
+                          @media print { body { font-size: 11px; } .no-print { display: none; } }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <div class="title">🍳 Piano Alimentare MASSICCIO (420+ Ricette)</div>
+                          <div class="subtitle">Generato il ${new Date().toLocaleDateString('it-IT')} per ${formData.nome || 'Utente'}</div>
+                        </div>
+                        <div style="white-space: pre-wrap; font-family: Georgia, serif; line-height: 1.4;">
+                          ${generatedPlan}
+                        </div>
+                      </body>
+                    </html>
+                  `;
+                  
+                  const printWindow = window.open('', '_blank', 'width=800,height=600');
+                  if (printWindow) {
+                    printWindow.document.write(printContent);
+                    printWindow.document.close();
+                    printWindow.onload = () => {
+                      setTimeout(() => {
+                        printWindow.print();
+                      }, 500);
+                    };
+                  } else {
+                    alert('Popup bloccato! Abilita i popup per scaricare il PDF');
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                📥 Scarica Piano MASSICCIO PDF
+              </button>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedPlan);
+                  alert('Piano MASSICCIO copiato negli appunti!');
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                📋 Copia Piano MASSICCIO
+              </button>
+
+              <button
+                onClick={() => {
+                  setGeneratedPlan(null);
+                  setShowPreview(false);
+                  resetFormData();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                🔄 Nuovo Piano MASSICCIO
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* FAQ Section */}
+      {!generatedPlan && !showPreview && !showComplete && (
+      <section className="bg-gray-800 py-20">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-4xl font-bold mb-12 text-center" style={{color: '#8FBC8F'}}>
+            Domande Frequenti - Sistema MASSICCIO
+          </h2>
+          
+          <div className="space-y-6">
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🍳 Cosa significa "Database MASSICCIO"?</h3>
+              <p className="text-gray-300">Il nostro sistema contiene 420+ ricette italiane fitness-ottimizzate: 60 chetogeniche, 60 low-carb, 60 paleo, 60 vegane, 60 mediterranee, 60 bilanciate e 60 fit. Ogni ricetta è classificata per obiettivo e difficoltà.</p>
+            </div>
+            
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🎯 Come vengono selezionate le ricette?</h3>
+              <p className="text-gray-300">Il sistema usa algoritmi avanzati per selezionare le ricette migliori basandosi su: obiettivo fitness, allergie, preferenze alimentari, rating delle ricette e varietà nutrizionale.</p>
+            </div>
+            
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">🔄 Quanto sono varie le ricette?</h3>
+              <p className="text-gray-300">Con 420+ ricette disponibili, ogni piano è completamente unico. Non vedrai mai la stessa ricetta ripetuta nello stesso piano, garantendo massima varietà e gusto.</p>
+            </div>
+
+            <div className="bg-gray-700 rounded-lg p-6">
+              <h3 className="text-xl font-bold mb-3">📊 Le ricette sono davvero fitness-ottimizzate?</h3>
+              <p className="text-gray-300">Ogni ricetta ha macro ottimizzati, scoring fitness 0-100, e ingredienti selezionati per performance. Le ricette "ricette_fit" hanno priorità massima per risultati ottimali.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-gray-900 py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex justify-center items-center gap-3 mb-6">
+            <img src="/images/icon-192x192.png" alt="Meal Prep Logo" className="w-10 h-10 rounded-full" />
+            <h3 className="text-2xl font-bold">Meal Prep Planner MASSICCIO 🍳</h3>
+          </div>
+          <p className="text-gray-400 mb-6">
+            Rivoluziona la tua alimentazione con il database più completo di ricette fitness italiane. 420+ ricette ottimizzate per i tuoi obiettivi.
+          </p>
+          <div className="flex justify-center gap-6">
+            <Link href="/privacy" className="text-gray-400 hover:text-green-400">Privacy</Link>
+            <Link href="/terms" className="text-gray-400 hover:text-green-400">Termini</Link>
+            <Link href="/contact" className="text-gray-400 hover:text-green-400">Contatti</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default RicettePage;
+}
