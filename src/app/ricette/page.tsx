@@ -192,6 +192,56 @@ const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe,
   );
 };
 
+// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE GENERICA
+function generateSteps(preparazione: string, nomeRicetta: string): string[] {
+  if (!preparazione) return ['Preparazione non disponibile'];
+  
+  // Se contiene già numerazione, la usiamo
+  if (preparazione.includes('1.') || preparazione.includes('Step')) {
+    return preparazione.split(/\d+\.|\n/).filter(step => step.trim());
+  }
+  
+  // Dividiamo per frasi e creiamo steps logici
+  const frasi = preparazione.split(/[.!]/).filter(f => f.trim().length > 10);
+  
+  if (frasi.length <= 1) {
+    // Se è una frase unica, creiamo steps generici
+    const nomeLC = nomeRicetta.toLowerCase();
+    if (nomeLC.includes('smoothie')) {
+      return [
+        'Lava e prepara tutti gli ingredienti freschi',
+        'Aggiungi gli ingredienti nel frullatore nell\'ordine indicato',
+        'Frulla per 1-2 minuti fino ad ottenere consistenza cremosa',
+        'Versa nel bicchiere e servi immediatamente'
+      ];
+    } else if (nomeLC.includes('insalata') || nomeLC.includes('bowl')) {
+      return [
+        'Lava e taglia tutte le verdure e ingredienti freschi',
+        'Prepara la base della bowl o insalata',
+        'Aggiungi le proteine e i condimenti',
+        'Mescola delicatamente e servi fresco'
+      ];
+    } else if (nomeLC.includes('pasta') || nomeLC.includes('risotto')) {
+      return [
+        'Metti a bollire abbondante acqua salata',
+        'Prepara tutti gli ingredienti per il condimento',
+        'Cuoci la pasta/riso secondo i tempi indicati',
+        'Scola e manteca con il condimento preparato',
+        'Servi caldo con una spolverata di formaggio se gradito'
+      ];
+    } else {
+      return [
+        'Prepara e pulisci tutti gli ingredienti necessari',
+        preparazione.trim(),
+        'Controlla la cottura e aggiusta di sale e pepe',
+        'Servi nel piatto e guarnisci a piacere'
+      ];
+    }
+  }
+  
+  return frasi.map(frase => frase.trim()).filter(f => f.length > 0);
+}
+
 const RicettePage = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
@@ -400,6 +450,9 @@ const RicettePage = () => {
     setSelectedRecipe(null);
     setShowRecipeModal(false);
   };
+
+  // 🔄 FUNZIONE ORDINAMENTO RICETTE
+  const sortRecipes = (sortBy: string) => {
     let sorted = [...filteredRecipes];
     switch (sortBy) {
       case 'rating':
@@ -665,7 +718,10 @@ const RicettePage = () => {
                   className="w-full h-48"
                 />
                 <button 
-                  onClick={() => toggleFavorite(recipe.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(recipe.id);
+                  }}
                   className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
                     favorites.has(recipe.id) 
                       ? 'bg-red-500 text-white' 
@@ -936,55 +992,5 @@ const RicettePage = () => {
     </div>
   );
 };
-
-// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE GENERICA
-function generateSteps(preparazione: string, nomeRicetta: string): string[] {
-  if (!preparazione) return ['Preparazione non disponibile'];
-  
-  // Se contiene già numerazione, la usiamo
-  if (preparazione.includes('1.') || preparazione.includes('Step')) {
-    return preparazione.split(/\d+\.|\n/).filter(step => step.trim());
-  }
-  
-  // Dividiamo per frasi e creiamo steps logici
-  const frasi = preparazione.split(/[.!]/).filter(f => f.trim().length > 10);
-  
-  if (frasi.length <= 1) {
-    // Se è una frase unica, creiamo steps generici
-    const nomeLC = nomeRicetta.toLowerCase();
-    if (nomeLC.includes('smoothie')) {
-      return [
-        'Lava e prepara tutti gli ingredienti freschi',
-        'Aggiungi gli ingredienti nel frullatore nell\'ordine indicato',
-        'Frulla per 1-2 minuti fino ad ottenere consistenza cremosa',
-        'Versa nel bicchiere e servi immediatamente'
-      ];
-    } else if (nomeLC.includes('insalata') || nomeLC.includes('bowl')) {
-      return [
-        'Lava e taglia tutte le verdure e ingredienti freschi',
-        'Prepara la base della bowl o insalata',
-        'Aggiungi le proteine e i condimenti',
-        'Mescola delicatamente e servi fresco'
-      ];
-    } else if (nomeLC.includes('pasta') || nomeLC.includes('risotto')) {
-      return [
-        'Metti a bollire abbondante acqua salata',
-        'Prepara tutti gli ingredienti per il condimento',
-        'Cuoci la pasta/riso secondo i tempi indicati',
-        'Scola e manteca con il condimento preparato',
-        'Servi caldo con una spolverata di formaggio se gradito'
-      ];
-    } else {
-      return [
-        'Prepara e pulisci tutti gli ingredienti necessari',
-        preparazione.trim(),
-        'Controlla la cottura e aggiusta di sale e pepe',
-        'Servi nel piatto e guarnisci a piacere'
-      ];
-    }
-  }
-  
-  return frasi.map(frase => frase.trim()).filter(f => f.length > 0);
-}
 
 export default RicettePage;
