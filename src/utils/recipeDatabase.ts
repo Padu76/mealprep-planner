@@ -2,6 +2,7 @@
 // ✅ 10 COLAZIONI + 10 PRANZI + 10 SPUNTINI + 10 CENE
 // 🎯 COMPATIBILI CON TUTTI I FILTRI DROPDOWN
 // 🔄 SINGLETON PATTERN PER COMPATIBILITÀ
+// 🛡️ FIX SEARCHRECIPES CON CONTROLLO SICUREZZA
 
 export interface Recipe {
   id: string;
@@ -1638,9 +1639,15 @@ export class RecipeDatabase {
     return filteredRecipes;
   }
 
-  // 🔍 RICERCA TESTO
+  // 🔍 RICERCA TESTO - FIX CONTROLLO SICUREZZA
   static searchRecipes(query: string): Recipe[] {
     const allRecipes = this.getAllRecipes();
+    
+    // 🛡️ Controllo sicurezza per query
+    if (!query || typeof query !== 'string') {
+      return allRecipes;
+    }
+    
     const searchTerm = query.toLowerCase();
 
     return allRecipes.filter(recipe =>
