@@ -5,12 +5,12 @@ import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft
 import Link from 'next/link';
 import Header from '../components/header';
 
-// Interfaccia Recipe locale
+// Interfaccia Recipe locale - AGGIORNATA CON NUOVI FILTRI
 interface Recipe {
   id: string;
   nome: string;
   categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino';
-  tipoCucina: 'italiana' | 'mediterranea' | 'asiatica' | 'americana' | 'messicana' | 'internazionale';
+  tipoCucina: 'italiana' | 'mediterranea' | 'asiatica' | 'americana' | 'messicana' | 'internazionale' | 'ricette_fit';
   difficolta: 'facile' | 'medio' | 'difficile';
   tempoPreparazione: number;
   porzioni: number;
@@ -20,7 +20,7 @@ interface Recipe {
   grassi: number;
   ingredienti: string[];
   preparazione: string;
-  tipoDieta: ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea')[];
+  tipoDieta: ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea' | 'low_carb' | 'chetogenica' | 'bilanciata')[];
   allergie: string[];
   stagione: ('primavera' | 'estate' | 'autunno' | 'inverno' | 'tutto_anno')[];
   tags: string[];
