@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Header from '../components/header';
@@ -29,6 +29,170 @@ interface Recipe {
   rating?: number;
   reviewCount?: number;
 }
+
+// 📸 HOOK PERSONALIZZATO UNSPLASH
+const useUnsplashImage = (recipeName: string, categoria: string) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  // 🎯 MAPPING RICETTA → QUERY UNSPLASH SEMPLICE
+  const getUnsplashQuery = useCallback((nome: string, cat: string): string => {
+    const nomeLC = nome.toLowerCase();
+    
+    // 🇮🇹 RICETTE ITALIANE/MEDITERRANEE (query generiche)
+    if (nomeLC.includes('risotto')) return 'risotto';
+    if (nomeLC.includes('pasta')) return 'pasta italiana';
+    if (nomeLC.includes('pizza')) return 'pizza margherita';
+    if (nomeLC.includes('lasagne')) return 'lasagne';
+    if (nomeLC.includes('carbonara')) return 'carbonara';
+    if (nomeLC.includes('amatriciana')) return 'amatriciana';
+    if (nomeLC.includes('pesto')) return 'pasta pesto';
+    if (nomeLC.includes('frittata')) return 'frittata';
+    if (nomeLC.includes('minestrone')) return 'minestrone';
+    if (nomeLC.includes('tagliata')) return 'tagliata manzo';
+    if (nomeLC.includes('salmone')) return 'salmone grigliato';
+    if (nomeLC.includes('branzino')) return 'branzino pesce';
+    if (nomeLC.includes('merluzzo')) return 'merluzzo pesce';
+    if (nomeLC.includes('insalata')) return 'insalata italiana';
+    
+    // 💪 FITNESS INTERNAZIONALI (query inglesi generiche)
+    if (nomeLC.includes('pancakes') || nomeLC.includes('pancake')) return 'protein pancakes';
+    if (nomeLC.includes('smoothie')) return 'protein smoothie';
+    if (nomeLC.includes('bowl') && nomeLC.includes('quinoa')) return 'quinoa bowl';
+    if (nomeLC.includes('bowl') && nomeLC.includes('buddha')) return 'buddha bowl';
+    if (nomeLC.includes('bowl') && nomeLC.includes('power')) return 'healthy bowl';
+    if (nomeLC.includes('bowl')) return 'healthy bowl';
+    if (nomeLC.includes('wrap')) return 'healthy wrap';
+    if (nomeLC.includes('shake')) return 'protein shake';
+    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats';
+    if (nomeLC.includes('porridge')) return 'porridge healthy';
+    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt';
+    if (nomeLC.includes('yogurt')) return 'yogurt berries';
+    if (nomeLC.includes('omelette') || nomeLC.includes('omelet')) return 'protein omelette';
+    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast';
+    if (nomeLC.includes('toast')) return 'healthy toast';
+    if (nomeLC.includes('chia')) return 'chia pudding';
+    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls';
+    if (nomeLC.includes('protein') && nomeLC.includes('bars')) return 'protein bars';
+    if (nomeLC.includes('muffin')) return 'protein muffin';
+    
+    // 🥘 CUCINE INTERNAZIONALI
+    if (nomeLC.includes('curry')) return 'curry dish';
+    if (nomeLC.includes('stir fry') || nomeLC.includes('saltato')) return 'stir fry';
+    if (nomeLC.includes('poke')) return 'poke bowl';
+    if (nomeLC.includes('sushi')) return 'sushi healthy';
+    if (nomeLC.includes('teriyaki')) return 'teriyaki';
+    if (nomeLC.includes('falafel')) return 'falafel';
+    if (nomeLC.includes('hummus')) return 'hummus vegetables';
+    if (nomeLC.includes('guacamole')) return 'guacamole';
+    if (nomeLC.includes('quinoa')) return 'quinoa salad';
+    
+    // 🍖 PROTEINE BASE
+    if (nomeLC.includes('pollo') || nomeLC.includes('chicken')) return 'grilled chicken';
+    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef';
+    if (nomeLC.includes('tacchino') || nomeLC.includes('turkey')) return 'turkey breast';
+    if (nomeLC.includes('tonno') || nomeLC.includes('tuna')) return 'tuna salad';
+    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp';
+    if (nomeLC.includes('tofu')) return 'grilled tofu';
+    if (nomeLC.includes('tempeh')) return 'tempeh';
+    if (nomeLC.includes('seitan')) return 'seitan';
+    
+    // 🥗 FALLBACK PER CATEGORIA
+    const categoryQueries = {
+      'colazione': 'healthy breakfast',
+      'pranzo': 'healthy lunch',
+      'cena': 'healthy dinner',
+      'spuntino': 'healthy snack'
+    };
+    
+    return categoryQueries[cat] || 'healthy food';
+  }, []);
+
+  useEffect(() => {
+    const fetchUnsplashImage = async () => {
+      try {
+        setIsLoading(true);
+        setError(false);
+        
+        const query = getUnsplashQuery(recipeName, categoria);
+        console.log(`🔍 Fetching Unsplash image for: "${recipeName}" → query: "${query}"`);
+        
+        // 📸 CHIAMATA UNSPLASH API
+        const response = await fetch(
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
+          {
+            headers: {
+              'Authorization': `Client-ID ${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Unsplash API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.results && data.results.length > 0) {
+          const imageData = data.results[0];
+          const optimizedUrl = `${imageData.urls.regular}&w=400&h=300&fit=crop&auto=format`;
+          setImageUrl(optimizedUrl);
+          console.log(`✅ Image loaded for "${recipeName}"`);
+        } else {
+          throw new Error('No images found');
+        }
+        
+      } catch (error) {
+        console.warn(`⚠️ Failed to load image for "${recipeName}":`, error);
+        setError(true);
+        // 🎯 FALLBACK URL SPECIFICO PER CATEGORIA
+        const fallbackUrls = {
+          'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
+          'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
+          'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
+          'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
+        };
+        setImageUrl(fallbackUrls[categoria] || fallbackUrls['pranzo']);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (recipeName && categoria) {
+      fetchUnsplashImage();
+    }
+  }, [recipeName, categoria, getUnsplashQuery]);
+
+  return { imageUrl, isLoading, error };
+};
+
+// 🖼️ COMPONENTE IMMAGINE RICETTA CON LOADING
+const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe, className = '' }) => {
+  const { imageUrl, isLoading, error } = useUnsplashImage(recipe.nome, recipe.categoria);
+  
+  if (isLoading) {
+    return (
+      <div className={`bg-gray-700 animate-pulse flex items-center justify-center ${className}`}>
+        <ChefHat className="w-8 h-8 text-gray-500" />
+      </div>
+    );
+  }
+  
+  return (
+    <img 
+      src={imageUrl}
+      alt={recipe.nome}
+      className={`object-cover ${className}`}
+      loading="lazy"
+      onError={(e) => {
+        // Fallback aggiuntivo se anche il fallback fallisce
+        const target = e.target as HTMLImageElement;
+        target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+      }}
+    />
+  );
+};
 
 const RicettePage = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -87,8 +251,62 @@ const RicettePage = () => {
     initializeDatabase();
   }, []);
 
-  // Suggerimenti AI
+  // 🤖 Suggerimenti AI con chiamata API
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+  const loadAIRecommendations = async () => {
+    if (isLoadingAI || aiRecommendations.length > 0) return;
+    
+    setIsLoadingAI(true);
+    try {
+      const response = await fetch('/api/ricette', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getAIRecommendations',
+          data: {
+            preferences: ['Fitness', 'Salutare'],
+            allergie: [],
+            obiettivo: 'mantenimento',
+            pasti_preferiti: ['colazione', 'pranzo'],
+            limit: 6
+          }
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.recommendations) {
+          setAiRecommendations(result.data.recommendations);
+        }
+      }
+    } catch (error) {
+      console.error('Errore caricamento AI recommendations:', error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  // Carica AI recommendations quando vengono mostrate
+  useEffect(() => {
+    if (showAIRecommendations) {
+      loadAIRecommendations();
+    }
+  }, [showAIRecommendations]);
+
+  // Suggerimenti AI fallback
   const getAIRecommendations = () => {
+    if (aiRecommendations.length > 0) {
+      return [
+        {
+          type: 'Raccomandazioni AI Personalizzate',
+          recipes: aiRecommendations.slice(0, 4),
+          reason: 'Suggerimenti basati su AI per i tuoi obiettivi fitness'
+        }
+      ];
+    }
+    
     if (!recipeDB) return [];
     
     const favoriteRecipes = recipeDB.getFavoriteRecipes();
@@ -200,7 +418,7 @@ const RicettePage = () => {
           <div className="text-center">
             <ChefHat className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
             <h2 className="text-2xl font-bold mb-2">Caricamento Database Ricette...</h2>
-            <p className="text-gray-400">Preparando 500+ ricette deliziose per te!</p>
+            <p className="text-gray-400">Preparando ricette deliziose con foto Unsplash per te!</p>
           </div>
         </div>
       </div>
@@ -228,7 +446,7 @@ const RicettePage = () => {
             🍳 Database Ricette
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Esplora oltre 500 ricette selezionate per il tuo meal prep. Filtra per categoria, dieta e difficoltà per trovare la ricetta perfetta.
+            Esplora ricette selezionate per il tuo meal prep con foto reali da Unsplash. Filtra per categoria, dieta e difficoltà.
           </p>
         </div>
 
@@ -238,6 +456,7 @@ const RicettePage = () => {
             <div className="flex items-center space-x-2 mb-4">
               <Sparkles className="w-6 h-6 text-purple-400" />
               <h2 className="text-xl font-semibold">Suggerimenti AI Personalizzati</h2>
+              {isLoadingAI && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>}
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               {getAIRecommendations().map((rec, index) => (
@@ -245,8 +464,8 @@ const RicettePage = () => {
                   <h3 className="font-medium text-white mb-2">{rec.type}</h3>
                   <p className="text-sm text-gray-400 mb-3">{rec.reason}</p>
                   <div className="flex space-x-2">
-                    {rec.recipes.slice(0, 3).map((recipe: Recipe) => (
-                      <div key={recipe.id} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
+                    {rec.recipes.slice(0, 3).map((recipe: any, i: number) => (
+                      <div key={recipe.id || i} className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
                         <ChefHat className="w-6 h-6 text-green-400" />
                       </div>
                     ))}
@@ -428,10 +647,9 @@ const RicettePage = () => {
           {filteredRecipes.slice(0, 20).map((recipe) => (
             <div key={recipe.id} className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20">
               <div className="relative">
-                <img 
-                  src={recipe.imageUrl || `https://images.unsplash.com/photo-1546554${recipe.id.slice(-3)}-6c5486b0b8e5?w=300&h=200&fit=crop&auto=format`} 
-                  alt={recipe.nome}
-                  className="w-full h-48 object-cover"
+                <RecipeImage 
+                  recipe={recipe}
+                  className="w-full h-48"
                 />
                 <button 
                   onClick={() => toggleFavorite(recipe.id)}
