@@ -1,3 +1,4 @@
+// 🔥 FORCE REBUILD 2024 - DATABASE MASSICCIO 420+ RICETTE
 'use client';
 
 import { useState, useEffect } from 'react';
