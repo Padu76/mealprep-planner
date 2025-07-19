@@ -209,40 +209,108 @@ export class RecipeDatabase {
 
   // 🏗️ INIZIALIZZA DATABASE CON TUTTE LE RICETTE
   private initializeDatabase(): void {
+    console.log('🍳 Initializing Recipe Database from FITNESS_RECIPES_DB...');
+    
     // Converti FITNESS_RECIPES_DB nel formato Recipe
-    const fitnessRecipes: Recipe[] = FITNESS_RECIPES_DB.map((recipe, index) => ({
-      id: `fitness_${index + 1}`,
-      nome: recipe.nome,
-      categoria: this.mapCategoria(recipe.categoria),
-      tipoCucina: this.mapTipoCucina(recipe.tipoCucina),
-      difficolta: this.mapDifficolta(recipe.difficolta),
-      tempoPreparazione: recipe.tempoPreparazione,
-      porzioni: recipe.porzioni,
-      calorie: recipe.calorie,
-      proteine: recipe.proteine,
-      carboidrati: recipe.carboidrati,
-      grassi: recipe.grassi,
-      ingredienti: recipe.ingredienti,
-      preparazione: recipe.preparazione,
-      tipoDieta: this.mapTipoDieta(recipe.tipoDieta),
-      allergie: recipe.allergie || [],
-      stagione: recipe.stagione || ['tutto_anno'],
-      tags: recipe.tags || [],
-      imageUrl: this.getUnsplashImageUrl(recipe.nome, this.mapCategoria(recipe.categoria)),
-      createdAt: new Date(),
-      rating: recipe.rating || (Math.random() * 2 + 3), // Rating tra 3-5
-      reviewCount: Math.floor(Math.random() * 100) + 10
-    }));
+    const fitnessRecipes: Recipe[] = [];
+    
+    // 🌅 COLAZIONI FITNESS
+    FITNESS_RECIPES_DB.colazione?.forEach((recipe: any, index: number) => {
+      fitnessRecipes.push(this.convertFitnessRecipe(recipe, 'colazione', fitnessRecipes.length + 1));
+    });
+
+    // ☀️ PRANZI FITNESS
+    FITNESS_RECIPES_DB.pranzo?.forEach((recipe: any, index: number) => {
+      fitnessRecipes.push(this.convertFitnessRecipe(recipe, 'pranzo', fitnessRecipes.length + 1));
+    });
+
+    // 🌙 CENE FITNESS
+    FITNESS_RECIPES_DB.cena?.forEach((recipe: any, index: number) => {
+      fitnessRecipes.push(this.convertFitnessRecipe(recipe, 'cena', fitnessRecipes.length + 1));
+    });
+
+    // 🍎 SPUNTINI FITNESS
+    FITNESS_RECIPES_DB.spuntino?.forEach((recipe: any, index: number) => {
+      fitnessRecipes.push(this.convertFitnessRecipe(recipe, 'spuntino', fitnessRecipes.length + 1));
+    });
 
     // Aggiungi ricette AI fitness
     const aiRecipes: Recipe[] = FITNESS_AI_RECIPES.map((recipe, index) => ({
       ...recipe,
       id: `ai_fit_${index + 1}`,
+      imageUrl: this.getAdvancedImageUrl(recipe.nome, recipe.categoria),
       createdAt: new Date(),
       reviewCount: Math.floor(Math.random() * 50) + 5
     }));
 
     this.recipes = [...fitnessRecipes, ...aiRecipes];
+    console.log(`✅ Database initialized with ${this.recipes.length} recipes`);
+    console.log(`📊 Cuisines: ${[...new Set(this.recipes.map(r => r.tipoCucina))].join(', ')}`);
+  }
+
+  // 🔄 CONVERTI RICETTA FITNESS IN FORMATO STANDARD
+  private convertFitnessRecipe(fitnessRecipe: any, categoria: string, id: number): Recipe {
+    return {
+      id: `fitness_${id.toString().padStart(3, '0')}`,
+      nome: fitnessRecipe.nome,
+      categoria: categoria as any,
+      tipoCucina: this.determineTipoCucina(fitnessRecipe.nome, fitnessRecipe.macroTarget),
+      difficolta: this.determineDifficolta(fitnessRecipe.tempo),
+      tempoPreparazione: this.parseTempoPreparazione(fitnessRecipe.tempo),
+      porzioni: fitnessRecipe.porzioni || 1,
+      calorie: fitnessRecipe.calorie,
+      proteine: fitnessRecipe.proteine,
+      carboidrati: fitnessRecipe.carboidrati,
+      grassi: fitnessRecipe.grassi,
+      ingredienti: Array.isArray(fitnessRecipe.ingredienti) ? fitnessRecipe.ingredienti : [],
+      preparazione: fitnessRecipe.preparazione || 'Preparazione da definire',
+      tipoDieta: this.determineTipoDieta(fitnessRecipe),
+      allergie: this.determineAllergie(fitnessRecipe.ingredienti),
+      stagione: ['tutto_anno'],
+      tags: this.generateTags(fitnessRecipe),
+      imageUrl: this.getAdvancedImageUrl(fitnessRecipe.nome, categoria),
+      createdAt: new Date(),
+      rating: this.generateRating(fitnessRecipe.fitnessScore),
+      reviewCount: Math.floor(Math.random() * 50) + 5,
+    };
+  }
+
+  // 🎯 DETERMINAZIONE TIPO CUCINA AVANZATA
+  private determineTipoCucina(nome: string, macroTarget?: string): 'italiana' | 'mediterranea' | 'asiatica' | 'americana' | 'messicana' | 'internazionale' | 'ricette_fit' {
+    const nomeLC = nome.toLowerCase();
+    
+    // 🏋️‍♂️ FITNESS/PROTEIN FOCUSED
+    if (nomeLC.includes('protein') || nomeLC.includes('fitness') || nomeLC.includes('power') || 
+        nomeLC.includes('energy balls') || nomeLC.includes('post-workout') || nomeLC.includes('shake') ||
+        macroTarget === 'high-protein' || macroTarget === 'post-workout' || macroTarget === 'energy') {
+      return 'ricette_fit';
+    }
+    
+    // 🇮🇹 ITALIANA
+    if (nomeLC.includes('risotto') || nomeLC.includes('pasta') || nomeLC.includes('tagliata') || 
+        nomeLC.includes('parmigiano') || nomeLC.includes('mozzarella') || nomeLC.includes('frittata')) {
+      return 'italiana';
+    }
+    
+    // 🌏 ASIATICA  
+    if (nomeLC.includes('bowl') || nomeLC.includes('teriyaki') || nomeLC.includes('poke') || 
+        nomeLC.includes('sushi') || nomeLC.includes('curry') || nomeLC.includes('tofu')) {
+      return 'asiatica';
+    }
+    
+    // 🇺🇸 AMERICANA
+    if (nomeLC.includes('pancakes') || nomeLC.includes('caesar') || nomeLC.includes('french') || 
+        nomeLC.includes('burger') || nomeLC.includes('muffin') || nomeLC.includes('wrap')) {
+      return 'americana';
+    }
+    
+    // 🌊 MEDITERRANEA
+    if (nomeLC.includes('salmone') || nomeLC.includes('branzino') || nomeLC.includes('greco') || 
+        nomeLC.includes('olive') || nomeLC.includes('feta') || nomeLC.includes('hummus')) {
+      return 'mediterranea';
+    }
+    
+    return 'internazionale';
   }
 
   // 🎯 MAPPATURA CATEGORII
@@ -291,46 +359,342 @@ export class RecipeDatabase {
     return difficultyMap[difficolta] || 'medio';
   }
 
-  private mapTipoDieta(tipoDieta: string[]): ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea' | 'low_carb' | 'chetogenica' | 'bilanciata')[] {
-    const dietMap: { [key: string]: any } = {
-      'Vegetariana': 'vegetariana',
-      'Vegana': 'vegana', 
-      'Senza Glutine': 'senza_glutine',
-      'Keto': 'keto',
-      'Paleo': 'paleo',
-      'Mediterranea': 'mediterranea',
-      'vegetariana': 'vegetariana',
-      'vegana': 'vegana',
-      'senza_glutine': 'senza_glutine',
-      'keto': 'keto',
-      'paleo': 'paleo',
-      'mediterranea': 'mediterranea',
-      'low_carb': 'low_carb',
-      'chetogenica': 'chetogenica',
-      'bilanciata': 'bilanciata'
-    };
-    return tipoDieta?.map(diet => dietMap[diet] || diet).filter(Boolean) || ['mediterranea'];
+  // 🛠️ UTILITY METHODS AVANZATE
+  private determineDifficolta(tempo: string): 'facile' | 'medio' | 'difficile' {
+    const minutes = this.parseTempoPreparazione(tempo);
+    if (minutes <= 15) return 'facile';
+    if (minutes <= 30) return 'medio';
+    return 'difficile';
   }
 
-  // 📸 URL IMMAGINE UNSPLASH
-  private getUnsplashImageUrl(nome: string, categoria: string): string {
+  private parseTempoPreparazione(tempo: string): number {
+    const match = tempo.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 20;
+  }
+
+  private determineTipoDieta(recipe: any): ('vegetariana' | 'vegana' | 'senza_glutine' | 'keto' | 'paleo' | 'mediterranea' | 'low_carb' | 'chetogenica' | 'bilanciata')[] {
+    const diets: any[] = [];
+    const ingredienti = Array.isArray(recipe.ingredienti) ? recipe.ingredienti.join(' ').toLowerCase() : '';
+    const nome = recipe.nome ? recipe.nome.toLowerCase() : '';
+    
+    // 🥬 VEGETARIANA (no carne/pesce)
+    if (!ingredienti.includes('carne') && !ingredienti.includes('pesce') && 
+        !ingredienti.includes('pollo') && !ingredienti.includes('manzo') && 
+        !ingredienti.includes('salmone') && !ingredienti.includes('tonno')) {
+      diets.push('vegetariana');
+    }
+    
+    // 🌱 VEGANA (no derivati animali)
+    if (!ingredienti.includes('uova') && !ingredienti.includes('latte') && 
+        !ingredienti.includes('formaggio') && !ingredienti.includes('yogurt') && 
+        !ingredienti.includes('ricotta') && !ingredienti.includes('parmigiano')) {
+      diets.push('vegana');
+    }
+    
+    // 🥖 SENZA GLUTINE
+    if (!ingredienti.includes('glutine') && !ingredienti.includes('pane') && 
+        !ingredienti.includes('pasta') && !ingredienti.includes('farina') && 
+        !ingredienti.includes('avena')) {
+      diets.push('senza_glutine');
+    }
+    
+    // 🥑 KETO/CHETOGENICA (bassi carbs, alti grassi)
+    if (recipe.carboidrati < 15 && recipe.grassi > 15) {
+      diets.push('keto');
+      diets.push('chetogenica');
+    }
+    
+    // 🥩 LOW CARB (carboidrati ridotti)
+    if (recipe.carboidrati < 25) {
+      diets.push('low_carb');
+    }
+    
+    // 🏛️ PALEO (no cereali/legumi/latticini)
+    if (!ingredienti.includes('latte') && !ingredienti.includes('formaggio') && 
+        !ingredienti.includes('fagioli') && !ingredienti.includes('lenticchie') && 
+        !ingredienti.includes('cereali') && !ingredienti.includes('avena')) {
+      diets.push('paleo');
+    }
+    
+    // ⚖️ BILANCIATA (40-30-30 o simile)
+    if (recipe.proteine && recipe.carboidrati && recipe.grassi) {
+      const totalMacro = recipe.proteine * 4 + recipe.carboidrati * 4 + recipe.grassi * 9;
+      const proteinPercent = (recipe.proteine * 4) / totalMacro * 100;
+      const carbPercent = (recipe.carboidrati * 4) / totalMacro * 100;
+      const fatPercent = (recipe.grassi * 9) / totalMacro * 100;
+      
+      // Bilanciata se macro sono relativamente equilibrate
+      if (proteinPercent >= 20 && proteinPercent <= 35 && 
+          carbPercent >= 25 && carbPercent <= 45 && 
+          fatPercent >= 20 && fatPercent <= 35) {
+        diets.push('bilanciata');
+      }
+    }
+    
+    // 🌊 MEDITERRANEA (olio EVO, pesce, verdure)
+    if (ingredienti.includes('olio evo') || ingredienti.includes('pesce') || 
+        ingredienti.includes('verdure') || ingredienti.includes('olive') ||
+        ingredienti.includes('salmone') || ingredienti.includes('branzino')) {
+      diets.push('mediterranea');
+    }
+    
+    // Fallback se nessuna dieta identificata
+    if (diets.length === 0) {
+      diets.push('bilanciata');
+    }
+    
+    return diets;
+  }
+
+  private determineAllergie(ingredienti: string[]): string[] {
+    const allergie: string[] = [];
+    const ingredientiText = ingredienti.join(' ').toLowerCase();
+    
+    if (ingredientiText.includes('glutine') || ingredientiText.includes('pane') || ingredientiText.includes('pasta')) {
+      allergie.push('glutine');
+    }
+    if (ingredientiText.includes('latte') || ingredientiText.includes('formaggio') || ingredientiText.includes('yogurt')) {
+      allergie.push('lattosio');
+    }
+    if (ingredientiText.includes('uova')) {
+      allergie.push('uova');
+    }
+    if (ingredientiText.includes('noci') || ingredientiText.includes('mandorle') || ingredientiText.includes('pistacchi')) {
+      allergie.push('frutta_secca');
+    }
+    
+    return allergie;
+  }
+
+  private generateTags(recipe: any): string[] {
+    const tags: string[] = [];
+    
+    if (recipe.fitnessScore >= 90) tags.push('top-rated');
+    if (recipe.calorie < 300) tags.push('light');
+    if (recipe.proteine >= 25) tags.push('high-protein');
+    if (recipe.macroTarget) tags.push(recipe.macroTarget);
+    
+    return tags;
+  }
+
+  private generateRating(fitnessScore?: number): number {
+    if (fitnessScore) {
+      // Converti fitness score (0-100) in rating (3.0-5.0)
+      return Math.min(5.0, Math.max(3.0, (fitnessScore / 100) * 2 + 3));
+    }
+    return Math.random() * 1.5 + 3.5; // Rating casuale tra 3.5 e 5.0
+  }
+
+  // 📸 URL IMMAGINE AVANZATO (60+ mappature specifiche)
+  private getAdvancedImageUrl(nome: string, categoria: string): string {
     const nomeLC = nome.toLowerCase();
     
-    // Mapping specifico per immagini
-    if (nomeLC.includes('porridge')) return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop';
-    if (nomeLC.includes('smoothie')) return 'https://images.unsplash.com/photo-1553003914-07a5a3d50ba6?w=400&h=300&fit=crop';
-    if (nomeLC.includes('salmone')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop';
-    if (nomeLC.includes('pollo')) return 'https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400&h=300&fit=crop';
+    // 🍳 COLAZIONI SPECIFICHE
+    if (nomeLC.includes('porridge') && nomeLC.includes('proteico')) {
+      return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('porridge') || nomeLC.includes('avena')) {
+      return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pancakes') && nomeLC.includes('protein')) {
+      return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pancakes')) {
+      return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) {
+      return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) {
+      return 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('smoothie') && nomeLC.includes('bowl')) {
+      return 'https://images.unsplash.com/photo-1553909489-cd47e0ef937f?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('smoothie')) {
+      return 'https://images.unsplash.com/photo-1553003914-07a5a3d50ba6?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) {
+      return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) {
+      return 'https://images.unsplash.com/photo-1478145787956-f6f12c59624d?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('french') && nomeLC.includes('toast')) {
+      return 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('chia') && nomeLC.includes('pudding')) {
+      return 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=300&fit=crop&auto=format';
+    }
     
-    // Fallback per categoria
-    const fallbackUrls = {
-      'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
-      'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-      'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
-      'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop'
+    // 🥗 PRANZI E INSALATE
+    if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) {
+      return 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) {
+      return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('power') && nomeLC.includes('bowl')) {
+      return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('poke') && nomeLC.includes('bowl')) {
+      return 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('caesar') && nomeLC.includes('salad')) {
+      return 'https://images.unsplash.com/photo-1551248429-40975aa4de74?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('chicken') && nomeLC.includes('salad')) {
+      return 'https://images.unsplash.com/photo-1551248429-40975aa4de74?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('insalata') && nomeLC.includes('quinoa')) {
+      return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('insalata') && nomeLC.includes('tonno')) {
+      return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('insalata') && nomeLC.includes('legumi')) {
+      return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('insalata')) {
+      return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🐟 PESCE E FRUTTI DI MARE
+    if (nomeLC.includes('salmone') && nomeLC.includes('grigliato')) {
+      return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('salmone') && nomeLC.includes('crosta')) {
+      return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('salmone')) {
+      return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('branzino')) {
+      return 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('merluzzo')) {
+      return 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('tonno')) {
+      return 'https://images.unsplash.com/photo-1564069114553-7215ea2fe407?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('gamberi')) {
+      return 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🍖 CARNE E PROTEINE
+    if (nomeLC.includes('pollo') && nomeLC.includes('curry')) {
+      return 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) {
+      return 'https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('chicken') && nomeLC.includes('power')) {
+      return 'https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pollo')) {
+      return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('tagliata') && nomeLC.includes('manzo')) {
+      return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('turkey') || nomeLC.includes('tacchino')) {
+      return 'https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('manzo')) {
+      return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('tofu') && nomeLC.includes('teriyaki')) {
+      return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('tofu')) {
+      return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🍝 PASTA E RISOTTI
+    if (nomeLC.includes('risotto') && nomeLC.includes('funghi')) {
+      return 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('risotto')) {
+      return 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pasta') && nomeLC.includes('integrale')) {
+      return 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('pasta')) {
+      return 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🥚 UOVA E FRITTATE
+    if (nomeLC.includes('omelette') && nomeLC.includes('fitness')) {
+      return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('frittata') && nomeLC.includes('verdure')) {
+      return 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('frittata')) {
+      return 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('omelette')) {
+      return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🥤 BEVANDE E SHAKE
+    if (nomeLC.includes('shake') && nomeLC.includes('protein')) {
+      return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('protein') && nomeLC.includes('shake')) {
+      return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🍯 SPUNTINI E SNACK
+    if (nomeLC.includes('energy') && nomeLC.includes('balls')) {
+      return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('protein') && nomeLC.includes('balls')) {
+      return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('muffin') && nomeLC.includes('protein')) {
+      return 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('muffin')) {
+      return 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('ricotta') && nomeLC.includes('noci')) {
+      return 'https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('cottage') && nomeLC.includes('cheese')) {
+      return 'https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('hummus')) {
+      return 'https://images.unsplash.com/photo-1571306894533-ad06d1070ac4?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🍲 ZUPPE
+    if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) {
+      return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('zuppa')) {
+      return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🌮 WRAPS
+    if (nomeLC.includes('wrap') && nomeLC.includes('proteico')) {
+      return 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop&auto=format';
+    }
+    if (nomeLC.includes('wrap')) {
+      return 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop&auto=format';
+    }
+    
+    // 🥗 FALLBACK PER CATEGORIA
+    const categoryImages = {
+      'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
+      'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
+      'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
+      'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
     };
     
-    return fallbackUrls[categoria] || fallbackUrls['pranzo'];
+    return categoryImages[categoria] || categoryImages['pranzo'];
   }
 
   // 🔍 RICERCA RICETTE CON FILTRI
