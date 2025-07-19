@@ -1,6 +1,7 @@
 // 🏋️‍♂️ DATABASE RICETTE FITNESS - 40 RICETTE COMPLETE
 // ✅ 10 COLAZIONI + 10 PRANZI + 10 SPUNTINI + 10 CENE
 // 🎯 COMPATIBILI CON TUTTI I FILTRI DROPDOWN
+// 🔄 SINGLETON PATTERN PER COMPATIBILITÀ
 
 export interface Recipe {
   id: string;
@@ -24,6 +25,37 @@ export interface Recipe {
 
 export class RecipeDatabase {
   private static recipes: Recipe[] = [];
+  private static instance: RecipeDatabase;
+
+  // 🔄 SINGLETON PATTERN per compatibilità
+  static getInstance(): RecipeDatabase {
+    if (!RecipeDatabase.instance) {
+      RecipeDatabase.instance = new RecipeDatabase();
+    }
+    return RecipeDatabase.instance;
+  }
+
+  // 🔧 METODI ISTANZA per compatibilità
+  getAllRecipes(): Recipe[] {
+    return RecipeDatabase.getAllRecipes();
+  }
+
+  getRecipesByFilter(filter: {
+    categoria?: string;
+    tipo_dieta?: string;
+    difficolta?: string;
+    tempo?: number;
+  }): Recipe[] {
+    return RecipeDatabase.getRecipesByFilter(filter);
+  }
+
+  searchRecipes(query: string): Recipe[] {
+    return RecipeDatabase.searchRecipes(query);
+  }
+
+  getTopRatedRecipes(limit: number = 10): Recipe[] {
+    return RecipeDatabase.getTopRatedRecipes(limit);
+  }
 
   // 🌅 COLAZIONI FITNESS (10 ricette)
   static getColazioni(): Recipe[] {
@@ -1279,7 +1311,7 @@ export class RecipeDatabase {
         foto: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
         allergie: ["latte"]
       },
-              {
+      {
         id: "cen_04",
         nome: "Salmone al Cartoccio con Verdure",
         categoria: "cena",
