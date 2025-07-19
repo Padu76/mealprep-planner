@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { MapPin, Users, Calendar, Utensils, TrendingUp, Search, Phone, Mail, Filter, Download, RefreshCw, Eye, Target, Activity } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -32,13 +31,17 @@ export default function AdminDashboard() {
   const [filterCity, setFilterCity] = useState('');
   const [dateRange, setDateRange] = useState('all');
 
-  // 📊 DATI PER GRAFICI
-  const [chartData, setChartData] = useState({
-    conversions: [],
-    goals: [],
-    activities: [],
-    timeline: [],
-    cities: []
+  // 📊 ANALYTICS DATA (senza grafici)
+  const [analyticsData, setAnalyticsData] = useState({
+    conversionFunnel: {
+      visitors: 0,
+      formSubmissions: 0,
+      plansGenerated: 0,
+      paidConversions: 0
+    },
+    topGoals: [],
+    topCities: [],
+    weeklyTrend: []
   });
 
   // Password per accesso dashboard - SICURA
@@ -211,8 +214,8 @@ export default function AdminDashboard() {
         
         setBusinessStats(stats);
         
-        // 📊 GENERA DATI PER GRAFICI
-        generateChartData(mappedUsers, metricsData.data);
+        // 📊 GENERA ANALYTICS DATA (senza grafici)
+        generateAnalyticsData(mappedUsers, metricsData.data);
         
         setLastRefresh(new Date().toLocaleTimeString('it-IT'));
         console.log('✅ Dashboard data loaded successfully');
@@ -231,59 +234,59 @@ export default function AdminDashboard() {
     }
   };
 
-  // 📊 GENERA DATI PER GRAFICI
-  const generateChartData = (users: any[], metrics: any) => {
+  // 📊 GENERA ANALYTICS DATA (versione semplificata senza grafici)
+  const generateAnalyticsData = (users: any[], metrics: any) => {
     // Conversion Funnel
-    const conversionData = [
-      { name: 'Visitatori', value: users.length * 3, color: '#8884d8' },
-      { name: 'Form Compilati', value: users.length, color: '#82ca9d' },
-      { name: 'Piani Generati', value: users.filter(u => u.status === 'Piano generato').length, color: '#ffc658' },
-      { name: 'Conversioni Paid', value: users.filter(u => u.planType === 'paid').length, color: '#ff7300' }
-    ];
+    const visitors = users.length * 3; // Stima visitatori
+    const formSubmissions = users.length;
+    const plansGenerated = users.filter(u => u.status === 'Piano generato').length;
+    const paidConversions = users.filter(u => u.planType === 'paid').length;
 
-    // Distribuzione Obiettivi
+    // Top Goals
     const goalCounts = {};
     users.forEach(user => {
       const goal = user.goal || 'Non specificato';
       goalCounts[goal] = (goalCounts[goal] || 0) + 1;
     });
-    const goalsData = Object.entries(goalCounts).map(([name, value]) => ({ name, value }));
+    const topGoals = Object.entries(goalCounts)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 5)
+      .map(([name, value]) => ({ name, value }));
 
-    // Distribuzione Attività
-    const activityCounts = {};
-    users.forEach(user => {
-      const activity = user.activity_level || 'Non specificato';
-      activityCounts[activity] = (activityCounts[activity] || 0) + 1;
-    });
-    const activitiesData = Object.entries(activityCounts).map(([name, value]) => ({ name, value }));
-
-    // Timeline Iscrizioni (ultimi 7 giorni)
-    const timelineData = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const count = users.filter(user => user.created_at?.startsWith(dateStr)).length;
-      timelineData.push({
-        date: date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }),
-        users: count
-      });
-    }
-
-    // Distribuzione Città (simulata)
+    // Top Cities
     const cityCounts = {};
     users.forEach(user => {
       const location = simulateLocation(user.nome || '');
       cityCounts[location.city] = (cityCounts[location.city] || 0) + 1;
     });
-    const citiesData = Object.entries(cityCounts).map(([name, value]) => ({ name, value }));
+    const topCities = Object.entries(cityCounts)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 5)
+      .map(([name, value]) => ({ name, value }));
 
-    setChartData({
-      conversions: conversionData,
-      goals: goalsData,
-      activities: activitiesData,
-      timeline: timelineData,
-      cities: citiesData
+    // Weekly Trend (ultimi 7 giorni)
+    const weeklyTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const count = users.filter(user => user.created_at?.startsWith(dateStr)).length;
+      weeklyTrend.push({
+        date: date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }),
+        users: count
+      });
+    }
+
+    setAnalyticsData({
+      conversionFunnel: {
+        visitors,
+        formSubmissions,
+        plansGenerated,
+        paidConversions
+      },
+      topGoals,
+      topCities,
+      weeklyTrend
     });
   };
 
@@ -358,9 +361,6 @@ export default function AdminDashboard() {
     
     return score;
   };
-
-  // 🎨 COLORI PER GRAFICI
-  const COLORS = ['#8FBC8F', '#9ACD32', '#32CD32', '#228B22', '#006400', '#ADFF2F'];
 
   // Login Form
   if (!isAuthenticated) {
@@ -532,85 +532,127 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        {/* 📊 NUOVA SEZIONE ANALYTICS */}
+        {/* 📊 ANALYTICS SENZA GRAFICI */}
         <section className="mb-12">
           <h2 className="text-3xl font-bold mb-6" style={{color: '#8FBC8F'}}>
             📊 Analytics Avanzati
           </h2>
           
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-3 gap-8">
             {/* Conversion Funnel */}
             <div className="bg-gray-800 rounded-xl p-6">
               <h3 className="text-xl font-bold mb-4 text-green-400">🎯 Conversion Funnel</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData.conversions}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Bar dataKey="value" fill="#8FBC8F" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">👥 Visitatori</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 bg-gray-700 rounded-full h-2">
+                      <div className="w-full bg-blue-500 h-2 rounded-full"></div>
+                    </div>
+                    <span className="text-blue-400 font-bold">{analyticsData.conversionFunnel.visitors}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">📝 Form Compilati</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full" 
+                        style={{width: `${(analyticsData.conversionFunnel.formSubmissions / analyticsData.conversionFunnel.visitors) * 100}%`}}
+                      ></div>
+                    </div>
+                    <span className="text-green-400 font-bold">{analyticsData.conversionFunnel.formSubmissions}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">✅ Piani Generati</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-yellow-500 h-2 rounded-full" 
+                        style={{width: `${(analyticsData.conversionFunnel.plansGenerated / analyticsData.conversionFunnel.visitors) * 100}%`}}
+                      ></div>
+                    </div>
+                    <span className="text-yellow-400 font-bold">{analyticsData.conversionFunnel.plansGenerated}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">💰 Conversioni Paid</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-32 bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-orange-500 h-2 rounded-full" 
+                        style={{width: `${(analyticsData.conversionFunnel.paidConversions / analyticsData.conversionFunnel.visitors) * 100}%`}}
+                      ></div>
+                    </div>
+                    <span className="text-orange-400 font-bold">{analyticsData.conversionFunnel.paidConversions}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Timeline Utenti */}
+            {/* Top Goals */}
             <div className="bg-gray-800 rounded-xl p-6">
-              <h3 className="text-xl font-bold mb-4 text-green-400">📈 Trend Iscrizioni (7gg)</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={chartData.timeline}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Area type="monotone" dataKey="users" stroke="#8FBC8F" fill="#8FBC8F" fillOpacity={0.3} />
-                </AreaChart>
-              </ResponsiveContainer>
+              <h3 className="text-xl font-bold mb-4 text-green-400">🎯 Top Obiettivi</h3>
+              <div className="space-y-3">
+                {analyticsData.topGoals.map((goal, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-gray-300">{goal.name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full" 
+                          style={{width: `${(goal.value / analyticsData.topGoals[0]?.value || 1) * 100}%`}}
+                        ></div>
+                      </div>
+                      <span className="text-green-400 font-bold">{goal.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Distribuzione Obiettivi */}
+            {/* Top Cities */}
             <div className="bg-gray-800 rounded-xl p-6">
-              <h3 className="text-xl font-bold mb-4 text-green-400">🎯 Obiettivi Utenti</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData.goals}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {chartData.goals.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <h3 className="text-xl font-bold mb-4 text-green-400">🗺️ Top Città</h3>
+              <div className="space-y-3">
+                {analyticsData.topCities.map((city, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-gray-300 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {city.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full" 
+                          style={{width: `${(city.value / analyticsData.topCities[0]?.value || 1) * 100}%`}}
+                        ></div>
+                      </div>
+                      <span className="text-blue-400 font-bold">{city.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
 
-            {/* Distribuzione Geografica */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h3 className="text-xl font-bold mb-4 text-green-400">🗺️ Distribuzione Geografica</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData.cities}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#F3F4F6' }}
-                  />
-                  <Bar dataKey="value" fill="#9ACD32" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          {/* Weekly Trend Table */}
+          <div className="mt-8 bg-gray-800 rounded-xl p-6">
+            <h3 className="text-xl font-bold mb-4 text-green-400">📈 Trend Settimanale</h3>
+            <div className="grid grid-cols-7 gap-4">
+              {analyticsData.weeklyTrend.map((day, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-xs text-gray-400 mb-2">{day.date}</div>
+                  <div className="h-16 bg-gray-700 rounded flex items-end justify-center">
+                    <div 
+                      className="bg-green-500 rounded-t w-full"
+                      style={{height: `${(day.users / Math.max(...analyticsData.weeklyTrend.map(d => d.users), 1)) * 100}%`}}
+                    ></div>
+                  </div>
+                  <div className="text-sm font-bold text-green-400 mt-1">{day.users}</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -911,7 +953,7 @@ export default function AdminDashboard() {
             <h3 className="text-xl font-bold">Admin CRM Dashboard</h3>
           </div>
           <p className="text-gray-400 text-sm">
-            🔒 Dati live da Airtable - Analytics avanzati - v2.0
+            🔒 Dati live da Airtable - Analytics avanzati - v2.0 (No Grafici)
           </p>
         </div>
       </footer>
