@@ -30,6 +30,17 @@ export default function RicettePage() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
 
+  // 🤖 STATI MODAL AI
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiFormData, setAiFormData] = useState({
+    ingredienti: '',
+    obiettivo: 'bilanciata',
+    categoria: 'pranzo',
+    tempo: '30',
+    allergie: ''
+  });
+
   // 🎛️ OPZIONI FILTRI
   const [filterOptions, setFilterOptions] = useState<any>({
     categories: [],
@@ -128,6 +139,83 @@ export default function RicettePage() {
     setSelectedRecipe(null);
     setShowRecipeModal(false);
     document.body.style.overflow = 'unset'; // Ripristina scroll body
+  };
+
+  // 🤖 GENERA RICETTA AI
+  const generateAiRecipe = async () => {
+    setAiLoading(true);
+    console.log('🤖 [AI] Starting recipe generation with data:', aiFormData);
+    
+    try {
+      const response = await fetch('/api/generate-ai-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredienti: aiFormData.ingredienti.split(',').map(i => i.trim()).filter(i => i),
+          obiettivo: aiFormData.obiettivo,
+          categoria: aiFormData.categoria,
+          tempoMax: parseInt(aiFormData.tempo),
+          allergie: aiFormData.allergie.split(',').map(a => a.trim()).filter(a => a)
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success && result.recipe) {
+        console.log('✅ [AI] Recipe generated successfully:', result.recipe.nome);
+        
+        // Crea ricetta AI con ID unico
+        const aiRecipe: Recipe = {
+          ...result.recipe,
+          id: `ai_${Date.now()}`,
+          createdAt: new Date(),
+          rating: 4.8,
+          reviewCount: 1,
+          tags: ['ai-generated'],
+          imageUrl: getRecipeImage(result.recipe)
+        };
+        
+        // Aggiungi temporaneamente alla lista ricette
+        const updatedRecipes = [aiRecipe, ...recipes];
+        setRecipes(updatedRecipes);
+        setFilteredRecipes([aiRecipe, ...filteredRecipes]);
+        
+        // Chiudi modal AI e apri ricetta
+        setShowAiModal(false);
+        setSelectedRecipe(aiRecipe);
+        setShowRecipeModal(true);
+        
+        // Reset form
+        setAiFormData({
+          ingredienti: '',
+          obiettivo: 'bilanciata',
+          categoria: 'pranzo',
+          tempo: '30',
+          allergie: ''
+        });
+        
+      } else {
+        console.error('❌ [AI] Recipe generation failed:', result.error);
+        alert('❌ Errore nella generazione AI. Riprova con ingredienti diversi.');
+      }
+    } catch (error) {
+      console.error('❌ [AI] Network error:', error);
+      alert('🤖 AI temporaneamente non disponibile. Riprova tra poco!');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // ❌ CHIUDI MODAL AI
+  const closeAiModal = () => {
+    setShowAiModal(false);
+    setAiFormData({
+      ingredienti: '',
+      obiettivo: 'bilanciata',
+      categoria: 'pranzo',
+      tempo: '30',
+      allergie: ''
+    });
   };
 
   // 🧹 RESET FILTRI
@@ -274,7 +362,7 @@ export default function RicettePage() {
             🍳 Database Ricette
           </h1>
           <p className="text-xl text-gray-100 mb-6 max-w-3xl mx-auto">
-            Migliaia di combinazioni possibili con AI avanzata. {recipes.length} ricette base + generazione AI illimitata.
+            {recipes.length} ricette base + AI infinita per combinazioni illimitate. Crea ricette personalizzate istantaneamente!
           </p>
           <div className="bg-white bg-opacity-10 rounded-lg p-4 max-w-md mx-auto">
             <div className="text-sm text-gray-200">
@@ -365,8 +453,8 @@ export default function RicettePage() {
               )}
               <button 
                 onClick={() => {
-                  // TODO: Integrazione AI
-                  alert('🤖 AI Recipe Generator in arrivo! Genera ricette personalizzate con ingredienti specifici.');
+                  // Apri Modal AI per generazione ricette personalizzate
+                  setShowAiModal(true);
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm font-semibold"
               >
@@ -420,14 +508,22 @@ export default function RicettePage() {
               <div>
                 <button
                   onClick={() => {
-                    // Mostra ricette casuali
-                    const shuffled = [...recipes].sort(() => 0.5 - Math.random());
-                    setFilteredRecipes(shuffled.slice(0, 20));
+                    // Mostra ricette casuali MA COMPLETE
+                    console.log('🎲 [RICETTE] Generating random recipes with full data...');
+                    const completeRecipes = recipes.filter(recipe => 
+                      recipe.ingredienti.length > 2 && 
+                      recipe.preparazione.length > 50 &&
+                      recipe.nome.length > 5
+                    );
+                    const shuffled = [...completeRecipes].sort(() => 0.5 - Math.random());
+                    const randomSelection = shuffled.slice(0, 12);
+                    setFilteredRecipes(randomSelection);
                     setCurrentPage(1);
+                    console.log(`✅ [RICETTE] Selected ${randomSelection.length} complete random recipes`);
                   }}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors"
                 >
-                  🎲 Sorprendimi!
+                  🎲 Sorprendimi! (Ricette Complete)
                 </button>
               </div>
             </div>
@@ -631,7 +727,146 @@ export default function RicettePage() {
         </div>
       </section>
 
-      {/* Modal Ricetta COMPLETO */}
+      {/* Modal AI Generator */}
+      {showAiModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header Modal AI */}
+            <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">🤖 Generatore AI Ricette</h2>
+              <button
+                onClick={closeAiModal}
+                className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Contenuto Modal AI */}
+            <div className="p-6">
+              <p className="text-gray-300 mb-6">
+                Crea ricette personalizzate con AI! Inserisci gli ingredienti che hai a disposizione e l'AI creerà una ricetta su misura per te.
+              </p>
+
+              <div className="space-y-4">
+                {/* Ingredienti */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    🥬 Ingredienti disponibili (separati da virgola)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="es. pollo, broccoli, riso, aglio, olio d'oliva"
+                    value={aiFormData.ingredienti}
+                    onChange={(e) => setAiFormData(prev => ({...prev, ingredienti: e.target.value}))}
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Grid per altri campi */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Obiettivo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">🎯 Obiettivo</label>
+                    <select
+                      value={aiFormData.obiettivo}
+                      onChange={(e) => setAiFormData(prev => ({...prev, obiettivo: e.target.value}))}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="bilanciata">Bilanciata</option>
+                      <option value="dimagrimento">Dimagrimento</option>
+                      <option value="massa">Aumento Massa</option>
+                      <option value="keto">Chetogenica</option>
+                      <option value="vegana">Vegana</option>
+                      <option value="mediterranea">Mediterranea</option>
+                    </select>
+                  </div>
+
+                  {/* Categoria */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">🍽️ Categoria</label>
+                    <select
+                      value={aiFormData.categoria}
+                      onChange={(e) => setAiFormData(prev => ({...prev, categoria: e.target.value}))}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="colazione">Colazione</option>
+                      <option value="pranzo">Pranzo</option>
+                      <option value="cena">Cena</option>
+                      <option value="spuntino">Spuntino</option>
+                    </select>
+                  </div>
+
+                  {/* Tempo */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">⏱️ Tempo Max</label>
+                    <select
+                      value={aiFormData.tempo}
+                      onChange={(e) => setAiFormData(prev => ({...prev, tempo: e.target.value}))}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="15">15 minuti</option>
+                      <option value="30">30 minuti</option>
+                      <option value="45">45 minuti</option>
+                      <option value="60">60 minuti</option>
+                    </select>
+                  </div>
+
+                  {/* Allergie */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">⚠️ Allergie/Evitare</label>
+                    <input
+                      type="text"
+                      placeholder="es. glutine, lattosio, noci"
+                      value={aiFormData.allergie}
+                      onChange={(e) => setAiFormData(prev => ({...prev, allergie: e.target.value}))}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Pulsanti */}
+                <div className="flex gap-4 pt-4">
+                  <button
+                    onClick={closeAiModal}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition-colors"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={generateAiRecipe}
+                    disabled={aiLoading || !aiFormData.ingredienti.trim()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white py-3 px-6 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Generando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🤖</span>
+                        <span>Genera Ricetta AI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Info AI */}
+              <div className="mt-6 p-4 bg-blue-600 bg-opacity-20 rounded-lg border border-blue-600 border-opacity-30">
+                <h4 className="text-blue-400 font-semibold mb-2">💡 Come funziona l'AI:</h4>
+                <ul className="text-blue-200 text-sm space-y-1">
+                  <li>• L'AI analizza i tuoi ingredienti disponibili</li>
+                  <li>• Crea una ricetta bilanciata con valori nutrizionali</li>
+                  <li>• Genera preparazione step-by-step personalizzata</li>
+                  <li>• Rispetta le tue preferenze alimentari e allergie</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showRecipeModal && selectedRecipe && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
