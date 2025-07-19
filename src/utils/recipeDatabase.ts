@@ -1,5 +1,6 @@
 // 🍳 DATABASE RICETTE DEFINITIVO - 420+ RICETTE GARANTITE
 // ✅ FIX COMPLETO - ZERO CONFLITTI - 100% FUNZIONANTE
+// 🎲 ORDINE RANDOMIZZATO PER VARIETÀ MASSIMA
 
 // 📋 Interfaccia Recipe definitiva
 export interface Recipe {
@@ -718,6 +719,16 @@ class DefinitiveRecipeGenerator {
     
     return categoryImages[categoria] || categoryImages['pranzo'];
   }
+
+  // 🎲 FUNZIONE SHUFFLE PER RANDOMIZZARE ORDINE
+  private static shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
 }
 
 // 🗃️ CLASSE DATABASE DEFINITIVA
@@ -738,23 +749,34 @@ export class RecipeDatabase {
     return RecipeDatabase.instance;
   }
 
-  // 🎲 INIZIALIZZA DATABASE CON TUTTE LE CATEGORIE
+  // 🎲 INIZIALIZZA DATABASE CON ORDINE RANDOMIZZATO
   private initializeDatabase() {
     console.log('🔥 [DATABASE] Starting MASSIVE initialization with 420+ recipes...');
     
-    this.recipes = [
-      ...DefinitiveRecipeGenerator.generateKetoRecipes(),
-      ...DefinitiveRecipeGenerator.generateLowCarbRecipes(),
-      ...DefinitiveRecipeGenerator.generatePaleoRecipes(),
-      ...DefinitiveRecipeGenerator.generateVeganeRecipes(),
-      ...DefinitiveRecipeGenerator.generateMediterraneeRecipes(),
-      ...DefinitiveRecipeGenerator.generateBilanciateRecipes(),
-      ...DefinitiveRecipeGenerator.generateRicetteFitRecipes()
+    // Genera tutte le categorie di ricette
+    const allRecipeCategories = [
+      DefinitiveRecipeGenerator.generateKetoRecipes(),
+      DefinitiveRecipeGenerator.generateLowCarbRecipes(),
+      DefinitiveRecipeGenerator.generatePaleoRecipes(),
+      DefinitiveRecipeGenerator.generateVeganeRecipes(),
+      DefinitiveRecipeGenerator.generateMediterraneeRecipes(),
+      DefinitiveRecipeGenerator.generateBilanciateRecipes(),
+      DefinitiveRecipeGenerator.generateRicetteFitRecipes()
     ];
 
-    console.log(`✅ [DATABASE] Database loaded: ${this.recipes.length} recipes`);
+    // 🎲 COMBINA E RANDOMIZZA COMPLETAMENTE L'ORDINE
+    const combinedRecipes: Recipe[] = [];
+    allRecipeCategories.forEach(categoryRecipes => {
+      combinedRecipes.push(...categoryRecipes);
+    });
+
+    // 🔀 SHUFFLE COMPLETO PER VARIETÀ MASSIMA
+    this.recipes = DefinitiveRecipeGenerator.shuffleArray(combinedRecipes);
+
+    console.log(`✅ [DATABASE] Database loaded: ${this.recipes.length} recipes (RANDOMIZED ORDER)`);
     console.log(`🎛️ [DATABASE] Cuisines:`, [...new Set(this.recipes.map(r => r.tipoCucina))]);
     console.log(`🥗 [DATABASE] Diets:`, [...new Set(this.recipes.flatMap(r => r.tipoDieta))]);
+    console.log(`🎲 [DATABASE] Order randomized for maximum variety!`);
     
     // Test filtri completo
     this.testAllFilters();
