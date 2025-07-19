@@ -30,97 +30,85 @@ interface Recipe {
   reviewCount?: number;
 }
 
-// 📸 HOOK PERSONALIZZATO UNSPLASH
+// 🖼️ COMPONENTE IMMAGINE RICETTA CON SISTEMA IBRIDO
+const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe, className = '' }) => {
+  // 🎯 STRATEGIA IBRIDA: Database = Statico, AI = Dinamico
+  const isAIGenerated = recipe.id.startsWith('ai_') || recipe.tags?.includes('ai-generated');
+  
+  if (isAIGenerated) {
+    // 🤖 RICETTE AI → USA UNSPLASH API DINAMICA
+    const { imageUrl, isLoading, error } = useUnsplashImage(recipe.nome, recipe.categoria);
+    
+    if (isLoading) {
+      return (
+        <div className={`bg-gray-700 animate-pulse flex items-center justify-center ${className}`}>
+          <ChefHat className="w-8 h-8 text-gray-500" />
+        </div>
+      );
+    }
+    
+    return (
+      <img 
+        src={imageUrl}
+        alt={recipe.nome}
+        className={`object-cover ${className}`}
+        loading="lazy"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
+        }}
+      />
+    );
+  } else {
+    // 📚 RICETTE DATABASE → USA IMMAGINI STATICHE
+    const imageUrl = recipe.imageUrl || getStaticImageUrl(recipe.nome, recipe.categoria);
+    
+    return (
+      <img 
+        src={imageUrl}
+        alt={recipe.nome}
+        className={`object-cover ${className}`}
+        loading="lazy"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
+        }}
+      />
+    );
+  }
+};
+
+// 📸 HOOK UNSPLASH PER RICETTE AI (mantenuto per dinamiche)
 const useUnsplashImage = (recipeName: string, categoria: string) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // 🎯 MAPPING RICETTA → QUERY UNSPLASH MIGLIORATO
+  // 🎯 MAPPING RICETTA AI → QUERY UNSPLASH OTTIMIZZATO
   const getUnsplashQuery = useCallback((nome: string, cat: string): string => {
     const nomeLC = nome.toLowerCase();
     
-    // 🥩 CARNE E PROTEINE SPECIFICHE
-    if (nomeLC.includes('tagliata') && nomeLC.includes('manzo')) return 'grilled beef steak arugula';
-    if (nomeLC.includes('tagliata')) return 'beef tagliata meal';
-    if (nomeLC.includes('manzo') && nomeLC.includes('rucola')) return 'beef arugula salad';
-    if (nomeLC.includes('burger') && nomeLC.includes('lenticchie')) return 'lentil burger healthy';
-    if (nomeLC.includes('frittata') && nomeLC.includes('verdure')) return 'vegetable frittata eggs';
-    if (nomeLC.includes('frittata')) return 'italian frittata';
+    // 🤖 QUERY AI SPECIFICHE (più creative)
+    if (nomeLC.includes('fusion')) return 'fusion cuisine creative dish';
+    if (nomeLC.includes('innovative')) return 'innovative healthy meal';
+    if (nomeLC.includes('gourmet')) return 'gourmet healthy food';
+    if (nomeLC.includes('exotic')) return 'exotic healthy cuisine';
     
-    // 🍝 PASTA E RISOTTI
-    if (nomeLC.includes('risotto') && nomeLC.includes('funghi')) return 'mushroom risotto italian';
-    if (nomeLC.includes('pasta') && nomeLC.includes('verdure')) return 'pasta vegetables healthy';
-    if (nomeLC.includes('pasta') && nomeLC.includes('integrale')) return 'whole grain pasta';
+    // 🏋️‍♂️ FITNESS AI QUERIES
+    if (nomeLC.includes('power') && nomeLC.includes('bowl')) return 'healthy power bowl fitness';
+    if (nomeLC.includes('protein') && nomeLC.includes('bomb')) return 'high protein meal fitness';
+    if (nomeLC.includes('recovery')) return 'post workout meal recovery';
+    if (nomeLC.includes('energy') && nomeLC.includes('boost')) return 'energy boosting healthy meal';
     
-    // 🥗 INSALATE E BOWL
-    if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) return 'buddha bowl quinoa vegetables';
-    if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) return 'quinoa bowl protein healthy';
-    if (nomeLC.includes('insalata') && nomeLC.includes('tonno')) return 'tuna salad healthy meal';
-    if (nomeLC.includes('insalata') && nomeLC.includes('legumi')) return 'bean salad protein';
-    
-    // 🐟 PESCE
-    if (nomeLC.includes('salmone') && nomeLC.includes('grigliato')) return 'grilled salmon fillet';
-    if (nomeLC.includes('salmone')) return 'salmon healthy meal';
-    if (nomeLC.includes('branzino')) return 'sea bass fish dinner';
-    if (nomeLC.includes('merluzzo')) return 'cod fish healthy';
-    if (nomeLC.includes('tonno')) return 'tuna steak grilled';
-    
-    // 🍳 COLAZIONI
-    if (nomeLC.includes('porridge') && nomeLC.includes('proteico')) return 'protein oatmeal breakfast';
-    if (nomeLC.includes('porridge')) return 'oatmeal berries healthy';
-    if (nomeLC.includes('pancakes') && nomeLC.includes('proteici')) return 'protein pancakes fitness';
-    if (nomeLC.includes('pancakes')) return 'healthy pancakes breakfast';
-    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt berries nuts';
-    if (nomeLC.includes('yogurt')) return 'yogurt healthy breakfast bowl';
-    if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) return 'green smoothie spinach healthy';
-    if (nomeLC.includes('smoothie') && nomeLC.includes('proteico')) return 'protein smoothie post workout';
-    if (nomeLC.includes('smoothie')) return 'healthy smoothie bowl';
-    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast healthy breakfast';
-    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats jar breakfast';
-    
-    // 🥜 SPUNTINI E SNACK
-    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls protein healthy';
-    if (nomeLC.includes('hummus') && nomeLC.includes('ceci')) return 'hummus chickpeas vegetables';
-    if (nomeLC.includes('hummus')) return 'hummus healthy snack';
-    if (nomeLC.includes('shake') && nomeLC.includes('proteico')) return 'protein shake fitness';
-    if (nomeLC.includes('ricotta') && nomeLC.includes('noci')) return 'ricotta cheese nuts healthy';
-    if (nomeLC.includes('cottage') && nomeLC.includes('cheese')) return 'cottage cheese cucumber';
-    if (nomeLC.includes('mela') && nomeLC.includes('protein')) return 'apple peanut butter protein';
-    if (nomeLC.includes('muffin') && nomeLC.includes('protein')) return 'protein muffins healthy';
-    
-    // 🌮 WRAP E TOAST
-    if (nomeLC.includes('wrap') && nomeLC.includes('pollo')) return 'chicken wrap healthy';
-    if (nomeLC.includes('wrap')) return 'healthy wrap vegetables';
-    if (nomeLC.includes('toast')) return 'healthy toast breakfast';
-    
-    // 🍲 ZUPPE E PIATTI CALDI
-    if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) return 'lentil soup healthy bowl';
-    if (nomeLC.includes('zuppa')) return 'healthy soup vegetables';
-    
-    // 🍖 PROTEINE GENERICHE
-    if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) return 'grilled chicken breast healthy';
-    if (nomeLC.includes('pollo')) return 'chicken healthy meal protein';
-    if (nomeLC.includes('tacchino')) return 'turkey breast healthy meal';
-    if (nomeLC.includes('tofu') && nomeLC.includes('teriyaki')) return 'teriyaki tofu vegetables asian';
-    if (nomeLC.includes('tofu')) return 'grilled tofu healthy protein';
-    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef healthy meal';
-    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp healthy seafood';
-    
-    // 🥘 CUCINE INTERNAZIONALI
-    if (nomeLC.includes('caesar') && nomeLC.includes('salad')) return 'caesar salad protein chicken';
-    if (nomeLC.includes('poke') && nomeLC.includes('bowl')) return 'poke bowl salmon healthy';
-    if (nomeLC.includes('chia') && nomeLC.includes('pudding')) return 'chia pudding healthy breakfast';
-    
-    // 🥗 FALLBACK PER CATEGORIA CON QUERY PIÙ SPECIFICHE
-    const categoryQueries = {
-      'colazione': 'healthy breakfast oats protein',
-      'pranzo': 'healthy lunch salad protein',
-      'cena': 'healthy dinner fish vegetables',
-      'spuntino': 'healthy protein snack nuts'
+    // 🥗 STANDARD AI FALLBACK
+    const aiQueries = {
+      'colazione': 'creative healthy breakfast bowl',
+      'pranzo': 'innovative lunch healthy meal',
+      'cena': 'gourmet healthy dinner plate',
+      'spuntino': 'creative healthy snack'
     };
     
-    return categoryQueries[cat] || 'healthy meal protein vegetables';
+    return aiQueries[cat] || 'innovative healthy meal';
   }, []);
 
   useEffect(() => {
@@ -130,7 +118,7 @@ const useUnsplashImage = (recipeName: string, categoria: string) => {
         setError(false);
         
         const query = getUnsplashQuery(recipeName, categoria);
-        console.log(`🔍 Fetching Unsplash image for: "${recipeName}" → query: "${query}"`);
+        console.log(`🤖 AI Recipe - Fetching Unsplash: "${recipeName}" → "${query}"`);
         
         // 📸 CHIAMATA UNSPLASH API
         const response = await fetch(
@@ -152,22 +140,16 @@ const useUnsplashImage = (recipeName: string, categoria: string) => {
           const imageData = data.results[0];
           const optimizedUrl = `${imageData.urls.regular}&w=400&h=300&fit=crop&auto=format`;
           setImageUrl(optimizedUrl);
-          console.log(`✅ Image loaded for "${recipeName}"`);
+          console.log(`✅ AI Image loaded for "${recipeName}"`);
         } else {
           throw new Error('No images found');
         }
         
       } catch (error) {
-        console.warn(`⚠️ Failed to load image for "${recipeName}":`, error);
+        console.warn(`⚠️ AI Image failed for "${recipeName}":`, error);
         setError(true);
-        // 🎯 FALLBACK URL SPECIFICO PER CATEGORIA
-        const fallbackUrls = {
-          'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
-          'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
-          'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
-          'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
-        };
-        setImageUrl(fallbackUrls[categoria] || fallbackUrls['pranzo']);
+        // Fallback a immagine statica
+        setImageUrl(getStaticImageUrl(recipeName, categoria));
       } finally {
         setIsLoading(false);
       }
@@ -181,32 +163,142 @@ const useUnsplashImage = (recipeName: string, categoria: string) => {
   return { imageUrl, isLoading, error };
 };
 
-// 🖼️ COMPONENTE IMMAGINE RICETTA CON LOADING
-const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe, className = '' }) => {
-  const { imageUrl, isLoading, error } = useUnsplashImage(recipe.nome, recipe.categoria);
+// 🎯 FUNZIONE PER IMMAGINI STATICHE (senza API Unsplash)
+function getStaticImageUrl(nome: string, categoria: string): string {
+  const nomeLC = nome.toLowerCase();
   
-  if (isLoading) {
-    return (
-      <div className={`bg-gray-700 animate-pulse flex items-center justify-center ${className}`}>
-        <ChefHat className="w-8 h-8 text-gray-500" />
-      </div>
-    );
+  // 🍳 MAPPING SPECIFICO RICETTE → IMMAGINI UNSPLASH STATICHE
+  if (nomeLC.includes('porridge') || nomeLC.includes('avena')) {
+    return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('pancakes')) {
+    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) {
+    return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) {
+    return 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('smoothie')) {
+    return 'https://images.unsplash.com/photo-1553003914-07a5a3d50ba6?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('toast') && nomeLC.includes('avocado')) {
+    return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('toast')) {
+    return 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('overnight') && nomeLC.includes('oats')) {
+    return 'https://images.unsplash.com/photo-1478145787956-f6f12c59624d?w=400&h=300&fit=crop&auto=format';
   }
   
-  return (
-    <img 
-      src={imageUrl}
-      alt={recipe.nome}
-      className={`object-cover ${className}`}
-      loading="lazy"
-      onError={(e) => {
-        // Fallback aggiuntivo se anche il fallback fallisce
-        const target = e.target as HTMLImageElement;
-        target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
-      }}
-    />
-  );
-};
+  // 🥗 PRANZI E INSALATE
+  if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) {
+    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('insalata') && nomeLC.includes('quinoa')) {
+    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('caesar') && nomeLC.includes('salad')) {
+    return 'https://images.unsplash.com/photo-1551248429-40975aa4de74?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('insalata')) {
+    return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('poke') && nomeLC.includes('bowl')) {
+    return 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) {
+    return 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🐟 PESCE
+  if (nomeLC.includes('salmone')) {
+    return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('branzino')) {
+    return 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('merluzzo')) {
+    return 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('tonno')) {
+    return 'https://images.unsplash.com/photo-1564069114553-7215ea2fe407?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🍖 CARNE
+  if (nomeLC.includes('pollo') && nomeLC.includes('curry')) {
+    return 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) {
+    return 'https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('pollo')) {
+    return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('tagliata') && nomeLC.includes('manzo')) {
+    return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('turkey') || nomeLC.includes('tacchino')) {
+    return 'https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🍝 PASTA E RISOTTI
+  if (nomeLC.includes('risotto')) {
+    return 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('pasta')) {
+    return 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🥚 UOVA E FRITTATE
+  if (nomeLC.includes('frittata')) {
+    return 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('omelette')) {
+    return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🥤 BEVANDE E SHAKE
+  if (nomeLC.includes('shake') && nomeLC.includes('protein')) {
+    return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🍯 SPUNTINI
+  if (nomeLC.includes('energy') && nomeLC.includes('balls')) {
+    return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('muffin')) {
+    return 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('ricotta') || nomeLC.includes('cottage')) {
+    return 'https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🍲 ZUPPE
+  if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) {
+    return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
+  }
+  if (nomeLC.includes('zuppa')) {
+    return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🌮 WRAPS
+  if (nomeLC.includes('wrap')) {
+    return 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop&auto=format';
+  }
+  
+  // 🥗 FALLBACK PER CATEGORIA
+  const categoryImages = {
+    'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
+    'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
+    'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
+    'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
+  };
+  
+  return categoryImages[categoria] || categoryImages['pranzo'];
+}
 
 // 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE GENERICA
 function generateSteps(preparazione: string, nomeRicetta: string): string[] {
