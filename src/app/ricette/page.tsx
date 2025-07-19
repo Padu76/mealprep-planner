@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft } from 'lucide-react';
+import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft, X } from 'lucide-react';
 import Link from 'next/link';
 import Header from '../components/header';
 
@@ -36,77 +36,75 @@ const useUnsplashImage = (recipeName: string, categoria: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // 🎯 MAPPING RICETTA → QUERY UNSPLASH SEMPLICE
+  // 🎯 MAPPING RICETTA → QUERY UNSPLASH SEMPLICE E CORRETTO
   const getUnsplashQuery = useCallback((nome: string, cat: string): string => {
     const nomeLC = nome.toLowerCase();
     
-    // 🇮🇹 RICETTE ITALIANE/MEDITERRANEE (query generiche)
-    if (nomeLC.includes('risotto')) return 'risotto';
-    if (nomeLC.includes('pasta')) return 'pasta italiana';
-    if (nomeLC.includes('pizza')) return 'pizza margherita';
-    if (nomeLC.includes('lasagne')) return 'lasagne';
-    if (nomeLC.includes('carbonara')) return 'carbonara';
-    if (nomeLC.includes('amatriciana')) return 'amatriciana';
-    if (nomeLC.includes('pesto')) return 'pasta pesto';
-    if (nomeLC.includes('frittata')) return 'frittata';
-    if (nomeLC.includes('minestrone')) return 'minestrone';
-    if (nomeLC.includes('tagliata')) return 'tagliata manzo';
-    if (nomeLC.includes('salmone')) return 'salmone grigliato';
-    if (nomeLC.includes('branzino')) return 'branzino pesce';
-    if (nomeLC.includes('merluzzo')) return 'merluzzo pesce';
-    if (nomeLC.includes('insalata')) return 'insalata italiana';
+    // 🇮🇹 RICETTE ITALIANE/MEDITERRANEE (query più specifiche)
+    if (nomeLC.includes('porridge')) return 'porridge oatmeal breakfast';
+    if (nomeLC.includes('omelette') || nomeLC.includes('frittata')) return 'omelette eggs breakfast';
+    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt berries';
+    if (nomeLC.includes('yogurt')) return 'yogurt healthy breakfast';
+    if (nomeLC.includes('pancakes')) return 'protein pancakes healthy';
+    if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) return 'green smoothie spinach';
+    if (nomeLC.includes('smoothie')) return 'smoothie bowl healthy';
+    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast eggs';
+    if (nomeLC.includes('toast')) return 'healthy toast breakfast';
+    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats jar';
+    if (nomeLC.includes('overnight')) return 'overnight oats breakfast';
     
-    // 💪 FITNESS INTERNAZIONALI (query inglesi generiche)
-    if (nomeLC.includes('pancakes') || nomeLC.includes('pancake')) return 'protein pancakes';
-    if (nomeLC.includes('smoothie')) return 'protein smoothie';
-    if (nomeLC.includes('bowl') && nomeLC.includes('quinoa')) return 'quinoa bowl';
-    if (nomeLC.includes('bowl') && nomeLC.includes('buddha')) return 'buddha bowl';
-    if (nomeLC.includes('bowl') && nomeLC.includes('power')) return 'healthy bowl';
-    if (nomeLC.includes('bowl')) return 'healthy bowl';
-    if (nomeLC.includes('wrap')) return 'healthy wrap';
-    if (nomeLC.includes('shake')) return 'protein shake';
-    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats';
-    if (nomeLC.includes('porridge')) return 'porridge healthy';
-    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt';
-    if (nomeLC.includes('yogurt')) return 'yogurt berries';
-    if (nomeLC.includes('omelette') || nomeLC.includes('omelet')) return 'protein omelette';
-    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast';
-    if (nomeLC.includes('toast')) return 'healthy toast';
-    if (nomeLC.includes('chia')) return 'chia pudding';
-    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls';
-    if (nomeLC.includes('protein') && nomeLC.includes('bars')) return 'protein bars';
-    if (nomeLC.includes('muffin')) return 'protein muffin';
+    // PRANZI/CENE
+    if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) return 'quinoa bowl healthy';
+    if (nomeLC.includes('quinoa') && nomeLC.includes('pollo')) return 'chicken quinoa salad';
+    if (nomeLC.includes('salmone')) return 'grilled salmon fish';
+    if (nomeLC.includes('branzino')) return 'sea bass fish grilled';
+    if (nomeLC.includes('merluzzo')) return 'cod fish healthy';
+    if (nomeLC.includes('insalata') && nomeLC.includes('legumi')) return 'bean salad healthy';
+    if (nomeLC.includes('insalata') && nomeLC.includes('tonno')) return 'tuna salad healthy';
+    if (nomeLC.includes('pasta') && nomeLC.includes('integrale')) return 'whole wheat pasta vegetables';
+    if (nomeLC.includes('pasta')) return 'pasta italiana vegetables';
+    if (nomeLC.includes('wrap')) return 'healthy wrap vegetables';
+    if (nomeLC.includes('manzo') && nomeLC.includes('bowl')) return 'beef bowl sweet potato';
+    if (nomeLC.includes('risotto')) return 'risotto mushrooms italian';
+    if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) return 'buddha bowl healthy';
+    if (nomeLC.includes('tagliata')) return 'beef tagliata arugula';
+    if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) return 'grilled chicken breast';
+    if (nomeLC.includes('pollo')) return 'chicken healthy meal';
+    if (nomeLC.includes('tacchino')) return 'turkey breast healthy';
+    if (nomeLC.includes('tofu') && nomeLC.includes('teriyaki')) return 'teriyaki tofu vegetables';
+    if (nomeLC.includes('tofu')) return 'grilled tofu healthy';
+    if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) return 'lentil soup healthy';
+    
+    // SPUNTINI
+    if (nomeLC.includes('shake') && nomeLC.includes('proteico')) return 'protein shake post workout';
+    if (nomeLC.includes('shake')) return 'protein shake fitness';
+    if (nomeLC.includes('ricotta') && nomeLC.includes('noci')) return 'ricotta nuts healthy';
+    if (nomeLC.includes('mela') && nomeLC.includes('protein')) return 'apple peanut butter protein';
+    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls protein';
+    if (nomeLC.includes('cottage') && nomeLC.includes('cheese')) return 'cottage cheese cucumber';
+    if (nomeLC.includes('hummus')) return 'hummus vegetables healthy';
+    if (nomeLC.includes('muffin') && nomeLC.includes('protein')) return 'protein muffins healthy';
     
     // 🥘 CUCINE INTERNAZIONALI
-    if (nomeLC.includes('curry')) return 'curry dish';
-    if (nomeLC.includes('stir fry') || nomeLC.includes('saltato')) return 'stir fry';
-    if (nomeLC.includes('poke')) return 'poke bowl';
-    if (nomeLC.includes('sushi')) return 'sushi healthy';
-    if (nomeLC.includes('teriyaki')) return 'teriyaki';
-    if (nomeLC.includes('falafel')) return 'falafel';
-    if (nomeLC.includes('hummus')) return 'hummus vegetables';
-    if (nomeLC.includes('guacamole')) return 'guacamole';
-    if (nomeLC.includes('quinoa')) return 'quinoa salad';
+    if (nomeLC.includes('caesar') && nomeLC.includes('salad')) return 'caesar salad protein';
+    if (nomeLC.includes('poke') && nomeLC.includes('bowl')) return 'poke bowl salmon';
+    if (nomeLC.includes('french') && nomeLC.includes('toast')) return 'french toast protein';
+    if (nomeLC.includes('chia') && nomeLC.includes('pudding')) return 'chia pudding tropical';
     
-    // 🍖 PROTEINE BASE
-    if (nomeLC.includes('pollo') || nomeLC.includes('chicken')) return 'grilled chicken';
-    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef';
-    if (nomeLC.includes('tacchino') || nomeLC.includes('turkey')) return 'turkey breast';
-    if (nomeLC.includes('tonno') || nomeLC.includes('tuna')) return 'tuna salad';
-    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp';
-    if (nomeLC.includes('tofu')) return 'grilled tofu';
-    if (nomeLC.includes('tempeh')) return 'tempeh';
-    if (nomeLC.includes('seitan')) return 'seitan';
+    // 🍖 PROTEINE BASE  
+    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef healthy';
+    if (nomeLC.includes('tonno') || nomeLC.includes('tuna')) return 'tuna salad protein';
+    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp healthy';
     
     // 🥗 FALLBACK PER CATEGORIA
     const categoryQueries = {
-      'colazione': 'healthy breakfast',
-      'pranzo': 'healthy lunch',
-      'cena': 'healthy dinner',
-      'spuntino': 'healthy snack'
+      'colazione': 'healthy breakfast protein',
+      'pranzo': 'healthy lunch bowl',
+      'cena': 'healthy dinner protein',
+      'spuntino': 'healthy protein snack'
     };
     
-    return categoryQueries[cat] || 'healthy food';
+    return categoryQueries[cat] || 'healthy food meal';
   }, []);
 
   useEffect(() => {
@@ -218,6 +216,8 @@ const RicettePage = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [recipeDB, setRecipeDB] = useState<any>(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
 
   // Inizializza database solo client-side
   useEffect(() => {
@@ -390,7 +390,16 @@ const RicettePage = () => {
     setShowFavoritesOnly(false);
   };
 
-  const sortRecipes = (sortBy: string) => {
+  // 🍳 APRI RICETTA COMPLETA
+  const openRecipeModal = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setShowRecipeModal(true);
+  };
+
+  const closeRecipeModal = () => {
+    setSelectedRecipe(null);
+    setShowRecipeModal(false);
+  };
     let sorted = [...filteredRecipes];
     switch (sortBy) {
       case 'rating':
@@ -645,7 +654,11 @@ const RicettePage = () => {
         {/* Recipe Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredRecipes.slice(0, 20).map((recipe) => (
-            <div key={recipe.id} className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20">
+            <div 
+              key={recipe.id} 
+              className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 cursor-pointer"
+              onClick={() => openRecipeModal(recipe)}
+            >
               <div className="relative">
                 <RecipeImage 
                   recipe={recipe}
@@ -734,8 +747,244 @@ const RicettePage = () => {
           </div>
         )}
       </div>
+
+      {/* 📖 MODAL RICETTA COMPLETA */}
+      {showRecipeModal && selectedRecipe && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header Modal */}
+            <div className="relative">
+              <RecipeImage 
+                recipe={selectedRecipe}
+                className="w-full h-64 object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+              
+              <button
+                onClick={closeRecipeModal}
+                className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <button
+                onClick={() => toggleFavorite(selectedRecipe.id)}
+                className={`absolute top-4 left-4 p-2 rounded-full transition-colors ${
+                  favorites.has(selectedRecipe.id) 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-black/50 text-gray-300 hover:text-red-400'
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${favorites.has(selectedRecipe.id) ? 'fill-current' : ''}`} />
+              </button>
+
+              <div className="absolute bottom-4 left-4 right-4">
+                <h2 className="text-2xl font-bold text-white mb-2">{selectedRecipe.nome}</h2>
+                <div className="flex items-center gap-4 text-sm text-gray-200">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>{selectedRecipe.tempoPreparazione} min</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    <span>{selectedRecipe.porzioni} porz.</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span>{selectedRecipe.rating?.toFixed(1) || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-semibold">{selectedRecipe.calorie} cal</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Modal */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Ingredienti */}
+                <div>
+                  <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                    🥘 Ingredienti
+                  </h3>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    <ul className="space-y-2">
+                      {selectedRecipe.ingredienti.map((ingrediente, index) => (
+                        <li key={index} className="flex items-center gap-3 text-gray-300">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>{ingrediente}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Macro Nutrizionali */}
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-white mb-3">📊 Valori Nutrizionali</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-blue-400">{selectedRecipe.proteine}g</div>
+                        <div className="text-xs text-gray-400">Proteine</div>
+                      </div>
+                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-purple-400">{selectedRecipe.carboidrati}g</div>
+                        <div className="text-xs text-gray-400">Carboidrati</div>
+                      </div>
+                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-yellow-400">{selectedRecipe.grassi}g</div>
+                        <div className="text-xs text-gray-400">Grassi</div>
+                      </div>
+                      <div className="bg-gray-700 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-green-400">{selectedRecipe.calorie}</div>
+                        <div className="text-xs text-gray-400">Calorie</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tag e Info */}
+                  <div className="mt-6">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className="bg-green-600 text-white px-2 py-1 rounded text-xs">
+                        {selectedRecipe.categoria}
+                      </span>
+                      <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                        {selectedRecipe.tipoCucina}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs text-white ${
+                        selectedRecipe.difficolta === 'facile' ? 'bg-green-600' :
+                        selectedRecipe.difficolta === 'medio' ? 'bg-yellow-600' : 'bg-red-600'
+                      }`}>
+                        {selectedRecipe.difficolta}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preparazione */}
+                <div>
+                  <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center gap-2">
+                    👨‍🍳 Preparazione
+                  </h3>
+                  <div className="bg-gray-700 rounded-lg p-4">
+                    {selectedRecipe.preparazione ? (
+                      // Se la preparazione è già formattata come steps
+                      selectedRecipe.preparazione.includes('1.') || selectedRecipe.preparazione.includes('Step') ? (
+                        <div className="space-y-3">
+                          {selectedRecipe.preparazione.split(/\d+\.|\n/).filter(step => step.trim()).map((step, index) => (
+                            <div key={index} className="flex gap-3">
+                              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </span>
+                              <p className="text-gray-300 flex-1">{step.trim()}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // Se è una preparazione generica, la dividiamo in step logici
+                        <div className="space-y-3">
+                          {generateSteps(selectedRecipe.preparazione, selectedRecipe.nome).map((step, index) => (
+                            <div key={index} className="flex gap-3">
+                              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </span>
+                              <p className="text-gray-300 flex-1">{step}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    ) : (
+                      <p className="text-gray-400 italic">Preparazione non disponibile</p>
+                    )}
+                  </div>
+
+                  {/* Consigli del Chef (se disponibili) */}
+                  <div className="mt-6 bg-amber-900/20 border border-amber-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
+                      👨‍🍳 Consigli del Chef
+                    </h4>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      <p>• Prepara tutti gli ingredienti prima di iniziare</p>
+                      <p>• {selectedRecipe.categoria === 'colazione' ? 'Perfetto per iniziare la giornata con energia' :
+                          selectedRecipe.categoria === 'pranzo' ? 'Ideale per un pranzo nutriente e saziante' :
+                          selectedRecipe.categoria === 'cena' ? 'Ottimo per una cena leggera ma completa' :
+                          'Spuntino perfetto per ricaricare le energie'}</p>
+                      <p>• Conserva in frigorifero per max 2-3 giorni</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="p-6 border-t border-gray-700 bg-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-400">
+                  Ricetta aggiunta il {selectedRecipe.createdAt.toLocaleDateString('it-IT')}
+                </div>
+                <button
+                  onClick={closeRecipeModal}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  Chiudi Ricetta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE GENERICA
+function generateSteps(preparazione: string, nomeRicetta: string): string[] {
+  if (!preparazione) return ['Preparazione non disponibile'];
+  
+  // Se contiene già numerazione, la usiamo
+  if (preparazione.includes('1.') || preparazione.includes('Step')) {
+    return preparazione.split(/\d+\.|\n/).filter(step => step.trim());
+  }
+  
+  // Dividiamo per frasi e creiamo steps logici
+  const frasi = preparazione.split(/[.!]/).filter(f => f.trim().length > 10);
+  
+  if (frasi.length <= 1) {
+    // Se è una frase unica, creiamo steps generici
+    const nomeLC = nomeRicetta.toLowerCase();
+    if (nomeLC.includes('smoothie')) {
+      return [
+        'Lava e prepara tutti gli ingredienti freschi',
+        'Aggiungi gli ingredienti nel frullatore nell\'ordine indicato',
+        'Frulla per 1-2 minuti fino ad ottenere consistenza cremosa',
+        'Versa nel bicchiere e servi immediatamente'
+      ];
+    } else if (nomeLC.includes('insalata') || nomeLC.includes('bowl')) {
+      return [
+        'Lava e taglia tutte le verdure e ingredienti freschi',
+        'Prepara la base della bowl o insalata',
+        'Aggiungi le proteine e i condimenti',
+        'Mescola delicatamente e servi fresco'
+      ];
+    } else if (nomeLC.includes('pasta') || nomeLC.includes('risotto')) {
+      return [
+        'Metti a bollire abbondante acqua salata',
+        'Prepara tutti gli ingredienti per il condimento',
+        'Cuoci la pasta/riso secondo i tempi indicati',
+        'Scola e manteca con il condimento preparato',
+        'Servi caldo con una spolverata di formaggio se gradito'
+      ];
+    } else {
+      return [
+        'Prepara e pulisci tutti gli ingredienti necessari',
+        preparazione.trim(),
+        'Controlla la cottura e aggiusta di sale e pepe',
+        'Servi nel piatto e guarnisci a piacere'
+      ];
+    }
+  }
+  
+  return frasi.map(frase => frase.trim()).filter(f => f.length > 0);
+}
 
 export default RicettePage;
