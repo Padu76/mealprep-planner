@@ -36,75 +36,91 @@ const useUnsplashImage = (recipeName: string, categoria: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // 🎯 MAPPING RICETTA → QUERY UNSPLASH SEMPLICE E CORRETTO
+  // 🎯 MAPPING RICETTA → QUERY UNSPLASH MIGLIORATO
   const getUnsplashQuery = useCallback((nome: string, cat: string): string => {
     const nomeLC = nome.toLowerCase();
     
-    // 🇮🇹 RICETTE ITALIANE/MEDITERRANEE (query più specifiche)
-    if (nomeLC.includes('porridge')) return 'porridge oatmeal breakfast';
-    if (nomeLC.includes('omelette') || nomeLC.includes('frittata')) return 'omelette eggs breakfast';
-    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt berries';
-    if (nomeLC.includes('yogurt')) return 'yogurt healthy breakfast';
-    if (nomeLC.includes('pancakes')) return 'protein pancakes healthy';
-    if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) return 'green smoothie spinach';
-    if (nomeLC.includes('smoothie')) return 'smoothie bowl healthy';
-    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast eggs';
-    if (nomeLC.includes('toast')) return 'healthy toast breakfast';
-    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats jar';
-    if (nomeLC.includes('overnight')) return 'overnight oats breakfast';
+    // 🥩 CARNE E PROTEINE SPECIFICHE
+    if (nomeLC.includes('tagliata') && nomeLC.includes('manzo')) return 'grilled beef steak arugula';
+    if (nomeLC.includes('tagliata')) return 'beef tagliata meal';
+    if (nomeLC.includes('manzo') && nomeLC.includes('rucola')) return 'beef arugula salad';
+    if (nomeLC.includes('burger') && nomeLC.includes('lenticchie')) return 'lentil burger healthy';
+    if (nomeLC.includes('frittata') && nomeLC.includes('verdure')) return 'vegetable frittata eggs';
+    if (nomeLC.includes('frittata')) return 'italian frittata';
     
-    // PRANZI/CENE
-    if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) return 'quinoa bowl healthy';
-    if (nomeLC.includes('quinoa') && nomeLC.includes('pollo')) return 'chicken quinoa salad';
-    if (nomeLC.includes('salmone')) return 'grilled salmon fish';
-    if (nomeLC.includes('branzino')) return 'sea bass fish grilled';
+    // 🍝 PASTA E RISOTTI
+    if (nomeLC.includes('risotto') && nomeLC.includes('funghi')) return 'mushroom risotto italian';
+    if (nomeLC.includes('pasta') && nomeLC.includes('verdure')) return 'pasta vegetables healthy';
+    if (nomeLC.includes('pasta') && nomeLC.includes('integrale')) return 'whole grain pasta';
+    
+    // 🥗 INSALATE E BOWL
+    if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) return 'buddha bowl quinoa vegetables';
+    if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) return 'quinoa bowl protein healthy';
+    if (nomeLC.includes('insalata') && nomeLC.includes('tonno')) return 'tuna salad healthy meal';
+    if (nomeLC.includes('insalata') && nomeLC.includes('legumi')) return 'bean salad protein';
+    
+    // 🐟 PESCE
+    if (nomeLC.includes('salmone') && nomeLC.includes('grigliato')) return 'grilled salmon fillet';
+    if (nomeLC.includes('salmone')) return 'salmon healthy meal';
+    if (nomeLC.includes('branzino')) return 'sea bass fish dinner';
     if (nomeLC.includes('merluzzo')) return 'cod fish healthy';
-    if (nomeLC.includes('insalata') && nomeLC.includes('legumi')) return 'bean salad healthy';
-    if (nomeLC.includes('insalata') && nomeLC.includes('tonno')) return 'tuna salad healthy';
-    if (nomeLC.includes('pasta') && nomeLC.includes('integrale')) return 'whole wheat pasta vegetables';
-    if (nomeLC.includes('pasta')) return 'pasta italiana vegetables';
-    if (nomeLC.includes('wrap')) return 'healthy wrap vegetables';
-    if (nomeLC.includes('manzo') && nomeLC.includes('bowl')) return 'beef bowl sweet potato';
-    if (nomeLC.includes('risotto')) return 'risotto mushrooms italian';
-    if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) return 'buddha bowl healthy';
-    if (nomeLC.includes('tagliata')) return 'beef tagliata arugula';
-    if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) return 'grilled chicken breast';
-    if (nomeLC.includes('pollo')) return 'chicken healthy meal';
-    if (nomeLC.includes('tacchino')) return 'turkey breast healthy';
-    if (nomeLC.includes('tofu') && nomeLC.includes('teriyaki')) return 'teriyaki tofu vegetables';
-    if (nomeLC.includes('tofu')) return 'grilled tofu healthy';
-    if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) return 'lentil soup healthy';
+    if (nomeLC.includes('tonno')) return 'tuna steak grilled';
     
-    // SPUNTINI
-    if (nomeLC.includes('shake') && nomeLC.includes('proteico')) return 'protein shake post workout';
-    if (nomeLC.includes('shake')) return 'protein shake fitness';
-    if (nomeLC.includes('ricotta') && nomeLC.includes('noci')) return 'ricotta nuts healthy';
-    if (nomeLC.includes('mela') && nomeLC.includes('protein')) return 'apple peanut butter protein';
-    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls protein';
+    // 🍳 COLAZIONI
+    if (nomeLC.includes('porridge') && nomeLC.includes('proteico')) return 'protein oatmeal breakfast';
+    if (nomeLC.includes('porridge')) return 'oatmeal berries healthy';
+    if (nomeLC.includes('pancakes') && nomeLC.includes('proteici')) return 'protein pancakes fitness';
+    if (nomeLC.includes('pancakes')) return 'healthy pancakes breakfast';
+    if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) return 'greek yogurt berries nuts';
+    if (nomeLC.includes('yogurt')) return 'yogurt healthy breakfast bowl';
+    if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) return 'green smoothie spinach healthy';
+    if (nomeLC.includes('smoothie') && nomeLC.includes('proteico')) return 'protein smoothie post workout';
+    if (nomeLC.includes('smoothie')) return 'healthy smoothie bowl';
+    if (nomeLC.includes('toast') && nomeLC.includes('avocado')) return 'avocado toast healthy breakfast';
+    if (nomeLC.includes('overnight') && nomeLC.includes('oats')) return 'overnight oats jar breakfast';
+    
+    // 🥜 SPUNTINI E SNACK
+    if (nomeLC.includes('energy') && nomeLC.includes('balls')) return 'energy balls protein healthy';
+    if (nomeLC.includes('hummus') && nomeLC.includes('ceci')) return 'hummus chickpeas vegetables';
+    if (nomeLC.includes('hummus')) return 'hummus healthy snack';
+    if (nomeLC.includes('shake') && nomeLC.includes('proteico')) return 'protein shake fitness';
+    if (nomeLC.includes('ricotta') && nomeLC.includes('noci')) return 'ricotta cheese nuts healthy';
     if (nomeLC.includes('cottage') && nomeLC.includes('cheese')) return 'cottage cheese cucumber';
-    if (nomeLC.includes('hummus')) return 'hummus vegetables healthy';
+    if (nomeLC.includes('mela') && nomeLC.includes('protein')) return 'apple peanut butter protein';
     if (nomeLC.includes('muffin') && nomeLC.includes('protein')) return 'protein muffins healthy';
     
+    // 🌮 WRAP E TOAST
+    if (nomeLC.includes('wrap') && nomeLC.includes('pollo')) return 'chicken wrap healthy';
+    if (nomeLC.includes('wrap')) return 'healthy wrap vegetables';
+    if (nomeLC.includes('toast')) return 'healthy toast breakfast';
+    
+    // 🍲 ZUPPE E PIATTI CALDI
+    if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) return 'lentil soup healthy bowl';
+    if (nomeLC.includes('zuppa')) return 'healthy soup vegetables';
+    
+    // 🍖 PROTEINE GENERICHE
+    if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) return 'grilled chicken breast healthy';
+    if (nomeLC.includes('pollo')) return 'chicken healthy meal protein';
+    if (nomeLC.includes('tacchino')) return 'turkey breast healthy meal';
+    if (nomeLC.includes('tofu') && nomeLC.includes('teriyaki')) return 'teriyaki tofu vegetables asian';
+    if (nomeLC.includes('tofu')) return 'grilled tofu healthy protein';
+    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef healthy meal';
+    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp healthy seafood';
+    
     // 🥘 CUCINE INTERNAZIONALI
-    if (nomeLC.includes('caesar') && nomeLC.includes('salad')) return 'caesar salad protein';
-    if (nomeLC.includes('poke') && nomeLC.includes('bowl')) return 'poke bowl salmon';
-    if (nomeLC.includes('french') && nomeLC.includes('toast')) return 'french toast protein';
-    if (nomeLC.includes('chia') && nomeLC.includes('pudding')) return 'chia pudding tropical';
+    if (nomeLC.includes('caesar') && nomeLC.includes('salad')) return 'caesar salad protein chicken';
+    if (nomeLC.includes('poke') && nomeLC.includes('bowl')) return 'poke bowl salmon healthy';
+    if (nomeLC.includes('chia') && nomeLC.includes('pudding')) return 'chia pudding healthy breakfast';
     
-    // 🍖 PROTEINE BASE  
-    if (nomeLC.includes('manzo') || nomeLC.includes('beef')) return 'lean beef healthy';
-    if (nomeLC.includes('tonno') || nomeLC.includes('tuna')) return 'tuna salad protein';
-    if (nomeLC.includes('gamber') || nomeLC.includes('shrimp')) return 'grilled shrimp healthy';
-    
-    // 🥗 FALLBACK PER CATEGORIA
+    // 🥗 FALLBACK PER CATEGORIA CON QUERY PIÙ SPECIFICHE
     const categoryQueries = {
-      'colazione': 'healthy breakfast protein',
-      'pranzo': 'healthy lunch bowl',
-      'cena': 'healthy dinner protein',
-      'spuntino': 'healthy protein snack'
+      'colazione': 'healthy breakfast oats protein',
+      'pranzo': 'healthy lunch salad protein',
+      'cena': 'healthy dinner fish vegetables',
+      'spuntino': 'healthy protein snack nuts'
     };
     
-    return categoryQueries[cat] || 'healthy food meal';
+    return categoryQueries[cat] || 'healthy meal protein vegetables';
   }, []);
 
   useEffect(() => {
