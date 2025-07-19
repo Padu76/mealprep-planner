@@ -5,7 +5,7 @@ import { Search, Filter, Heart, Clock, Users, ChefHat, Sparkles, Star, ArrowLeft
 import Link from 'next/link';
 import Header from '../components/header';
 
-// Interfaccia Recipe locale - AGGIORNATA CON NUOVI FILTRI
+// Interfaccia Recipe locale - COMPLETA CON TUTTI I FILTRI
 interface Recipe {
   id: string;
   nome: string;
@@ -30,263 +30,50 @@ interface Recipe {
   reviewCount?: number;
 }
 
-// 🖼️ COMPONENTE IMMAGINE RICETTA CON SISTEMA IBRIDO
+// 🖼️ COMPONENTE IMMAGINE RICETTA SEMPLIFICATO
 const RecipeImage: React.FC<{ recipe: Recipe; className?: string }> = ({ recipe, className = '' }) => {
-  // 🎯 STRATEGIA IBRIDA: Database = Statico, AI = Dinamico
-  const isAIGenerated = recipe.id.startsWith('ai_') || recipe.tags?.includes('ai-generated');
+  // 📸 USA SEMPRE IMMAGINI STATICHE PER ORA (no API Unsplash)
+  const imageUrl = recipe.imageUrl || getStaticImageUrl(recipe.nome, recipe.categoria);
   
-  if (isAIGenerated) {
-    // 🤖 RICETTE AI → USA UNSPLASH API DINAMICA
-    const { imageUrl, isLoading, error } = useUnsplashImage(recipe.nome, recipe.categoria);
-    
-    if (isLoading) {
-      return (
-        <div className={`bg-gray-700 animate-pulse flex items-center justify-center ${className}`}>
-          <ChefHat className="w-8 h-8 text-gray-500" />
-        </div>
-      );
-    }
-    
-    return (
-      <img 
-        src={imageUrl}
-        alt={recipe.nome}
-        className={`object-cover ${className}`}
-        loading="lazy"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
-        }}
-      />
-    );
-  } else {
-    // 📚 RICETTE DATABASE → USA IMMAGINI STATICHE
-    const imageUrl = recipe.imageUrl || getStaticImageUrl(recipe.nome, recipe.categoria);
-    
-    return (
-      <img 
-        src={imageUrl}
-        alt={recipe.nome}
-        className={`object-cover ${className}`}
-        loading="lazy"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
-        }}
-      />
-    );
-  }
+  return (
+    <img 
+      src={imageUrl}
+      alt={recipe.nome}
+      className={`object-cover ${className}`}
+      loading="lazy"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = getStaticImageUrl(recipe.nome, recipe.categoria);
+      }}
+    />
+  );
 };
 
-// 📸 HOOK UNSPLASH PER RICETTE AI (mantenuto per dinamiche)
-const useUnsplashImage = (recipeName: string, categoria: string) => {
-  const [imageUrl, setImageUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  // 🎯 MAPPING RICETTA AI → QUERY UNSPLASH OTTIMIZZATO
-  const getUnsplashQuery = useCallback((nome: string, cat: string): string => {
-    const nomeLC = nome.toLowerCase();
-    
-    // 🤖 QUERY AI SPECIFICHE (più creative)
-    if (nomeLC.includes('fusion')) return 'fusion cuisine creative dish';
-    if (nomeLC.includes('innovative')) return 'innovative healthy meal';
-    if (nomeLC.includes('gourmet')) return 'gourmet healthy food';
-    if (nomeLC.includes('exotic')) return 'exotic healthy cuisine';
-    
-    // 🏋️‍♂️ FITNESS AI QUERIES
-    if (nomeLC.includes('power') && nomeLC.includes('bowl')) return 'healthy power bowl fitness';
-    if (nomeLC.includes('protein') && nomeLC.includes('bomb')) return 'high protein meal fitness';
-    if (nomeLC.includes('recovery')) return 'post workout meal recovery';
-    if (nomeLC.includes('energy') && nomeLC.includes('boost')) return 'energy boosting healthy meal';
-    
-    // 🥗 STANDARD AI FALLBACK
-    const aiQueries = {
-      'colazione': 'creative healthy breakfast bowl',
-      'pranzo': 'innovative lunch healthy meal',
-      'cena': 'gourmet healthy dinner plate',
-      'spuntino': 'creative healthy snack'
-    };
-    
-    return aiQueries[cat] || 'innovative healthy meal';
-  }, []);
-
-  useEffect(() => {
-    const fetchUnsplashImage = async () => {
-      try {
-        setIsLoading(true);
-        setError(false);
-        
-        const query = getUnsplashQuery(recipeName, categoria);
-        console.log(`🤖 AI Recipe - Fetching Unsplash: "${recipeName}" → "${query}"`);
-        
-        // 📸 CHIAMATA UNSPLASH API
-        const response = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
-          {
-            headers: {
-              'Authorization': `Client-ID ${process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY}`
-            }
-          }
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Unsplash API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-          const imageData = data.results[0];
-          const optimizedUrl = `${imageData.urls.regular}&w=400&h=300&fit=crop&auto=format`;
-          setImageUrl(optimizedUrl);
-          console.log(`✅ AI Image loaded for "${recipeName}"`);
-        } else {
-          throw new Error('No images found');
-        }
-        
-      } catch (error) {
-        console.warn(`⚠️ AI Image failed for "${recipeName}":`, error);
-        setError(true);
-        // Fallback a immagine statica
-        setImageUrl(getStaticImageUrl(recipeName, categoria));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (recipeName && categoria) {
-      fetchUnsplashImage();
-    }
-  }, [recipeName, categoria, getUnsplashQuery]);
-
-  return { imageUrl, isLoading, error };
-};
-
-// 🎯 FUNZIONE PER IMMAGINI STATICHE (senza API Unsplash)
+// 🎯 FUNZIONE PER IMMAGINI STATICHE
 function getStaticImageUrl(nome: string, categoria: string): string {
   const nomeLC = nome.toLowerCase();
   
-  // 🍳 MAPPING SPECIFICO RICETTE → IMMAGINI UNSPLASH STATICHE
+  // 🍳 MAPPING SPECIFICO RICETTE → IMMAGINI
   if (nomeLC.includes('porridge') || nomeLC.includes('avena')) {
     return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
   }
   if (nomeLC.includes('pancakes')) {
     return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
   }
-  if (nomeLC.includes('yogurt') && nomeLC.includes('greco')) {
-    return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('smoothie') && nomeLC.includes('verde')) {
-    return 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('smoothie')) {
-    return 'https://images.unsplash.com/photo-1553003914-07a5a3d50ba6?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('toast') && nomeLC.includes('avocado')) {
-    return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('toast')) {
-    return 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('overnight') && nomeLC.includes('oats')) {
-    return 'https://images.unsplash.com/photo-1478145787956-f6f12c59624d?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🥗 PRANZI E INSALATE
-  if (nomeLC.includes('quinoa') && nomeLC.includes('bowl')) {
+  if (nomeLC.includes('power') && nomeLC.includes('bowl')) {
     return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
   }
-  if (nomeLC.includes('insalata') && nomeLC.includes('quinoa')) {
-    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+  if (nomeLC.includes('protein') && nomeLC.includes('shake')) {
+    return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
   }
-  if (nomeLC.includes('caesar') && nomeLC.includes('salad')) {
-    return 'https://images.unsplash.com/photo-1551248429-40975aa4de74?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('insalata')) {
-    return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('poke') && nomeLC.includes('bowl')) {
-    return 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('buddha') && nomeLC.includes('bowl')) {
-    return 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🐟 PESCE
   if (nomeLC.includes('salmone')) {
     return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
   }
-  if (nomeLC.includes('branzino')) {
-    return 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('merluzzo')) {
-    return 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('tonno')) {
-    return 'https://images.unsplash.com/photo-1564069114553-7215ea2fe407?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🍖 CARNE
-  if (nomeLC.includes('pollo') && nomeLC.includes('curry')) {
-    return 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('pollo') && nomeLC.includes('grigliato')) {
-    return 'https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('pollo')) {
+  if (nomeLC.includes('chicken') || nomeLC.includes('pollo')) {
     return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
   }
-  if (nomeLC.includes('tagliata') && nomeLC.includes('manzo')) {
-    return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('turkey') || nomeLC.includes('tacchino')) {
-    return 'https://images.unsplash.com/photo-1574672280600-4accfa5b6f98?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🍝 PASTA E RISOTTI
-  if (nomeLC.includes('risotto')) {
-    return 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('pasta')) {
-    return 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🥚 UOVA E FRITTATE
-  if (nomeLC.includes('frittata')) {
-    return 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('omelette')) {
-    return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🥤 BEVANDE E SHAKE
-  if (nomeLC.includes('shake') && nomeLC.includes('protein')) {
-    return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🍯 SPUNTINI
-  if (nomeLC.includes('energy') && nomeLC.includes('balls')) {
-    return 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('muffin')) {
-    return 'https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('ricotta') || nomeLC.includes('cottage')) {
-    return 'https://images.unsplash.com/photo-1571091655789-405eb7a3a3a8?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🍲 ZUPPE
-  if (nomeLC.includes('zuppa') && nomeLC.includes('lenticchie')) {
-    return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
-  }
-  if (nomeLC.includes('zuppa')) {
-    return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
-  }
-  
-  // 🌮 WRAPS
-  if (nomeLC.includes('wrap')) {
-    return 'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop&auto=format';
+  if (nomeLC.includes('insalata') || nomeLC.includes('salad')) {
+    return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
   }
   
   // 🥗 FALLBACK PER CATEGORIA
@@ -300,20 +87,17 @@ function getStaticImageUrl(nome: string, categoria: string): string {
   return categoryImages[categoria] || categoryImages['pranzo'];
 }
 
-// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE GENERICA
+// 🧑‍🍳 FUNZIONE GENERA STEPS DA PREPARAZIONE
 function generateSteps(preparazione: string, nomeRicetta: string): string[] {
   if (!preparazione) return ['Preparazione non disponibile'];
   
-  // Se contiene già numerazione, la usiamo
   if (preparazione.includes('1.') || preparazione.includes('Step')) {
     return preparazione.split(/\d+\.|\n/).filter(step => step.trim());
   }
   
-  // Dividiamo per frasi e creiamo steps logici
   const frasi = preparazione.split(/[.!]/).filter(f => f.trim().length > 10);
   
   if (frasi.length <= 1) {
-    // Se è una frase unica, creiamo steps generici
     const nomeLC = nomeRicetta.toLowerCase();
     if (nomeLC.includes('smoothie')) {
       return [
@@ -329,14 +113,6 @@ function generateSteps(preparazione: string, nomeRicetta: string): string[] {
         'Aggiungi le proteine e i condimenti',
         'Mescola delicatamente e servi fresco'
       ];
-    } else if (nomeLC.includes('pasta') || nomeLC.includes('risotto')) {
-      return [
-        'Metti a bollire abbondante acqua salata',
-        'Prepara tutti gli ingredienti per il condimento',
-        'Cuoci la pasta/riso secondo i tempi indicati',
-        'Scola e manteca con il condimento preparato',
-        'Servi caldo con una spolverata di formaggio se gradito'
-      ];
     } else {
       return [
         'Prepara e pulisci tutti gli ingredienti necessari',
@@ -349,6 +125,21 @@ function generateSteps(preparazione: string, nomeRicetta: string): string[] {
   
   return frasi.map(frase => frase.trim()).filter(f => f.length > 0);
 }
+
+// 🔄 FUNZIONE ORDINAMENTO RICETTE
+const sortRecipes = (recipes: Recipe[], sortBy: string): Recipe[] => {
+  let sorted = [...recipes];
+  switch (sortBy) {
+    case 'rating':
+      return sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    case 'time':
+      return sorted.sort((a, b) => a.tempoPreparazione - b.tempoPreparazione);
+    case 'calories':
+      return sorted.sort((a, b) => a.calorie - b.calorie);
+    default:
+      return sorted;
+  }
+};
 
 const RicettePage = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -365,43 +156,51 @@ const RicettePage = () => {
   });
   const [showAIRecommendations, setShowAIRecommendations] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [filterOptions, setFilterOptions] = useState({
-    categories: [] as string[],
-    cuisines: [] as string[],
-    difficulties: [] as string[],
-    diets: [] as string[],
-    allergies: [] as string[]
+  
+  // 🎛️ OPZIONI FILTRI FISSE GARANTITE
+  const [filterOptions] = useState({
+    categories: ['colazione', 'pranzo', 'cena', 'spuntino'],
+    cuisines: ['italiana', 'mediterranea', 'asiatica', 'americana', 'messicana', 'internazionale', 'ricette_fit'],
+    difficulties: ['facile', 'medio', 'difficile'],
+    diets: ['vegetariana', 'vegana', 'senza_glutine', 'keto', 'paleo', 'mediterranea', 'low_carb', 'chetogenica', 'bilanciata'],
+    allergies: ['latte', 'uova', 'frutta_secca', 'pesce', 'glutine']
   });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [recipeDB, setRecipeDB] = useState<any>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
 
-  // Inizializza database solo client-side
+  // 🏗️ INIZIALIZZA DATABASE
   useEffect(() => {
     const initializeDatabase = async () => {
       try {
-        // Import dinamico per evitare errori SSR
+        console.log('🚀 [UI FIX] Starting database initialization...');
+        
         const { RecipeDatabase } = await import('../utils/recipeDatabase');
         const db = RecipeDatabase.getInstance();
         setRecipeDB(db);
         
-        // Carica ricette dal database
+        // Carica ricette
         const allRecipes = db.searchRecipes({});
+        console.log(`📚 [UI FIX] Loaded ${allRecipes.length} recipes from database`);
         setRecipes(allRecipes);
         setFilteredRecipes(allRecipes);
-        
-        // Carica opzioni filtri
-        const options = db.getFilterOptions();
-        setFilterOptions(options);
         
         // Carica preferiti
         const favoriteRecipes = db.getFavoriteRecipes();
         setFavorites(new Set(favoriteRecipes.map((r: Recipe) => r.id)));
         
+        // ✅ LOG FILTRI CARICATI
+        const dbOptions = db.getFilterOptions();
+        console.log('🎛️ [UI FIX] Database filter options:', dbOptions);
+        console.log('🎛️ [UI FIX] UI filter options (fixed):', filterOptions);
+        
         setIsLoading(false);
+        console.log('✅ [UI FIX] Database initialization completed successfully');
+        
       } catch (error) {
-        console.error('Errore caricamento database:', error);
+        console.error('🚨 [UI FIX] Database initialization error:', error);
         setIsLoading(false);
       }
     };
@@ -409,62 +208,38 @@ const RicettePage = () => {
     initializeDatabase();
   }, []);
 
-  // 🤖 Suggerimenti AI con chiamata API
+  // 🔍 FILTRI INTELLIGENTI
+  useEffect(() => {
+    if (!recipeDB || recipes.length === 0) return;
+    
+    console.log(`🔍 [UI FIX] Applying filters:`, selectedFilters);
+    
+    const filters = {
+      query: searchTerm,
+      categoria: selectedFilters.categoria || undefined,
+      tipoCucina: selectedFilters.tipoCucina || undefined,
+      difficolta: selectedFilters.difficolta || undefined,
+      maxTempo: selectedFilters.maxTempo ? parseInt(selectedFilters.maxTempo) : undefined,
+      tipoDieta: selectedFilters.tipoDieta.length > 0 ? selectedFilters.tipoDieta : undefined,
+      allergie: selectedFilters.allergie.length > 0 ? selectedFilters.allergie : undefined
+    };
+
+    let filtered = recipeDB.searchRecipes(filters);
+
+    // Filtro solo preferiti
+    if (showFavoritesOnly) {
+      filtered = filtered.filter((recipe: Recipe) => favorites.has(recipe.id));
+    }
+
+    console.log(`🎯 [UI FIX] Filtered results: ${filtered.length} recipes`);
+    setFilteredRecipes(filtered);
+  }, [searchTerm, selectedFilters, showFavoritesOnly, recipeDB, favorites, recipes]);
+
+  // 🤖 AI RECOMMENDATIONS (placeholder)
   const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
 
-  const loadAIRecommendations = async () => {
-    if (isLoadingAI || aiRecommendations.length > 0) return;
-    
-    setIsLoadingAI(true);
-    try {
-      const response = await fetch('/api/ricette', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'getAIRecommendations',
-          data: {
-            preferences: ['Fitness', 'Salutare'],
-            allergie: [],
-            obiettivo: 'mantenimento',
-            pasti_preferiti: ['colazione', 'pranzo'],
-            limit: 6
-          }
-        })
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data.recommendations) {
-          setAiRecommendations(result.data.recommendations);
-        }
-      }
-    } catch (error) {
-      console.error('Errore caricamento AI recommendations:', error);
-    } finally {
-      setIsLoadingAI(false);
-    }
-  };
-
-  // Carica AI recommendations quando vengono mostrate
-  useEffect(() => {
-    if (showAIRecommendations) {
-      loadAIRecommendations();
-    }
-  }, [showAIRecommendations]);
-
-  // Suggerimenti AI fallback
   const getAIRecommendations = () => {
-    if (aiRecommendations.length > 0) {
-      return [
-        {
-          type: 'Raccomandazioni AI Personalizzate',
-          recipes: aiRecommendations.slice(0, 4),
-          reason: 'Suggerimenti basati su AI per i tuoi obiettivi fitness'
-        }
-      ];
-    }
-    
     if (!recipeDB) return [];
     
     const favoriteRecipes = recipeDB.getFavoriteRecipes();
@@ -490,30 +265,7 @@ const RicettePage = () => {
     ];
   };
 
-  // Filtri intelligenti
-  useEffect(() => {
-    if (!recipeDB) return;
-    
-    const filters = {
-      query: searchTerm,
-      categoria: selectedFilters.categoria || undefined,
-      tipoCucina: selectedFilters.tipoCucina || undefined,
-      difficolta: selectedFilters.difficolta || undefined,
-      maxTempo: selectedFilters.maxTempo ? parseInt(selectedFilters.maxTempo) : undefined,
-      tipoDieta: selectedFilters.tipoDieta.length > 0 ? selectedFilters.tipoDieta : undefined,
-      allergie: selectedFilters.allergie.length > 0 ? selectedFilters.allergie : undefined
-    };
-
-    let filtered = recipeDB.searchRecipes(filters);
-
-    // Filtro solo preferiti
-    if (showFavoritesOnly) {
-      filtered = filtered.filter((recipe: Recipe) => favorites.has(recipe.id));
-    }
-
-    setFilteredRecipes(filtered);
-  }, [searchTerm, selectedFilters, showFavoritesOnly, recipeDB, favorites]);
-
+  // 🎛️ GESTIONE FILTRI
   const toggleFavorite = (recipeId: string) => {
     if (!recipeDB) return;
     
@@ -529,13 +281,28 @@ const RicettePage = () => {
   };
 
   const handleFilterChange = (filterType: string, value: string) => {
-    setSelectedFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
+    console.log(`🎛️ [UI FIX] Filter change: ${filterType} = ${value}`);
+    
+    if (filterType === 'tipoDieta') {
+      setSelectedFilters(prev => ({
+        ...prev,
+        tipoDieta: value ? [value] : []
+      }));
+    } else if (filterType === 'allergie') {
+      setSelectedFilters(prev => ({
+        ...prev,
+        allergie: value ? [value] : []
+      }));
+    } else {
+      setSelectedFilters(prev => ({
+        ...prev,
+        [filterType]: value
+      }));
+    }
   };
 
   const clearFilters = () => {
+    console.log('🧹 [UI FIX] Clearing all filters');
     setSelectedFilters({
       categoria: '',
       tipoCucina: '',
@@ -548,7 +315,7 @@ const RicettePage = () => {
     setShowFavoritesOnly(false);
   };
 
-  // 🍳 APRI RICETTA COMPLETA
+  // 📖 MODAL RICETTA
   const openRecipeModal = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setShowRecipeModal(true);
@@ -559,27 +326,14 @@ const RicettePage = () => {
     setShowRecipeModal(false);
   };
 
-  // 🔄 FUNZIONE ORDINAMENTO RICETTE
-  const sortRecipes = (sortBy: string) => {
-    let sorted = [...filteredRecipes];
-    switch (sortBy) {
-      case 'rating':
-        sorted = sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case 'time':
-        sorted = sorted.sort((a, b) => a.tempoPreparazione - b.tempoPreparazione);
-        break;
-      case 'calories':
-        sorted = sorted.sort((a, b) => a.calorie - b.calorie);
-        break;
-      default:
-        // Rilevanza - nessun ordinamento particolare
-        break;
-    }
+  // 🔄 ORDINAMENTO
+  const handleSort = (sortBy: string) => {
+    console.log(`🔄 [UI FIX] Sorting by: ${sortBy}`);
+    const sorted = sortRecipes(filteredRecipes, sortBy);
     setFilteredRecipes(sorted);
   };
 
-  // Loading state
+  // 📱 LOADING STATE
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -588,7 +342,7 @@ const RicettePage = () => {
           <div className="text-center">
             <ChefHat className="w-16 h-16 text-green-400 mx-auto mb-4 animate-pulse" />
             <h2 className="text-2xl font-bold mb-2">Caricamento Database Ricette...</h2>
-            <p className="text-gray-400">Preparando ricette deliziose con foto Unsplash per te!</p>
+            <p className="text-gray-400">Preparando ricette deliziose per te!</p>
           </div>
         </div>
       </div>
@@ -616,7 +370,7 @@ const RicettePage = () => {
             🍳 Database Ricette
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Esplora ricette selezionate per il tuo meal prep con foto reali da Unsplash. Filtra per categoria, dieta e difficoltà.
+            Esplora ricette selezionate per il tuo meal prep. Filtra per categoria, dieta e difficoltà.
           </p>
         </div>
 
@@ -665,7 +419,7 @@ const RicettePage = () => {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* 🎛️ FILTRI GARANTITI */}
         <div className="mb-6 bg-gray-800/50 rounded-lg border border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
@@ -690,7 +444,7 @@ const RicettePage = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            {/* Categoria Filter */}
+            {/* 📂 CATEGORIA */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
               <select 
@@ -700,12 +454,14 @@ const RicettePage = () => {
               >
                 <option value="">Tutte</option>
                 {filterOptions.categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Tipo Cucina Filter */}
+            {/* 🍳 CUCINA (CON RICETTE FIT) */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Cucina</label>
               <select 
@@ -715,12 +471,15 @@ const RicettePage = () => {
               >
                 <option value="">Tutte</option>
                 {filterOptions.cuisines.map(cuisine => (
-                  <option key={cuisine} value={cuisine}>{cuisine}</option>
+                  <option key={cuisine} value={cuisine}>
+                    {cuisine === 'ricette_fit' ? 'Ricette Fit' : 
+                     cuisine.charAt(0).toUpperCase() + cuisine.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Difficolta Filter */}
+            {/* ⚙️ DIFFICOLTÀ */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Difficoltà</label>
               <select 
@@ -730,12 +489,14 @@ const RicettePage = () => {
               >
                 <option value="">Tutte</option>
                 {filterOptions.difficulties.map(diff => (
-                  <option key={diff} value={diff}>{diff}</option>
+                  <option key={diff} value={diff}>
+                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Tempo Max Filter */}
+            {/* ⏱️ TEMPO MAX */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Tempo Max</label>
               <select 
@@ -751,32 +512,39 @@ const RicettePage = () => {
               </select>
             </div>
 
-            {/* Tipo Dieta Filter */}
+            {/* 🥗 DIETA (CON NUOVI FILTRI) */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Dieta</label>
               <select 
                 value={selectedFilters.tipoDieta[0] || ''}
-                onChange={(e) => handleFilterChange('tipoDieta', e.target.value ? [e.target.value] : [])}
+                onChange={(e) => handleFilterChange('tipoDieta', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Tutte</option>
                 {filterOptions.diets.map(diet => (
-                  <option key={diet} value={diet}>{diet}</option>
+                  <option key={diet} value={diet}>
+                    {diet === 'low_carb' ? 'Low Carb' :
+                     diet === 'senza_glutine' ? 'Senza Glutine' :
+                     diet.charAt(0).toUpperCase() + diet.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Allergie Filter */}
+            {/* 🚫 ALLERGIE */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">Evita</label>
               <select 
                 value={selectedFilters.allergie[0] || ''}
-                onChange={(e) => handleFilterChange('allergie', e.target.value ? [e.target.value] : [])}
+                onChange={(e) => handleFilterChange('allergie', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-green-500"
               >
                 <option value="">Nessuna</option>
                 {filterOptions.allergies.map(allergy => (
-                  <option key={allergy} value={allergy}>{allergy}</option>
+                  <option key={allergy} value={allergy}>
+                    {allergy === 'frutta_secca' ? 'Frutta Secca' :
+                     allergy.charAt(0).toUpperCase() + allergy.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -801,7 +569,7 @@ const RicettePage = () => {
               <span>Solo preferiti ({favorites.size})</span>
             </button>
             <select 
-              onChange={(e) => sortRecipes(e.target.value)}
+              onChange={(e) => handleSort(e.target.value)}
               className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-green-500"
             >
               <option value="relevance">Ordina per: Rilevanza</option>
@@ -843,7 +611,7 @@ const RicettePage = () => {
                     {recipe.categoria}
                   </span>
                   <span className="bg-black/70 text-blue-400 px-2 py-1 rounded text-xs font-medium">
-                    {recipe.tipoCucina}
+                    {recipe.tipoCucina === 'ricette_fit' ? 'Fit' : recipe.tipoCucina}
                   </span>
                 </div>
               </div>
@@ -1013,7 +781,7 @@ const RicettePage = () => {
                         {selectedRecipe.categoria}
                       </span>
                       <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs">
-                        {selectedRecipe.tipoCucina}
+                        {selectedRecipe.tipoCucina === 'ricette_fit' ? 'Ricette Fit' : selectedRecipe.tipoCucina}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs text-white ${
                         selectedRecipe.difficolta === 'facile' ? 'bg-green-600' :
@@ -1032,37 +800,22 @@ const RicettePage = () => {
                   </h3>
                   <div className="bg-gray-700 rounded-lg p-4">
                     {selectedRecipe.preparazione ? (
-                      // Se la preparazione è già formattata come steps
-                      selectedRecipe.preparazione.includes('1.') || selectedRecipe.preparazione.includes('Step') ? (
-                        <div className="space-y-3">
-                          {selectedRecipe.preparazione.split(/\d+\.|\n/).filter(step => step.trim()).map((step, index) => (
-                            <div key={index} className="flex gap-3">
-                              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                                {index + 1}
-                              </span>
-                              <p className="text-gray-300 flex-1">{step.trim()}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        // Se è una preparazione generica, la dividiamo in step logici
-                        <div className="space-y-3">
-                          {generateSteps(selectedRecipe.preparazione, selectedRecipe.nome).map((step, index) => (
-                            <div key={index} className="flex gap-3">
-                              <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                                {index + 1}
-                              </span>
-                              <p className="text-gray-300 flex-1">{step}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )
+                      <div className="space-y-3">
+                        {generateSteps(selectedRecipe.preparazione, selectedRecipe.nome).map((step, index) => (
+                          <div key={index} className="flex gap-3">
+                            <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                              {index + 1}
+                            </span>
+                            <p className="text-gray-300 flex-1">{step}</p>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <p className="text-gray-400 italic">Preparazione non disponibile</p>
                     )}
                   </div>
 
-                  {/* Consigli del Chef (se disponibili) */}
+                  {/* Consigli del Chef */}
                   <div className="mt-6 bg-amber-900/20 border border-amber-700 rounded-lg p-4">
                     <h4 className="font-semibold text-amber-400 mb-2 flex items-center gap-2">
                       👨‍🍳 Consigli del Chef
