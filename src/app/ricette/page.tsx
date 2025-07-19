@@ -158,28 +158,40 @@ export default function RicettePage() {
     return colors[categoria as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  // 🖼️ FUNZIONE IMMAGINE RICETTA MIGLIORATA
+  // 🖼️ FUNZIONE IMMAGINE RICETTA CORRETTA
   const getRecipeImage = (recipe: Recipe) => {
     const nome = recipe.nome.toLowerCase();
     
-    // Mapping specifico per ricette italiane
-    if (nome.includes('avocado')) return 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop';
-    if (nome.includes('shake') || nome.includes('smoothie')) return 'https://images.unsplash.com/photo-1570197788417-0e82375c9371?w=400&h=300&fit=crop';
-    if (nome.includes('uova') || nome.includes('egg')) return 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=400&h=300&fit=crop';
-    if (nome.includes('pancakes')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop';
-    if (nome.includes('salmone') || nome.includes('salmon')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop';
-    if (nome.includes('pollo') || nome.includes('chicken')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop';
-    if (nome.includes('insalata') || nome.includes('salad')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop';
-    if (nome.includes('pasta')) return 'https://images.unsplash.com/photo-1551782450-17144efb9c50?w=400&h=300&fit=crop';
-    if (nome.includes('yogurt')) return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop';
-    if (nome.includes('bowl')) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
+    // Mapping specifico migliorato per ricette del database
+    if (nome.includes('avocado') && nome.includes('bowl')) return 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('shake') && nome.includes('chetogenico')) return 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('uova') && nome.includes('strapazzate')) return 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('pancakes') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('smoothie') && nome.includes('verde')) return 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('frittata')) return 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('chia') && nome.includes('pudding')) return 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('omelette')) return 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('yogurt') && nome.includes('proteico')) return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('caffè') && nome.includes('bulletproof')) return 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('muffin')) return 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('granola')) return 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('salmone')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('caesar') && nome.includes('salad')) return 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('zucchini') && nome.includes('noodles')) return 'https://images.unsplash.com/photo-1594756202469-9282d0e2f1d9?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('caprese')) return 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('pollo') || nome.includes('chicken')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('bistecca') || nome.includes('beef')) return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('insalata') || nome.includes('salad')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('bowl')) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('wrap')) return 'https://images.unsplash.com/photo-1565299585323-38174c4a6b52?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('zuppa') || nome.includes('soup')) return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
     
-    // Fallback per categoria
+    // Fallback per categoria con immagini corrette
     const categoryImages = {
-      'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop',
-      'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop',
-      'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop',
-      'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop'
+      'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
+      'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
+      'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
+      'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
     };
     
     return categoryImages[recipe.categoria as keyof typeof categoryImages] || categoryImages['pranzo'];
@@ -242,7 +254,7 @@ export default function RicettePage() {
       <section className="bg-gray-800 py-6 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Barra di ricerca + filtri visibili */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             {/* Ricerca */}
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -287,6 +299,17 @@ export default function RicettePage() {
               </select>
             </div>
 
+            {/* Tempo Max */}
+            <div>
+              <input
+                type="number"
+                placeholder="Tempo max (min)"
+                value={maxTempo}
+                onChange={(e) => setMaxTempo(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
             {/* Reset + AI */}
             <div className="flex gap-2">
               {(searchQuery || selectedCategoria || selectedDieta.length > 0 || selectedDifficolta || maxTempo) && (
@@ -297,7 +320,13 @@ export default function RicettePage() {
                   Reset
                 </button>
               )}
-              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm font-semibold">
+              <button 
+                onClick={() => {
+                  // TODO: Integrazione AI
+                  alert('🤖 AI Recipe Generator in arrivo! Genera ricette personalizzate con ingredienti specifici.');
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm font-semibold"
+              >
                 🤖 Genera AI
               </button>
             </div>
@@ -615,21 +644,46 @@ export default function RicettePage() {
                     </div>
                   </div>
 
-                  {/* Preparazione PASSO-PASSO */}
+                  {/* Preparazione PASSO-PASSO MIGLIORATA */}
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold text-white mb-4">👨‍🍳 Preparazione Passo-Passo</h3>
                     <div className="bg-gray-700 rounded-lg p-4">
                       <div className="space-y-4">
-                        {selectedRecipe.preparazione.split('.').filter(step => step.trim()).map((step, index) => (
-                          <div key={index} className="flex items-start space-x-4">
-                            <div className="flex-shrink-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {index + 1}
+                        {(() => {
+                          // Migliora il parsing della preparazione
+                          let steps: string[] = [];
+                          
+                          if (selectedRecipe.preparazione.includes('1.') || selectedRecipe.preparazione.includes('2.')) {
+                            // Se già numerata
+                            steps = selectedRecipe.preparazione.split(/\d+\.\s*/).filter(step => step.trim());
+                          } else if (selectedRecipe.preparazione.includes('.')) {
+                            // Split per punti
+                            steps = selectedRecipe.preparazione.split('.').filter(step => step.trim().length > 10);
+                          } else {
+                            // Prova con virgole o split generico
+                            steps = selectedRecipe.preparazione.split(/[,;]/).filter(step => step.trim().length > 10);
+                            if (steps.length < 2) {
+                              // Se non trova step, crea step generici
+                              steps = [
+                                "Prepara tutti gli ingredienti necessari",
+                                selectedRecipe.preparazione.trim(),
+                                "Servi immediatamente e gusta!"
+                              ];
+                            }
+                          }
+                          
+                          return steps.slice(0, 8).map((step, index) => (
+                            <div key={index} className="flex items-start space-x-4">
+                              <div className="flex-shrink-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {index + 1}
+                              </div>
+                              <div className="text-gray-200 leading-relaxed">
+                                {step.trim().charAt(0).toUpperCase() + step.trim().slice(1)}
+                                {!step.trim().endsWith('.') && !step.trim().endsWith('!') && '.'}
+                              </div>
                             </div>
-                            <div className="text-gray-200 leading-relaxed">
-                              {step.trim()}.
-                            </div>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
                     </div>
                   </div>
