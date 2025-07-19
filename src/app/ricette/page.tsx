@@ -222,11 +222,10 @@ export default function RicettePage() {
       <section className="bg-gradient-to-r from-green-600 to-blue-600 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            🍳 Database Massiccio Ricette
+            🍳 Database Ricette
           </h1>
           <p className="text-xl text-gray-100 mb-6 max-w-3xl mx-auto">
-            Esplora {recipes.length} ricette fitness-ottimizzate con ingredienti e preparazione dettagliata. 
-            Ogni ricetta è cliccabile per vedere la preparazione completa passo-passo!
+            Migliaia di combinazioni possibili con AI avanzata. {recipes.length} ricette base + generazione AI illimitata.
           </p>
           <div className="bg-white bg-opacity-10 rounded-lg p-4 max-w-md mx-auto">
             <div className="text-sm text-gray-200">
@@ -239,12 +238,13 @@ export default function RicettePage() {
         </div>
       </section>
 
-      {/* Filtri Semplificati */}
-      <section className="bg-gray-800 py-6 sticky top-0 z-10 shadow-lg">
+      {/* Filtri SEMPRE VISIBILI */}
+      <section className="bg-gray-800 py-6 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Barra di ricerca principale */}
-          <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
-            <div className="relative flex-1 max-w-md">
+          {/* Barra di ricerca + filtri visibili */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            {/* Ricerca */}
+            <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
                 type="text"
@@ -255,103 +255,77 @@ export default function RicettePage() {
               />
             </div>
             
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-            >
-              <Filter className="h-5 w-5" />
-              <span>Filtri</span>
-              {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-
-            {(searchQuery || selectedCategoria || selectedDieta.length > 0 || selectedDifficolta || maxTempo) && (
-              <button
-                onClick={resetFilters}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            {/* Categoria */}
+            <div>
+              <select
+                value={selectedCategoria}
+                onChange={(e) => setSelectedCategoria(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               >
-                <X className="h-5 w-5" />
-                <span>Reset</span>
+                <option value="">Tutte categorie</option>
+                {filterOptions.categories.map((cat: string) => (
+                  <option key={cat} value={cat}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Difficoltà */}
+            <div>
+              <select
+                value={selectedDifficolta}
+                onChange={(e) => setSelectedDifficolta(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Difficoltà</option>
+                {filterOptions.difficulties.map((diff: string) => (
+                  <option key={diff} value={diff}>
+                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Reset + AI */}
+            <div className="flex gap-2">
+              {(searchQuery || selectedCategoria || selectedDieta.length > 0 || selectedDifficolta || maxTempo) && (
+                <button
+                  onClick={resetFilters}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-sm"
+                >
+                  Reset
+                </button>
+              )}
+              <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm font-semibold">
+                🤖 Genera AI
               </button>
-            )}
+            </div>
           </div>
 
-          {/* Pannello Filtri SEMPLIFICATO */}
-          {showFilters && (
-            <div className="bg-gray-700 rounded-lg p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Categoria */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Categoria</label>
-                  <select
-                    value={selectedCategoria}
-                    onChange={(e) => setSelectedCategoria(e.target.value)}
-                    className="w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Tutte le categorie</option>
-                    {filterOptions.categories.map((cat: string) => (
-                      <option key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Difficoltà */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Difficoltà</label>
-                  <select
-                    value={selectedDifficolta}
-                    onChange={(e) => setSelectedDifficolta(e.target.value)}
-                    className="w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="">Tutte</option>
-                    {filterOptions.difficulties.map((diff: string) => (
-                      <option key={diff} value={diff}>
-                        {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Tempo Massimo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tempo Max (min)</label>
-                  <input
-                    type="number"
-                    placeholder="es. 30"
-                    value={maxTempo}
-                    onChange={(e) => setMaxTempo(e.target.value)}
-                    className="w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              </div>
-
-              {/* Filtri Dieta */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Tipo Dieta</label>
-                <div className="flex flex-wrap gap-2">
-                  {filterOptions.diets.map((diet: string) => (
-                    <button
-                      key={diet}
-                      onClick={() => {
-                        const newDiets = selectedDieta.includes(diet)
-                          ? selectedDieta.filter(d => d !== diet)
-                          : [...selectedDieta, diet];
-                        setSelectedDieta(newDiets);
-                      }}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedDieta.includes(diet)
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      }`}
-                    >
-                      {diet.charAt(0).toUpperCase() + diet.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          {/* Filtri Dieta - Sempre visibili */}
+          <div className="mt-4">
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.diets.map((diet: string) => (
+                <button
+                  key={diet}
+                  onClick={() => {
+                    const newDiets = selectedDieta.includes(diet)
+                      ? selectedDieta.filter(d => d !== diet)
+                      : [...selectedDieta, diet];
+                    setSelectedDieta(newDiets);
+                  }}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    selectedDieta.includes(diet)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  }`}
+                >
+                  {diet.charAt(0).toUpperCase() + diet.slice(1)}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </section>
 
@@ -641,12 +615,21 @@ export default function RicettePage() {
                     </div>
                   </div>
 
-                  {/* Preparazione */}
+                  {/* Preparazione PASSO-PASSO */}
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-white mb-4">👨‍🍳 Preparazione</h3>
+                    <h3 className="text-xl font-semibold text-white mb-4">👨‍🍳 Preparazione Passo-Passo</h3>
                     <div className="bg-gray-700 rounded-lg p-4">
-                      <div className="text-gray-200 leading-relaxed whitespace-pre-line">
-                        {selectedRecipe.preparazione}
+                      <div className="space-y-4">
+                        {selectedRecipe.preparazione.split('.').filter(step => step.trim()).map((step, index) => (
+                          <div key={index} className="flex items-start space-x-4">
+                            <div className="flex-shrink-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            <div className="text-gray-200 leading-relaxed">
+                              {step.trim()}.
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -694,7 +677,7 @@ export default function RicettePage() {
             <h3 className="text-xl font-bold">Database Massiccio Ricette</h3>
           </div>
           <p className="text-gray-400 mb-4">
-            {recipes.length} ricette fitness-ottimizzate con ingredienti e preparazione dettagliata.
+            {recipes.length} ricette base + generazione AI illimitata per combinazioni infinite.
           </p>
           <div className="flex justify-center gap-6">
             <Link href="/" className="text-gray-400 hover:text-green-400 transition-colors">Home</Link>
