@@ -3,6 +3,7 @@
 // 🎯 COMPATIBILI CON TUTTI I FILTRI DROPDOWN
 // 🔄 SINGLETON PATTERN PER COMPATIBILITÀ
 // 🛡️ FIX SEARCHRECIPES CON CONTROLLO SICUREZZA
+// 📊 METODI COMPLETI: getStats, getRecipeById, getCategories, etc.
 
 export interface Recipe {
   id: string;
@@ -56,6 +57,38 @@ export class RecipeDatabase {
 
   getTopRatedRecipes(limit: number = 10): Recipe[] {
     return RecipeDatabase.getTopRatedRecipes(limit);
+  }
+
+  getStats(): object {
+    return RecipeDatabase.getStats();
+  }
+
+  getRecipeById(id: string): Recipe | undefined {
+    return RecipeDatabase.getRecipeById(id);
+  }
+
+  getCategories(): string[] {
+    return RecipeDatabase.getCategories();
+  }
+
+  getDiets(): string[] {
+    return RecipeDatabase.getDiets();
+  }
+
+  getDifficulties(): string[] {
+    return RecipeDatabase.getDifficulties();
+  }
+
+  getTimes(): number[] {
+    return RecipeDatabase.getTimes();
+  }
+
+  getRandomRecipes(count: number = 6): Recipe[] {
+    return RecipeDatabase.getRandomRecipes(count);
+  }
+
+  getRecipeCountByCategory(): object {
+    return RecipeDatabase.getRecipeCountByCategory();
   }
 
   // 🌅 COLAZIONI FITNESS (10 ricette)
@@ -1663,5 +1696,71 @@ export class RecipeDatabase {
     return this.getAllRecipes()
       .sort((a, b) => b.rating - a.rating)
       .slice(0, limit);
+  }
+
+  // 📊 STATISTICHE DATABASE
+  static getStats(): object {
+    const allRecipes = this.getAllRecipes();
+    const categories = [...new Set(allRecipes.map(r => r.categoria))];
+    const diets = [...new Set(allRecipes.map(r => r.tipo_dieta))];
+    const difficulties = [...new Set(allRecipes.map(r => r.difficolta))];
+    const times = [...new Set(allRecipes.map(r => r.tempo))].sort();
+
+    return {
+      totalRecipes: allRecipes.length,
+      categories: categories,
+      diets: diets,
+      difficulties: difficulties,
+      times: times,
+      averageRating: (allRecipes.reduce((sum, r) => sum + r.rating, 0) / allRecipes.length).toFixed(1),
+      averageCalories: Math.round(allRecipes.reduce((sum, r) => sum + r.calorie, 0) / allRecipes.length),
+      averageProtein: Math.round(allRecipes.reduce((sum, r) => sum + r.proteine, 0) / allRecipes.length)
+    };
+  }
+
+  // 🔍 RICERCA PER ID
+  static getRecipeById(id: string): Recipe | undefined {
+    return this.getAllRecipes().find(recipe => recipe.id === id);
+  }
+
+  // 📋 GETTER PER FILTRI
+  static getCategories(): string[] {
+    return ['colazione', 'pranzo', 'spuntino', 'cena'];
+  }
+
+  static getDiets(): string[] {
+    return ['low_carb', 'paleo', 'chetogenica', 'bilanciata', 'mediterranea', 'vegetariana', 'vegana'];
+  }
+
+  static getDifficulties(): string[] {
+    return ['facile', 'media', 'difficile'];
+  }
+
+  static getTimes(): number[] {
+    return [5, 10, 15, 30];
+  }
+
+  // 🎲 RICETTE CASUALI
+  static getRandomRecipes(count: number = 6): Recipe[] {
+    const allRecipes = this.getAllRecipes();
+    const shuffled = [...allRecipes].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
+
+  // 📈 RICETTE PER CATEGORIA CON CONTEGGIO
+  static getRecipeCountByCategory(): object {
+    const allRecipes = this.getAllRecipes();
+    const counts = {
+      colazione: 0,
+      pranzo: 0,
+      spuntino: 0,
+      cena: 0
+    };
+
+    allRecipes.forEach(recipe => {
+      counts[recipe.categoria]++;
+    });
+
+    return counts;
   }
 }
