@@ -67,6 +67,20 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'recipes' | 'shopping'>('overview');
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
+  // 🔧 FIX CRITICO: Funzione sicura per ottenere valori nutrizionali (STESSO FIX DI MEALPREVIEW)
+  const getMealNutrition = (meal: any) => {
+    if (!meal) {
+      return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return {
+      calories: meal.calories || meal.calorie || 0,
+      protein: meal.protein || meal.proteine || 0,
+      carbs: meal.carbs || meal.carboidrati || 0,
+      fat: meal.fat || meal.grassi || 0
+    };
+  };
+
   // 🔧 FIX CRITICO: Funzione per ottenere tutti i pasti in ordine CON CONTROLLI
   const getAllMealsInOrder = (dayMeals: DayMeals) => {
     console.log('🔍 [DEBUG] getAllMealsInOrder called with:', dayMeals);
@@ -164,15 +178,15 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
       throw new Error('No valid meals found');
     }
     
-    // ERRORE ERA QUI: meal poteva essere undefined nel reduce!
+    // 🔧 FIX CRITICO: USA getMealNutrition() invece di accesso diretto
     totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => {
       if (!meal) {
         console.warn('⚠️ [WARNING] Meal is undefined in reduce');
         return sum;
       }
-      const calories = meal.calorie || 0;
-      console.log(`🔍 [DEBUG] Adding ${calories} calories from ${meal.nome}`);
-      return sum + calories;
+      const nutrition = getMealNutrition(meal);
+      console.log(`🔍 [DEBUG] Adding ${nutrition.calories} calories from ${meal.nome}`);
+      return sum + nutrition.calories;
     }, 0);
     
     totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
@@ -463,8 +477,12 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
               }
 
               const dayMeals = getAllMealsInOrder(dayData.meals);
+              
+              // 🔧 FIX CRITICO: USA getMealNutrition() per il calcolo
               const dayTotalCalories = dayMeals.reduce((sum, { meal }) => {
-                return sum + (meal?.calorie || 0);
+                if (!meal) return sum;
+                const nutrition = getMealNutrition(meal);
+                return sum + nutrition.calories;
               }, 0);
               
               return (
@@ -501,6 +519,9 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                           );
                         }
 
+                        // 🔧 FIX CRITICO: USA getMealNutrition() per UI
+                        const nutrition = getMealNutrition(meal);
+
                         return (
                           <div key={key} className="bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors">
                             {/* Immagine ricetta */}
@@ -532,11 +553,11 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                             <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
                             
                             <div className="text-xs text-gray-300 mb-2">
-                              🔥 {meal.calorie || 0} kcal | ⏱️ {meal.tempo || 'N/A'} | 👥 {meal.porzioni || 1} porz.
+                              🔥 {nutrition.calories} kcal | ⏱️ {meal.tempo || 'N/A'} | 👥 {meal.porzioni || 1} porz.
                             </div>
                             
                             <div className="text-xs text-gray-300">
-                              P: {meal.proteine || 0}g | C: {meal.carboidrati || 0}g | G: {meal.grassi || 0}g
+                              P: {nutrition.protein}g | C: {nutrition.carbs}g | G: {nutrition.fat}g
                             </div>
                           </div>
                         );
@@ -567,75 +588,80 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-6">
-                {allRecipes.map((recipe, index) => (
-                  <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
-                    {/* Immagine ricetta */}
-                    <img 
-                      src={recipe.imageUrl || generateRecipeImage(recipe.nome)}
-                      alt={recipe.nome}
-                      className="w-full h-48 object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = generateRecipeImage(recipe.nome);
-                      }}
-                    />
-                    
-                    <div className="p-6">
-                      <h4 className="text-xl font-bold text-white mb-3">{recipe.nome}</h4>
+                {allRecipes.map((recipe, index) => {
+                  // 🔧 FIX CRITICO: USA getMealNutrition() per ogni ricetta
+                  const nutrition = getMealNutrition(recipe);
+                  
+                  return (
+                    <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
+                      {/* Immagine ricetta */}
+                      <img 
+                        src={recipe.imageUrl || generateRecipeImage(recipe.nome)}
+                        alt={recipe.nome}
+                        className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = generateRecipeImage(recipe.nome);
+                        }}
+                      />
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
-                        <span className="flex items-center gap-1">
-                          <Flame size={16} className="text-orange-500" />
-                          {recipe.calorie || 0} kcal
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={16} className="text-blue-400" />
-                          {recipe.tempo || 'N/A'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users size={16} className="text-green-400" />
-                          {recipe.porzioni || 1} porz.
-                        </span>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
-                          <div className="space-y-1">
-                            {(recipe.ingredienti || []).map((ingrediente, idx) => (
-                              <div 
-                                key={idx}
-                                className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
-                                onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
-                              >
-                                <span className="text-gray-300 text-sm">• {ingrediente}</span>
-                                <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
-                                  🔀
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                      <div className="p-6">
+                        <h4 className="text-xl font-bold text-white mb-3">{recipe.nome}</h4>
                         
-                        <div>
-                          <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
-                          <p className="text-gray-300 text-sm leading-relaxed">
-                            {recipe.preparazione || 'Preparazione non disponibile'}
-                          </p>
+                        <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
+                          <span className="flex items-center gap-1">
+                            <Flame size={16} className="text-orange-500" />
+                            {nutrition.calories} kcal
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={16} className="text-blue-400" />
+                            {recipe.tempo || 'N/A'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users size={16} className="text-green-400" />
+                            {recipe.porzioni || 1} porz.
+                          </span>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
+                            <div className="space-y-1">
+                              {(recipe.ingredienti || []).map((ingrediente, idx) => (
+                                <div 
+                                  key={idx}
+                                  className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
+                                  onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
+                                >
+                                  <span className="text-gray-300 text-sm">• {ingrediente}</span>
+                                  <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
+                                    🔀
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                           
-                          <div className="mt-4 p-3 bg-gray-600 rounded-lg">
-                            <h6 className="font-semibold text-white mb-2 text-sm">📊 Valori Nutrizionali:</h6>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
-                              <span>Proteine: {recipe.proteine || 0}g</span>
-                              <span>Carboidrati: {recipe.carboidrati || 0}g</span>
-                              <span>Grassi: {recipe.grassi || 0}g</span>
-                              <span>Calorie: {recipe.calorie || 0} kcal</span>
+                          <div>
+                            <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                              {recipe.preparazione || 'Preparazione non disponibile'}
+                            </p>
+                            
+                            <div className="mt-4 p-3 bg-gray-600 rounded-lg">
+                              <h6 className="font-semibold text-white mb-2 text-sm">📊 Valori Nutrizionali:</h6>
+                              <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                                <span>Proteine: {nutrition.protein}g</span>
+                                <span>Carboidrati: {nutrition.carbs}g</span>
+                                <span>Grassi: {nutrition.fat}g</span>
+                                <span>Calorie: {nutrition.calories} kcal</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
