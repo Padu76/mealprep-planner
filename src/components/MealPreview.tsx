@@ -41,6 +41,20 @@ export default function MealPreview({
     return names[mealType] || mealType.charAt(0).toUpperCase() + mealType.slice(1);
   };
 
+  // 🔧 FIX CRITICO: Funzione sicura per ottenere valori nutrizionali
+  const getMealNutrition = (meal: any) => {
+    if (!meal) {
+      return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return {
+      calories: meal.calories || meal.calorie || 0,
+      protein: meal.protein || meal.proteine || 0,
+      carbs: meal.carbs || meal.carboidrati || 0,
+      fat: meal.fat || meal.grassi || 0
+    };
+  };
+
   // 🔧 FIX CRITICO: Funzione con controlli di sicurezza
   const calculateDayTotals = (day: any) => {
     console.log('🔍 [DEBUG] Calculating day totals for:', day);
@@ -66,22 +80,15 @@ export default function MealPreview({
         return; // Skip questo pasto
       }
 
-      // Verifica che le proprietà nutrizionali esistano
-      const calories = typeof meal.calorie === 'number' ? meal.calorie : 
-                     typeof meal.calories === 'number' ? meal.calories : 0;
-      const protein = typeof meal.proteine === 'number' ? meal.proteine : 
-                     typeof meal.protein === 'number' ? meal.protein : 0;
-      const carbs = typeof meal.carboidrati === 'number' ? meal.carboidrati : 
-                   typeof meal.carbs === 'number' ? meal.carbs : 0;
-      const fat = typeof meal.grassi === 'number' ? meal.grassi : 
-                 typeof meal.fat === 'number' ? meal.fat : 0;
+      // Usa la funzione sicura per ottenere i valori nutrizionali
+      const nutrition = getMealNutrition(meal);
+      
+      console.log(`✅ [DEBUG] Meal ${mealType} values: cal=${nutrition.calories}, prot=${nutrition.protein}, carb=${nutrition.carbs}, fat=${nutrition.fat}`);
 
-      console.log(`✅ [DEBUG] Meal ${mealType} values: cal=${calories}, prot=${protein}, carb=${carbs}, fat=${fat}`);
-
-      totalCalories += calories;
-      totalProtein += protein;
-      totalCarbs += carbs;
-      totalFat += fat;
+      totalCalories += nutrition.calories;
+      totalProtein += nutrition.protein;
+      totalCarbs += nutrition.carbs;
+      totalFat += nutrition.fat;
     });
 
     const result = { totalCalories, totalProtein, totalCarbs, totalFat };
@@ -263,6 +270,9 @@ export default function MealPreview({
                         );
                       }
 
+                      // Ottieni i valori nutrizionali in modo sicuro
+                      const nutrition = getMealNutrition(meal);
+
                       return (
                         <div key={mealType} className="bg-gray-700 rounded-lg p-4 hover:bg-gray-650 transition-colors">
                           {/* Meal Header */}
@@ -288,16 +298,16 @@ export default function MealPreview({
                               </h5>
                               <div className="flex gap-3 text-sm text-gray-300">
                                 <span className="bg-blue-600/20 px-2 py-1 rounded">
-                                  {meal.calorie || meal.calories || 0} kcal
+                                  {nutrition.calories} kcal
                                 </span>
                                 <span className="bg-green-600/20 px-2 py-1 rounded">
-                                  P: {meal.proteine || meal.protein || 0}g
+                                  P: {nutrition.protein}g
                                 </span>
                                 <span className="bg-orange-600/20 px-2 py-1 rounded">
-                                  C: {meal.carboidrati || meal.carbs || 0}g
+                                  C: {nutrition.carbs}g
                                 </span>
                                 <span className="bg-purple-600/20 px-2 py-1 rounded">
-                                  F: {meal.grassi || meal.fat || 0}g
+                                  F: {nutrition.fat}g
                                 </span>
                               </div>
                             </div>
