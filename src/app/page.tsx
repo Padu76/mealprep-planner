@@ -74,6 +74,20 @@ export default function HomePage() {
     testAPI();
   }, []);
 
+  // 🔧 FIX CRITICO: Funzione sicura per ottenere valori nutrizionali
+  const getMealNutrition = (meal: any) => {
+    if (!meal) {
+      return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    }
+
+    return {
+      calories: meal.calories || meal.calorie || 0,
+      protein: meal.protein || meal.proteine || 0,
+      carbs: meal.carbs || meal.carboidrati || 0,
+      fat: meal.fat || meal.grassi || 0
+    };
+  };
+
   // 💾 SALVATAGGIO AUTOMATICO PIANO GENERATO
   const saveGeneratedPlan = (plan: any, formData: any) => {
     try {
@@ -153,13 +167,15 @@ export default function HomePage() {
     }, 3000);
   };
 
-  // 🧮 FUNZIONI DI CALCOLO
+  // 🧮 FUNZIONI DI CALCOLO - FIX CRITICO CON getMealNutrition()
   const calculateDailyCalories = (plan: any) => {
     if (!plan?.days?.[0]?.meals) return 0;
     
     const firstDay = plan.days[0].meals;
     return Object.values(firstDay).reduce((total: number, meal: any) => {
-      return total + (meal?.calorie || 0);
+      if (!meal) return total;
+      const nutrition = getMealNutrition(meal);
+      return total + nutrition.calories;
     }, 0);
   };
 
@@ -167,8 +183,11 @@ export default function HomePage() {
     if (!plan?.days) return 0;
     
     return plan.days.reduce((total: number, day: any) => {
+      if (!day || !day.meals) return total;
       const dayCalories = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
-        return dayTotal + (meal?.calorie || 0);
+        if (!meal) return dayTotal;
+        const nutrition = getMealNutrition(meal);
+        return dayTotal + nutrition.calories;
       }, 0);
       return total + dayCalories;
     }, 0);
@@ -178,8 +197,11 @@ export default function HomePage() {
     if (!plan?.days) return 0;
     
     return plan.days.reduce((total: number, day: any) => {
+      if (!day || !day.meals) return total;
       const dayProteins = Object.values(day.meals || {}).reduce((dayTotal: number, meal: any) => {
-        return dayTotal + (meal?.proteine || 0);
+        if (!meal) return dayTotal;
+        const nutrition = getMealNutrition(meal);
+        return dayTotal + nutrition.protein;
       }, 0);
       return total + dayProteins;
     }, 0);
@@ -384,7 +406,7 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🍳 NUOVA FUNZIONE: SELEZIONA RICETTE DAL DATABASE MASSICCIO
+  // 🍳 NUOVA FUNZIONE: SELEZIONA RICETTE DAL DATABASE MASSICCIO - CON FIX CRITICO
   const selectMassiveRecipes = (
     categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino',
     obiettivo: string,
@@ -401,13 +423,13 @@ export default function HomePage() {
     
     // Mappa obiettivi alle diete appropriate
     const obiettivoToDiet: { [key: string]: string[] } = {
-      'dimagrimento': ['low_carb', 'chetogenica', 'bilanciata'],
-      'aumento-massa': ['bilanciata'],
-      'mantenimento': ['bilanciata', 'mediterranea'],
-      'definizione': ['low_carb', 'chetogenica']
+      'dimagrimento': ['keto', 'proteica', 'mediterranea'],
+      'aumento-massa': ['bilanciata-40-30-30', 'proteica'],
+      'mantenimento': ['bilanciata-40-30-30', 'mediterranea'],
+      'definizione': ['keto', 'proteica']
     };
 
-    const targetDiets = obiettivoToDiet[obiettivo] || ['bilanciata'];
+    const targetDiets = obiettivoToDiet[obiettivo] || ['bilanciata-40-30-30'];
     
     // Cerca ricette appropriate
     let recipes = recipeDb.searchRecipes({
@@ -435,13 +457,6 @@ export default function HomePage() {
       }
     }
 
-    // Prioritizza ricette "ricette_fit" se disponibili
-    const fitRecipes = recipes.filter(r => r.tipoCucina === 'ricette_fit');
-    if (fitRecipes.length > 0) {
-      recipes = [...fitRecipes, ...recipes.filter(r => r.tipoCucina !== 'ricette_fit')];
-      console.log(`🏋️‍♂️ [MASSIVE] Prioritized ${fitRecipes.length} fit recipes`);
-    }
-
     // Seleziona le migliori ricette (ordinate per rating)
     const selectedRecipes = recipes
       .sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -453,7 +468,7 @@ export default function HomePage() {
     return selectedRecipes;
   };
 
-  // 🇮🇹 PIANO FALLBACK CON DATABASE MASSICCIO
+  // 🇮🇹 PIANO FALLBACK CON DATABASE MASSICCIO - FIX CRITICO
   const createMassiveFallback = (formData: any) => {
     const numDays = parseInt(formData.durata) || 2;
     const numPasti = parseInt(formData.pasti) || 3;
@@ -472,78 +487,12 @@ export default function HomePage() {
         meals: {} as any
       };
       
-      // 🌅 COLAZIONE
-      const colazioneRecipes = selectMassiveRecipes('colazione', obiettivo, numDays, preferenze, allergie);
+      // 🌅 COLAZIONE - FIX CRITICO: CONTROLLO UNDEFINED
+      const colazioneRecipes = selectMassiveRecipes('colazione', obiettivo, Math.max(3, numDays), preferenze, allergie);
       if (colazioneRecipes.length > 0) {
         const selected = colazioneRecipes[i % colazioneRecipes.length];
-        day.meals.colazione = {
-          nome: selected.nome,
-          calorie: selected.calorie,
-          proteine: selected.proteine,
-          carboidrati: selected.carboidrati,
-          grassi: selected.grassi,
-          tempo: `${selected.tempoPreparazione} min`,
-          porzioni: selected.porzioni,
-          ingredienti: selected.ingredienti,
-          preparazione: selected.preparazione,
-          fitnessScore: 90, // Score alto per ricette dal database
-          recipeId: selected.id,
-          categoria: 'colazione',
-          rating: selected.rating || 4.5
-        };
-        console.log(`✅ [MASSIVE] Day ${i + 1} colazione: ${selected.nome}`);
-      }
-      
-      // ☀️ PRANZO
-      const pranzoRecipes = selectMassiveRecipes('pranzo', obiettivo, numDays, preferenze, allergie);
-      if (pranzoRecipes.length > 0) {
-        const selected = pranzoRecipes[i % pranzoRecipes.length];
-        day.meals.pranzo = {
-          nome: selected.nome,
-          calorie: selected.calorie,
-          proteine: selected.proteine,
-          carboidrati: selected.carboidrati,
-          grassi: selected.grassi,
-          tempo: `${selected.tempoPreparazione} min`,
-          porzioni: selected.porzioni,
-          ingredienti: selected.ingredienti,
-          preparazione: selected.preparazione,
-          fitnessScore: 88,
-          recipeId: selected.id,
-          categoria: 'pranzo',
-          rating: selected.rating || 4.7
-        };
-        console.log(`✅ [MASSIVE] Day ${i + 1} pranzo: ${selected.nome}`);
-      }
-      
-      // 🌙 CENA
-      const cenaRecipes = selectMassiveRecipes('cena', obiettivo, numDays, preferenze, allergie);
-      if (cenaRecipes.length > 0) {
-        const selected = cenaRecipes[i % cenaRecipes.length];
-        day.meals.cena = {
-          nome: selected.nome,
-          calorie: selected.calorie,
-          proteine: selected.proteine,
-          carboidrati: selected.carboidrati,
-          grassi: selected.grassi,
-          tempo: `${selected.tempoPreparazione} min`,
-          porzioni: selected.porzioni,
-          ingredienti: selected.ingredienti,
-          preparazione: selected.preparazione,
-          fitnessScore: 85,
-          recipeId: selected.id,
-          categoria: 'cena',
-          rating: selected.rating || 4.3
-        };
-        console.log(`✅ [MASSIVE] Day ${i + 1} cena: ${selected.nome}`);
-      }
-      
-      // 🍎 SPUNTINI
-      if (numPasti >= 4) {
-        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
-        if (spuntinoRecipes.length > 0) {
-          const selected = spuntinoRecipes[i % spuntinoRecipes.length];
-          day.meals.spuntino1 = {
+        if (selected) { // 🔧 CONTROLLO CRITICO
+          day.meals.colazione = {
             nome: selected.nome,
             calorie: selected.calorie,
             proteine: selected.proteine,
@@ -553,56 +502,134 @@ export default function HomePage() {
             porzioni: selected.porzioni,
             ingredienti: selected.ingredienti,
             preparazione: selected.preparazione,
-            fitnessScore: 82,
+            fitnessScore: 90,
             recipeId: selected.id,
-            categoria: 'spuntino',
-            rating: selected.rating || 4.1
+            categoria: 'colazione',
+            rating: selected.rating || 4.5
           };
-          console.log(`✅ [MASSIVE] Day ${i + 1} spuntino1: ${selected.nome}`);
+          console.log(`✅ [MASSIVE] Day ${i + 1} colazione: ${selected.nome}`);
+        }
+      }
+      
+      // ☀️ PRANZO - FIX CRITICO: CONTROLLO UNDEFINED  
+      const pranzoRecipes = selectMassiveRecipes('pranzo', obiettivo, Math.max(3, numDays), preferenze, allergie);
+      if (pranzoRecipes.length > 0) {
+        const selected = pranzoRecipes[i % pranzoRecipes.length];
+        if (selected) { // 🔧 CONTROLLO CRITICO
+          day.meals.pranzo = {
+            nome: selected.nome,
+            calorie: selected.calorie,
+            proteine: selected.proteine,
+            carboidrati: selected.carboidrati,
+            grassi: selected.grassi,
+            tempo: `${selected.tempoPreparazione} min`,
+            porzioni: selected.porzioni,
+            ingredienti: selected.ingredienti,
+            preparazione: selected.preparazione,
+            fitnessScore: 88,
+            recipeId: selected.id,
+            categoria: 'pranzo',
+            rating: selected.rating || 4.7
+          };
+          console.log(`✅ [MASSIVE] Day ${i + 1} pranzo: ${selected.nome}`);
+        }
+      }
+      
+      // 🌙 CENA - FIX CRITICO: CONTROLLO UNDEFINED
+      const cenaRecipes = selectMassiveRecipes('cena', obiettivo, Math.max(3, numDays), preferenze, allergie);
+      if (cenaRecipes.length > 0) {
+        const selected = cenaRecipes[i % cenaRecipes.length];
+        if (selected) { // 🔧 CONTROLLO CRITICO
+          day.meals.cena = {
+            nome: selected.nome,
+            calorie: selected.calorie,
+            proteine: selected.proteine,
+            carboidrati: selected.carboidrati,
+            grassi: selected.grassi,
+            tempo: `${selected.tempoPreparazione} min`,
+            porzioni: selected.porzioni,
+            ingredienti: selected.ingredienti,
+            preparazione: selected.preparazione,
+            fitnessScore: 85,
+            recipeId: selected.id,
+            categoria: 'cena',
+            rating: selected.rating || 4.3
+          };
+          console.log(`✅ [MASSIVE] Day ${i + 1} cena: ${selected.nome}`);
+        }
+      }
+      
+      // 🍎 SPUNTINI - FIX CRITICO: CONTROLLO UNDEFINED
+      if (numPasti >= 4) {
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, Math.max(3, numDays), preferenze, allergie);
+        if (spuntinoRecipes.length > 0) {
+          const selected = spuntinoRecipes[i % spuntinoRecipes.length];
+          if (selected) { // 🔧 CONTROLLO CRITICO
+            day.meals.spuntino1 = {
+              nome: selected.nome,
+              calorie: selected.calorie,
+              proteine: selected.proteine,
+              carboidrati: selected.carboidrati,
+              grassi: selected.grassi,
+              tempo: `${selected.tempoPreparazione} min`,
+              porzioni: selected.porzioni,
+              ingredienti: selected.ingredienti,
+              preparazione: selected.preparazione,
+              fitnessScore: 82,
+              recipeId: selected.id,
+              categoria: 'spuntino',
+              rating: selected.rating || 4.1
+            };
+            console.log(`✅ [MASSIVE] Day ${i + 1} spuntino1: ${selected.nome}`);
+          }
         }
       }
       
       if (numPasti >= 5) {
-        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, Math.max(3, numDays), preferenze, allergie);
         if (spuntinoRecipes.length > 0) {
           const selected = spuntinoRecipes[(i + 1) % spuntinoRecipes.length];
-          day.meals.spuntino2 = {
-            nome: selected.nome,
-            calorie: selected.calorie,
-            proteine: selected.proteine,
-            carboidrati: selected.carboidrati,
-            grassi: selected.grassi,
-            tempo: `${selected.tempoPreparazione} min`,
-            porzioni: selected.porzioni,
-            ingredienti: selected.ingredienti,
-            preparazione: selected.preparazione,
-            fitnessScore: 80,
-            recipeId: selected.id,
-            categoria: 'spuntino',
-            rating: selected.rating || 4.4
-          };
+          if (selected) { // 🔧 CONTROLLO CRITICO
+            day.meals.spuntino2 = {
+              nome: selected.nome,
+              calorie: selected.calorie,
+              proteine: selected.proteine,
+              carboidrati: selected.carboidrati,
+              grassi: selected.grassi,
+              tempo: `${selected.tempoPreparazione} min`,
+              porzioni: selected.porzioni,
+              ingredienti: selected.ingredienti,
+              preparazione: selected.preparazione,
+              fitnessScore: 80,
+              recipeId: selected.id,
+              categoria: 'spuntino',
+              rating: selected.rating || 4.4
+            };
+          }
         }
       }
       
       if (numPasti >= 6) {
-        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, numDays, preferenze, allergie);
+        const spuntinoRecipes = selectMassiveRecipes('spuntino', obiettivo, Math.max(3, numDays), preferenze, allergie);
         if (spuntinoRecipes.length > 0) {
           const selected = spuntinoRecipes[(i + 2) % spuntinoRecipes.length];
-          day.meals.spuntino3 = {
-            nome: selected.nome,
-            calorie: selected.calorie,
-            proteine: selected.proteine,
-            carboidrati: selected.carboidrati,
-            grassi: selected.grassi,
-            tempo: `${selected.tempoPreparazione} min`,
-            porzioni: selected.porzioni,
-            ingredienti: selected.ingredienti,
-            preparazione: selected.preparazione,
-            fitnessScore: 78,
-            recipeId: selected.id,
-            categoria: 'spuntino',
-            rating: selected.rating || 4.0
-          };
+          if (selected) { // 🔧 CONTROLLO CRITICO
+            day.meals.spuntino3 = {
+              nome: selected.nome,
+              calorie: selected.calorie,
+              proteine: selected.proteine,
+              carboidrati: selected.carboidrati,
+              grassi: selected.grassi,
+              tempo: `${selected.tempoPreparazione} min`,
+              porzioni: selected.porzioni,
+              ingredienti: selected.ingredienti,
+              preparazione: selected.preparazione,
+              fitnessScore: 78,
+              recipeId: selected.id,
+              categoria: 'spuntino',
+              rating: selected.rating || 4.0
+            };
+          }
         }
       }
       
@@ -748,7 +775,10 @@ export default function HomePage() {
           apiGeneratedPlan.days.forEach((day: any) => {
             let currentTotal = 0;
             Object.values(day.meals).forEach((meal: any) => {
-              currentTotal += meal.calorie || 0;
+              if (meal) {
+                const nutrition = getMealNutrition(meal);
+                currentTotal += nutrition.calories;
+              }
             });
             
             const scaleFactor = targetCalories / Math.max(currentTotal, 1);
@@ -756,10 +786,10 @@ export default function HomePage() {
             
             Object.values(day.meals).forEach((meal: any) => {
               if (meal) {
-                meal.calorie = Math.round(meal.calorie * scaleFactor);
-                meal.proteine = Math.round(meal.proteine * scaleFactor);
-                meal.carboidrati = Math.round(meal.carboidrati * scaleFactor);
-                meal.grassi = Math.round(meal.grassi * scaleFactor);
+                meal.calorie = Math.round((meal.calorie || 0) * scaleFactor);
+                meal.proteine = Math.round((meal.proteine || 0) * scaleFactor);
+                meal.carboidrati = Math.round((meal.carboidrati || 0) * scaleFactor);
+                meal.grassi = Math.round((meal.grassi || 0) * scaleFactor);
               }
             });
           });
