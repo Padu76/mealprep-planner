@@ -67,23 +67,127 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'recipes' | 'shopping'>('overview');
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
-  // Funzione per ottenere tutti i pasti in ordine
+  // 🔧 FIX CRITICO: Funzione per ottenere tutti i pasti in ordine CON CONTROLLI
   const getAllMealsInOrder = (dayMeals: DayMeals) => {
+    console.log('🔍 [DEBUG] getAllMealsInOrder called with:', dayMeals);
+    
+    if (!dayMeals) {
+      console.error('❌ [ERROR] dayMeals is undefined');
+      return [];
+    }
+
     const meals = [];
-    meals.push({ key: 'colazione', meal: dayMeals.colazione, emoji: '🌅', nome: 'COLAZIONE' });
-    if (dayMeals.spuntino1) meals.push({ key: 'spuntino1', meal: dayMeals.spuntino1, emoji: '🍎', nome: 'SPUNTINO MATTINA' });
-    meals.push({ key: 'pranzo', meal: dayMeals.pranzo, emoji: '☀️', nome: 'PRANZO' });
-    if (dayMeals.spuntino2) meals.push({ key: 'spuntino2', meal: dayMeals.spuntino2, emoji: '🥤', nome: 'SPUNTINO POMERIGGIO' });
-    meals.push({ key: 'cena', meal: dayMeals.cena, emoji: '🌙', nome: 'CENA' });
-    if (dayMeals.spuntino3) meals.push({ key: 'spuntino3', meal: dayMeals.spuntino3, emoji: '🌆', nome: 'SPUNTINO SERA' });
+    
+    // Controllo esistenza di ogni pasto prima di aggiungerlo
+    if (dayMeals.colazione) {
+      meals.push({ key: 'colazione', meal: dayMeals.colazione, emoji: '🌅', nome: 'COLAZIONE' });
+    } else {
+      console.warn('⚠️ [WARNING] colazione is missing');
+    }
+    
+    if (dayMeals.spuntino1) {
+      meals.push({ key: 'spuntino1', meal: dayMeals.spuntino1, emoji: '🍎', nome: 'SPUNTINO MATTINA' });
+    }
+    
+    if (dayMeals.pranzo) {
+      meals.push({ key: 'pranzo', meal: dayMeals.pranzo, emoji: '☀️', nome: 'PRANZO' });
+    } else {
+      console.warn('⚠️ [WARNING] pranzo is missing');
+    }
+    
+    if (dayMeals.spuntino2) {
+      meals.push({ key: 'spuntino2', meal: dayMeals.spuntino2, emoji: '🥤', nome: 'SPUNTINO POMERIGGIO' });
+    }
+    
+    if (dayMeals.cena) {
+      meals.push({ key: 'cena', meal: dayMeals.cena, emoji: '🌙', nome: 'CENA' });
+    } else {
+      console.warn('⚠️ [WARNING] cena is missing');
+    }
+    
+    if (dayMeals.spuntino3) {
+      meals.push({ key: 'spuntino3', meal: dayMeals.spuntino3, emoji: '🌆', nome: 'SPUNTINO SERA' });
+    }
+    
+    console.log(`✅ [SUCCESS] Found ${meals.length} valid meals`);
     return meals;
   };
 
-  // Calcola statistiche
-  const firstDay = parsedPlan.days[0].meals;
-  const orderedMeals = getAllMealsInOrder(firstDay);
-  const totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
-  const totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
+  // 🔧 FIX CRITICO: Validazione completa del piano
+  if (!parsedPlan) {
+    console.error('❌ [ERROR] parsedPlan is undefined');
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 text-center">
+        <div className="bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-6">
+          <h3 className="text-red-400 text-xl font-bold mb-2">❌ Errore Piano</h3>
+          <p className="text-gray-400">Il piano alimentare non è stato caricato correttamente</p>
+          <button 
+            onClick={onGenerateNewPlan}
+            className="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            🔄 Genera Nuovo Piano
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!parsedPlan.days || !Array.isArray(parsedPlan.days) || parsedPlan.days.length === 0) {
+    console.error('❌ [ERROR] parsedPlan.days is invalid:', parsedPlan.days);
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8 text-center">
+        <div className="bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-lg p-6">
+          <h3 className="text-yellow-400 text-xl font-bold mb-2">⚠️ Piano Vuoto</h3>
+          <p className="text-gray-400">Non sono stati trovati giorni nel piano alimentare</p>
+          <button 
+            onClick={onGenerateNewPlan}
+            className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            🔄 Genera Nuovo Piano
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 🔧 FIX CRITICO: Calcola statistiche con controlli di sicurezza
+  let firstDay, orderedMeals, totalCaloriesPerDay, totalCaloriesPlan;
+  
+  try {
+    firstDay = parsedPlan.days[0]?.meals;
+    if (!firstDay) {
+      throw new Error('First day meals not found');
+    }
+    
+    orderedMeals = getAllMealsInOrder(firstDay);
+    if (orderedMeals.length === 0) {
+      throw new Error('No valid meals found');
+    }
+    
+    // ERRORE ERA QUI: meal poteva essere undefined nel reduce!
+    totalCaloriesPerDay = orderedMeals.reduce((sum, { meal }) => {
+      if (!meal) {
+        console.warn('⚠️ [WARNING] Meal is undefined in reduce');
+        return sum;
+      }
+      const calories = meal.calorie || 0;
+      console.log(`🔍 [DEBUG] Adding ${calories} calories from ${meal.nome}`);
+      return sum + calories;
+    }, 0);
+    
+    totalCaloriesPlan = totalCaloriesPerDay * parsedPlan.days.length;
+    
+    console.log(`✅ [SUCCESS] Stats calculated: ${totalCaloriesPerDay} cal/day, ${totalCaloriesPlan} total`);
+    
+  } catch (error) {
+    console.error('❌ [ERROR] Failed to calculate plan stats:', error);
+    
+    // Fallback sicuro
+    firstDay = {};
+    orderedMeals = [];
+    totalCaloriesPerDay = 0;
+    totalCaloriesPlan = 0;
+  }
 
   // Genera immagine per ricetta usando Unsplash
   const generateRecipeImage = (recipeName: string): string => {
@@ -111,33 +215,64 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     return `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format&q=80&crop=center&${query}`;
   };
 
-  // Genera lista spesa consolidata
+  // 🔧 FIX CRITICO: Genera lista spesa con controlli
   const generateShoppingList = () => {
+    console.log('🛒 [DEBUG] Generating shopping list...');
     const ingredients: { [key: string]: { count: number; category: string; baseQuantity: string; originalNames: string[] } } = {};
     
-    parsedPlan.days.forEach(dayData => {
-      const dayMeals = getAllMealsInOrder(dayData.meals);
-      dayMeals.forEach(({ meal }) => {
-        meal.ingredienti.forEach(ingrediente => {
-          const cleanIngredient = ingrediente.trim();
-          const normalizedName = normalizeIngredientName(cleanIngredient);
-          
-          if (ingredients[normalizedName]) {
-            ingredients[normalizedName].count += 1;
-            ingredients[normalizedName].originalNames.push(cleanIngredient);
-          } else {
-            ingredients[normalizedName] = { 
-              count: 1, 
-              category: categorizeIngredient(cleanIngredient),
-              baseQuantity: extractQuantity(cleanIngredient),
-              originalNames: [cleanIngredient]
-            };
+    try {
+      parsedPlan.days.forEach((dayData, dayIndex) => {
+        console.log(`🔍 [DEBUG] Processing day ${dayIndex}:`, dayData);
+        
+        if (!dayData || !dayData.meals) {
+          console.warn(`⚠️ [WARNING] Day ${dayIndex} has no meals`);
+          return;
+        }
+        
+        const dayMeals = getAllMealsInOrder(dayData.meals);
+        
+        dayMeals.forEach(({ meal, key }) => {
+          if (!meal) {
+            console.warn(`⚠️ [WARNING] Meal ${key} is undefined`);
+            return;
           }
+          
+          if (!meal.ingredienti || !Array.isArray(meal.ingredienti)) {
+            console.warn(`⚠️ [WARNING] Meal ${key} has no ingredients`);
+            return;
+          }
+          
+          meal.ingredienti.forEach(ingrediente => {
+            if (!ingrediente || typeof ingrediente !== 'string') {
+              console.warn('⚠️ [WARNING] Invalid ingredient:', ingrediente);
+              return;
+            }
+            
+            const cleanIngredient = ingrediente.trim();
+            const normalizedName = normalizeIngredientName(cleanIngredient);
+            
+            if (ingredients[normalizedName]) {
+              ingredients[normalizedName].count += 1;
+              ingredients[normalizedName].originalNames.push(cleanIngredient);
+            } else {
+              ingredients[normalizedName] = { 
+                count: 1, 
+                category: categorizeIngredient(cleanIngredient),
+                baseQuantity: extractQuantity(cleanIngredient),
+                originalNames: [cleanIngredient]
+              };
+            }
+          });
         });
       });
-    });
-
-    return ingredients;
+      
+      console.log('✅ [SUCCESS] Shopping list generated:', ingredients);
+      return ingredients;
+      
+    } catch (error) {
+      console.error('❌ [ERROR] Failed to generate shopping list:', error);
+      return {};
+    }
   };
 
   // Normalizza nome ingrediente per raggruppamento
@@ -214,23 +349,39 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     return acc;
   }, {} as { [key: string]: Array<{ ingredient: string; count: number; baseQuantity: string; originalNames: string[] }> });
 
-  // Ottieni ricette uniche
-  const allRecipes = Array.from(new Set(
-    parsedPlan.days.flatMap(dayData => 
-      getAllMealsInOrder(dayData.meals).map(({ meal }) => meal.nome)
-    )
-  )).map(recipeName => {
-    const recipe = parsedPlan.days.flatMap(dayData => 
-      getAllMealsInOrder(dayData.meals)
-    ).find(({ meal }) => meal.nome === recipeName)?.meal;
+  // 🔧 FIX CRITICO: Ottieni ricette uniche con controlli
+  let allRecipes: Meal[] = [];
+  
+  try {
+    const recipeNames = Array.from(new Set(
+      parsedPlan.days.flatMap(dayData => {
+        if (!dayData || !dayData.meals) return [];
+        return getAllMealsInOrder(dayData.meals)
+          .map(({ meal }) => meal?.nome)
+          .filter(Boolean);
+      })
+    ));
     
-    // Aggiungi immagine se non presente
-    if (recipe && !recipe.imageUrl) {
-      recipe.imageUrl = generateRecipeImage(recipe.nome);
-    }
+    allRecipes = recipeNames.map(recipeName => {
+      const recipe = parsedPlan.days.flatMap(dayData => {
+        if (!dayData || !dayData.meals) return [];
+        return getAllMealsInOrder(dayData.meals);
+      }).find(({ meal }) => meal?.nome === recipeName)?.meal;
+      
+      // Aggiungi immagine se non presente
+      if (recipe && !recipe.imageUrl) {
+        recipe.imageUrl = generateRecipeImage(recipe.nome);
+      }
+      
+      return recipe;
+    }).filter(Boolean) as Meal[];
+
+    console.log(`✅ [SUCCESS] Found ${allRecipes.length} unique recipes`);
     
-    return recipe;
-  }).filter(Boolean);
+  } catch (error) {
+    console.error('❌ [ERROR] Failed to get unique recipes:', error);
+    allRecipes = [];
+  }
 
   return (
     <section id="complete-section" className="max-w-6xl mx-auto px-4 py-20">
@@ -293,8 +444,28 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
             </h3>
             
             {parsedPlan.days.map((dayData, dayIndex) => {
+              // Controllo sicurezza per ogni giorno
+              if (!dayData || !dayData.meals) {
+                return (
+                  <div key={dayIndex} className="mb-8 bg-red-900 bg-opacity-30 border border-red-600 rounded-xl p-6">
+                    <h4 className="text-xl font-bold text-red-400">
+                      ❌ Giorno {dayIndex + 1} - Dati mancanti
+                    </h4>
+                    <p className="text-red-300 mt-2">Non sono stati trovati pasti per questo giorno</p>
+                    <button
+                      onClick={onGenerateNewPlan}
+                      className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                    >
+                      🔄 Rigenera Piano
+                    </button>
+                  </div>
+                );
+              }
+
               const dayMeals = getAllMealsInOrder(dayData.meals);
-              const dayTotalCalories = dayMeals.reduce((sum, { meal }) => sum + meal.calorie, 0);
+              const dayTotalCalories = dayMeals.reduce((sum, { meal }) => {
+                return sum + (meal?.calorie || 0);
+              }, 0);
               
               return (
                 <div key={dayIndex} className="mb-8 bg-gray-700 rounded-xl p-6">
@@ -305,47 +476,73 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {dayMeals.map(({ key, meal, emoji, nome }) => (
-                      <div key={key} className="bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors">
-                        {/* Immagine ricetta */}
-                        {meal.imageUrl && (
-                          <img 
-                            src={meal.imageUrl}
-                            alt={meal.nome}
-                            className="w-full h-24 object-cover rounded-lg mb-3"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = generateRecipeImage(meal.nome);
-                            }}
-                          />
-                        )}
-                        
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{emoji}</span>
-                            <span className="font-semibold text-white text-sm">{nome}</span>
+                  {dayMeals.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      ⚠️ Nessun pasto valido trovato per questo giorno
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {dayMeals.map(({ key, meal, emoji, nome }) => {
+                        if (!meal) {
+                          return (
+                            <div key={key} className="bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg">{emoji}</span>
+                                <span className="font-semibold text-red-400 text-sm">{nome}</span>
+                              </div>
+                              <div className="text-red-300 text-sm">❌ Ricetta non trovata</div>
+                              <button
+                                onClick={() => handleReplacement(key, dayData.day)}
+                                className="mt-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                              >
+                                🔄 Sostituisci
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={key} className="bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors">
+                            {/* Immagine ricetta */}
+                            {meal.imageUrl && (
+                              <img 
+                                src={meal.imageUrl}
+                                alt={meal.nome}
+                                className="w-full h-24 object-cover rounded-lg mb-3"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = generateRecipeImage(meal.nome);
+                                }}
+                              />
+                            )}
+                            
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{emoji}</span>
+                                <span className="font-semibold text-white text-sm">{nome}</span>
+                              </div>
+                              <button
+                                onClick={() => handleReplacement(key, dayData.day)}
+                                disabled={isReplacing === `${dayData.day}-${key}`}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+                              >
+                                {isReplacing === `${dayData.day}-${key}` ? '⏳' : '🔄'}
+                              </button>
+                            </div>
+                            
+                            <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
+                            
+                            <div className="text-xs text-gray-300 mb-2">
+                              🔥 {meal.calorie || 0} kcal | ⏱️ {meal.tempo || 'N/A'} | 👥 {meal.porzioni || 1} porz.
+                            </div>
+                            
+                            <div className="text-xs text-gray-300">
+                              P: {meal.proteine || 0}g | C: {meal.carboidrati || 0}g | G: {meal.grassi || 0}g
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleReplacement(key, dayData.day)}
-                            disabled={isReplacing === `${dayData.day}-${key}`}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-2 py-1 rounded text-xs"
-                          >
-                            {isReplacing === `${dayData.day}-${key}` ? '⏳' : '🔄'}
-                          </button>
-                        </div>
-                        
-                        <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
-                        
-                        <div className="text-xs text-gray-300 mb-2">
-                          🔥 {meal.calorie} kcal | ⏱️ {meal.tempo} | 👥 {meal.porzioni} porz.
-                        </div>
-                        
-                        <div className="text-xs text-gray-300">
-                          P: {meal.proteine}g | C: {meal.carboidrati}g | G: {meal.grassi}g
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -358,77 +555,89 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
               🍳 Ricette Complete con Foto
             </h3>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              {allRecipes.map((recipe, index) => (
-                <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
-                  {/* Immagine ricetta */}
-                  <img 
-                    src={recipe!.imageUrl || generateRecipeImage(recipe!.nome)}
-                    alt={recipe!.nome}
-                    className="w-full h-48 object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = generateRecipeImage(recipe!.nome);
-                    }}
-                  />
-                  
-                  <div className="p-6">
-                    <h4 className="text-xl font-bold text-white mb-3">{recipe!.nome}</h4>
+            {allRecipes.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-lg mb-4">⚠️ Nessuna ricetta trovata</div>
+                <button 
+                  onClick={onGenerateNewPlan}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg"
+                >
+                  🔄 Genera Nuovo Piano
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {allRecipes.map((recipe, index) => (
+                  <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
+                    {/* Immagine ricetta */}
+                    <img 
+                      src={recipe.imageUrl || generateRecipeImage(recipe.nome)}
+                      alt={recipe.nome}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = generateRecipeImage(recipe.nome);
+                      }}
+                    />
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
-                      <span className="flex items-center gap-1">
-                        <Flame size={16} className="text-orange-500" />
-                        {recipe!.calorie} kcal
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={16} className="text-blue-400" />
-                        {recipe!.tempo}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users size={16} className="text-green-400" />
-                        {recipe!.porzioni} porz.
-                      </span>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
-                        <div className="space-y-1">
-                          {recipe!.ingredienti.map((ingrediente, idx) => (
-                            <div 
-                              key={idx}
-                              className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
-                              onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
-                            >
-                              <span className="text-gray-300 text-sm">• {ingrediente}</span>
-                              <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
-                                🔀
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="p-6">
+                      <h4 className="text-xl font-bold text-white mb-3">{recipe.nome}</h4>
                       
-                      <div>
-                        <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          {recipe!.preparazione}
-                        </p>
+                      <div className="flex items-center gap-4 text-sm text-gray-300 mb-4">
+                        <span className="flex items-center gap-1">
+                          <Flame size={16} className="text-orange-500" />
+                          {recipe.calorie || 0} kcal
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={16} className="text-blue-400" />
+                          {recipe.tempo || 'N/A'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users size={16} className="text-green-400" />
+                          {recipe.porzioni || 1} porz.
+                        </span>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <h5 className="font-bold text-white mb-3">🛒 Ingredienti:</h5>
+                          <div className="space-y-1">
+                            {(recipe.ingredienti || []).map((ingrediente, idx) => (
+                              <div 
+                                key={idx}
+                                className="flex justify-between items-center bg-gray-600 px-3 py-2 rounded hover:bg-gray-500 cursor-pointer group"
+                                onClick={() => handleIngredientSubstitution(ingrediente, 0, 'recipe', idx)}
+                              >
+                                <span className="text-gray-300 text-sm">• {ingrediente}</span>
+                                <span className="opacity-0 group-hover:opacity-100 text-xs bg-blue-600 px-2 py-1 rounded">
+                                  🔀
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                         
-                        <div className="mt-4 p-3 bg-gray-600 rounded-lg">
-                          <h6 className="font-semibold text-white mb-2 text-sm">📊 Valori Nutrizionali:</h6>
-                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
-                            <span>Proteine: {recipe!.proteine}g</span>
-                            <span>Carboidrati: {recipe!.carboidrati}g</span>
-                            <span>Grassi: {recipe!.grassi}g</span>
-                            <span>Calorie: {recipe!.calorie} kcal</span>
+                        <div>
+                          <h5 className="font-bold text-white mb-3">👨‍🍳 Preparazione:</h5>
+                          <p className="text-gray-300 text-sm leading-relaxed">
+                            {recipe.preparazione || 'Preparazione non disponibile'}
+                          </p>
+                          
+                          <div className="mt-4 p-3 bg-gray-600 rounded-lg">
+                            <h6 className="font-semibold text-white mb-2 text-sm">📊 Valori Nutrizionali:</h6>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-300">
+                              <span>Proteine: {recipe.proteine || 0}g</span>
+                              <span>Carboidrati: {recipe.carboidrati || 0}g</span>
+                              <span>Grassi: {recipe.grassi || 0}g</span>
+                              <span>Calorie: {recipe.calorie || 0} kcal</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -438,60 +647,74 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
               🛒 Lista della Spesa Consolidata
             </h3>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              {Object.entries(categorizedShopping).map(([category, items]) => (
-                <div key={category} className="bg-gray-700 rounded-xl p-6">
-                  <h4 className="text-lg font-bold text-white mb-4">{category}</h4>
-                  <div className="space-y-3">
-                    {items.map(({ ingredient, count, baseQuantity, originalNames }) => {
-                      const totalQuantity = calculateTotalQuantity(baseQuantity, count);
-                      return (
-                        <div key={ingredient} className="flex justify-between items-center text-gray-300 hover:text-white transition-colors">
-                          <div className="flex-1">
-                            <span>• {ingredient}</span>
-                            {totalQuantity && (
-                              <div className="text-green-400 text-sm font-semibold">
-                                Totale: {totalQuantity}
+            {Object.keys(categorizedShopping).length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-lg mb-4">⚠️ Nessun ingrediente trovato</div>
+                <button 
+                  onClick={onGenerateNewPlan}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg"
+                >
+                  🔄 Genera Nuovo Piano
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {Object.entries(categorizedShopping).map(([category, items]) => (
+                    <div key={category} className="bg-gray-700 rounded-xl p-6">
+                      <h4 className="text-lg font-bold text-white mb-4">{category}</h4>
+                      <div className="space-y-3">
+                        {items.map(({ ingredient, count, baseQuantity, originalNames }) => {
+                          const totalQuantity = calculateTotalQuantity(baseQuantity, count);
+                          return (
+                            <div key={ingredient} className="flex justify-between items-center text-gray-300 hover:text-white transition-colors">
+                              <div className="flex-1">
+                                <span>• {ingredient}</span>
+                                {totalQuantity && (
+                                  <div className="text-green-400 text-sm font-semibold">
+                                    Totale: {totalQuantity}
+                                  </div>
+                                )}
+                                {originalNames && originalNames.length > 1 && (
+                                  <div className="text-gray-500 text-xs">
+                                    (Varianti: {originalNames.slice(0, 2).join(', ')}{originalNames.length > 2 ? '...' : ''})
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            {originalNames && originalNames.length > 1 && (
-                              <div className="text-gray-500 text-xs">
-                                (Varianti: {originalNames.slice(0, 2).join(', ')}{originalNames.length > 2 ? '...' : ''})
-                              </div>
-                            )}
-                          </div>
-                          {count > 1 && (
-                            <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold ml-2">
-                              {count}x
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                              {count > 1 && (
+                                <span className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-bold ml-2">
+                                  {count}x
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => {
-                  const shoppingText = Object.entries(categorizedShopping)
-                    .map(([category, items]) => 
-                      `${category}\n${items.map(({ingredient, count, baseQuantity}) => {
-                        const totalQuantity = calculateTotalQuantity(baseQuantity, count);
-                        return `• ${ingredient}${count > 1 ? ` (${count}x)` : ''}${totalQuantity ? ` - Totale: ${totalQuantity}` : ''}`;
-                      }).join('\n')}`
-                    ).join('\n\n');
-                  
-                  navigator.clipboard.writeText(`🛒 LISTA SPESA\n\n${shoppingText}`);
-                  alert('Lista spesa copiata negli appunti!');
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-              >
-                📋 Copia Lista Spesa
-              </button>
-            </div>
+                
+                <div className="mt-8 text-center">
+                  <button
+                    onClick={() => {
+                      const shoppingText = Object.entries(categorizedShopping)
+                        .map(([category, items]) => 
+                          `${category}\n${items.map(({ingredient, count, baseQuantity}) => {
+                            const totalQuantity = calculateTotalQuantity(baseQuantity, count);
+                            return `• ${ingredient}${count > 1 ? ` (${count}x)` : ''}${totalQuantity ? ` - Totale: ${totalQuantity}` : ''}`;
+                          }).join('\n')}`
+                        ).join('\n\n');
+                      
+                      navigator.clipboard.writeText(`🛒 LISTA SPESA\n\n${shoppingText}`);
+                      alert('Lista spesa copiata negli appunti!');
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    📋 Copia Lista Spesa
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -563,6 +786,30 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
           🔄 Nuovo Piano
         </button>
       </div>
+
+      {/* Debug Info (solo in development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 bg-gray-900 border border-gray-600 rounded-lg p-4">
+          <h4 className="text-white font-bold mb-2">🐛 Debug Info</h4>
+          <div className="text-xs text-gray-400 space-y-1">
+            <div>Plan Days: {parsedPlan.days?.length || 0}</div>
+            <div>Total Recipes: {allRecipes.length}</div>
+            <div>Shopping Categories: {Object.keys(categorizedShopping).length}</div>
+            <div>Console: Apri DevTools per log dettagliati</div>
+            <button 
+              onClick={() => {
+                console.log('🔍 [DEBUG] Full parsedPlan:', parsedPlan);
+                console.log('🔍 [DEBUG] All recipes:', allRecipes);
+                console.log('🔍 [DEBUG] Shopping list:', shoppingList);
+                alert('Debug info logged to console');
+              }}
+              className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs"
+            >
+              Log Full Data
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
