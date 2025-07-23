@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, Clock, Users, Star, ChefHat, Filter, Search, X, Eye, ChevronDown, ChevronUp } from 'lucide-react';
-// 🍳 IMPORT CORRETTO PER RICETTE PAGE - DATABASE MASSICCIO 420+ RICETTE
+// 🍳 IMPORT CORRETTO PER RICETTE PAGE - DATABASE COMPLETO 40 RICETTE
 import { RecipeDatabase, Recipe } from '../../utils/recipeDatabase';
 
 export default function RicettePage() {
@@ -14,7 +14,7 @@ export default function RicettePage() {
   const [favoriteRecipes, setFavoriteRecipes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // 🔍 STATI FILTRI SEMPLIFICATI
+  // 🔍 STATI FILTRI CORRETTI
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoria, setSelectedCategoria] = useState('');
   const [selectedDieta, setSelectedDieta] = useState<string[]>([]);
@@ -30,12 +30,12 @@ export default function RicettePage() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
 
-  // 🤖 STATI MODAL AI
+  // 🤖 STATI MODAL AI CORRETTI
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFormData, setAiFormData] = useState({
     ingredienti: '',
-    obiettivo: 'bilanciata',
+    obiettivo: 'dimagrimento',
     categoria: 'pranzo',
     tempo: '30',
     allergie: ''
@@ -48,21 +48,21 @@ export default function RicettePage() {
     diets: []
   });
 
-  // 🍳 INIZIALIZZAZIONE DATABASE
+  // 🍳 INIZIALIZZAZIONE DATABASE CORRETTO
   useEffect(() => {
-    console.log('🍳 [RICETTE] Initializing MASSIVE Recipe Database...');
+    console.log('🍳 [RICETTE] Initializing Complete Recipe Database...');
     setLoading(true);
     
     try {
       const db = RecipeDatabase.getInstance();
       setRecipeDb(db);
       
-      // Carica tutte le ricette
+      // Carica tutte le ricette CORRETTE
       const allRecipes = db.searchRecipes({});
       setRecipes(allRecipes);
       setFilteredRecipes(allRecipes);
       
-      // Carica opzioni filtri SEMPLIFICATE
+      // Carica opzioni filtri CORRETTE
       const options = db.getFilterOptions();
       setFilterOptions({
         categories: options.categories,
@@ -87,11 +87,11 @@ export default function RicettePage() {
     }
   }, []);
 
-  // 🔍 APPLICAZIONE FILTRI MIGLIORATA
+  // 🔍 APPLICAZIONE FILTRI CORRETTA
   useEffect(() => {
     if (!recipeDb) return;
 
-    console.log('🔍 [RICETTE] Applying simplified filters...');
+    console.log('🔍 [RICETTE] Applying filters...');
     
     const filters: any = {};
     
@@ -125,54 +125,83 @@ export default function RicettePage() {
     }
     
     setFavoriteRecipes(newFavorites);
+    localStorage.setItem('recipe_favorites', JSON.stringify(Array.from(newFavorites)));
   };
 
   // 👁️ APRI MODAL RICETTA
   const openRecipeModal = (recipe: Recipe) => {
+    if (!recipeDb) return;
+    
     setSelectedRecipe(recipe);
     setShowRecipeModal(true);
-    document.body.style.overflow = 'hidden'; // Blocca scroll body
+    document.body.style.overflow = 'hidden';
+    
+    // Aggiungi alla cronologia
+    recipeDb.addToRecentlyViewed(recipe);
   };
 
   // ❌ CHIUDI MODAL RICETTA
   const closeRecipeModal = () => {
     setSelectedRecipe(null);
     setShowRecipeModal(false);
-    document.body.style.overflow = 'unset'; // Ripristina scroll body
+    document.body.style.overflow = 'unset';
   };
 
-  // 🤖 GENERA RICETTA AI
+  // 🤖 GENERA RICETTA AI - CHIAMATA API CORRETTA
   const generateAiRecipe = async () => {
     setAiLoading(true);
     console.log('🤖 [AI] Starting recipe generation with data:', aiFormData);
     
     try {
-      const response = await fetch('/api/generate-ai-recipe', {
+      // ✅ CHIAMATA API CORRETTA
+      const response = await fetch('/api/ricette', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ingredienti: aiFormData.ingredienti.split(',').map(i => i.trim()).filter(i => i),
-          obiettivo: aiFormData.obiettivo,
-          categoria: aiFormData.categoria,
-          tempoMax: parseInt(aiFormData.tempo),
-          allergie: aiFormData.allergie.split(',').map(a => a.trim()).filter(a => a)
+          action: 'generateRecipe',
+          data: {
+            ingredienti_base: aiFormData.ingredienti.split(',').map(i => i.trim()).filter(i => i),
+            calorie_target: aiFormData.obiettivo === 'dimagrimento' ? 400 : aiFormData.obiettivo === 'aumento-massa' ? 600 : 500,
+            proteine_target: aiFormData.obiettivo === 'dimagrimento' ? 30 : aiFormData.obiettivo === 'aumento-massa' ? 40 : 25,
+            categoria: aiFormData.categoria,
+            tempo_max: parseInt(aiFormData.tempo),
+            allergie: aiFormData.allergie.split(',').map(a => a.trim()).filter(a => a),
+            obiettivo_fitness: aiFormData.obiettivo
+          }
         })
       });
 
       const result = await response.json();
       
-      if (result.success && result.recipe) {
-        console.log('✅ [AI] Recipe generated successfully:', result.recipe.nome);
+      if (result.success && result.data?.ricetta) {
+        console.log('✅ [AI] Recipe generated successfully:', result.data.ricetta.nome);
         
-        // Crea ricetta AI con ID unico
+        // Crea ricetta AI con ID unico e formato corretto
         const aiRecipe: Recipe = {
-          ...result.recipe,
           id: `ai_${Date.now()}`,
+          nome: result.data.ricetta.nome,
+          categoria: result.data.ricetta.categoria as any,
+          tipoCucina: 'internazionale',
+          difficolta: result.data.ricetta.difficolta as any,
+          tempoPreparazione: result.data.ricetta.tempo_preparazione || parseInt(aiFormData.tempo),
+          porzioni: result.data.ricetta.porzioni || 1,
+          calorie: result.data.ricetta.macros.calorie,
+          proteine: result.data.ricetta.macros.proteine,
+          carboidrati: result.data.ricetta.macros.carboidrati,
+          grassi: result.data.ricetta.macros.grassi,
+          ingredienti: Array.isArray(result.data.ricetta.ingredienti) 
+            ? result.data.ricetta.ingredienti.map((ing: any) => typeof ing === 'string' ? ing : `${ing.quantita} ${ing.nome}`)
+            : [],
+          preparazione: Array.isArray(result.data.ricetta.preparazione) 
+            ? result.data.ricetta.preparazione.join(' ') 
+            : result.data.ricetta.preparazione || 'Ricetta generata con AI',
+          tipoDieta: [],
+          allergie: aiFormData.allergie.split(',').map(a => a.trim()).filter(a => a),
+          stagione: ['tutto_anno'],
+          tags: ['ai-generated'],
           createdAt: new Date(),
           rating: 4.8,
-          reviewCount: 1,
-          tags: ['ai-generated'],
-          imageUrl: getRecipeImage(result.recipe)
+          reviewCount: 1
         };
         
         // Aggiungi temporaneamente alla lista ricette
@@ -188,7 +217,7 @@ export default function RicettePage() {
         // Reset form
         setAiFormData({
           ingredienti: '',
-          obiettivo: 'bilanciata',
+          obiettivo: 'dimagrimento',
           categoria: 'pranzo',
           tempo: '30',
           allergie: ''
@@ -211,7 +240,7 @@ export default function RicettePage() {
     setShowAiModal(false);
     setAiFormData({
       ingredienti: '',
-      obiettivo: 'bilanciata',
+      obiettivo: 'dimagrimento',
       categoria: 'pranzo',
       tempo: '30',
       allergie: ''
@@ -246,78 +275,26 @@ export default function RicettePage() {
     return colors[categoria as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  // 🖼️ FUNZIONE IMMAGINE RICETTA ULTRA-SPECIFICA
+  // 🖼️ FUNZIONE IMMAGINE RICETTA SICURA
   const getRecipeImage = (recipe: Recipe) => {
     const nome = recipe.nome.toLowerCase();
     
-    // Mapping ultra-specifico per ogni ricetta del database
-    if (nome.includes('avocado') && nome.includes('keto') && nome.includes('power')) return 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('shake') && nome.includes('chetogenico')) return 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('uova') && nome.includes('strapazzate') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('pancakes') && nome.includes('keto') && nome.includes('cocco')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('smoothie') && nome.includes('verde') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('frittata') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('chia') && nome.includes('pudding') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('omelette') && nome.includes('salmone') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('toast') && nome.includes('keto') && nome.includes('avocado')) return 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('yogurt') && nome.includes('keto') && nome.includes('proteico')) return 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('caffè') && nome.includes('bulletproof')) return 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('muffin') && nome.includes('keto') && nome.includes('cioccolato')) return 'https://images.unsplash.com/photo-1426869981800-95ebf51ce900?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('granola') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('porridge') && nome.includes('keto') && nome.includes('chia')) return 'https://images.unsplash.com/photo-1559847844-d721426d6eaf?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('crêpes') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=400&h=300&fit=crop&auto=format';
-    
-    // Caesar Salad e insalate
-    if (nome.includes('caesar') && nome.includes('salad')) return 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('zucchini') && nome.includes('noodles')) return 'https://images.unsplash.com/photo-1594756202469-9282d0e2f1d9?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('salmone') && nome.includes('avocado') && nome.includes('bowl')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('caprese') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1608897013039-887f21d8c804?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('wrap') && nome.includes('keto') && nome.includes('tacchino')) return 'https://images.unsplash.com/photo-1565299585323-38174c4a6b52?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('zuppa') && nome.includes('broccoli') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('tuna') && nome.includes('salad') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1559181567-c3190ca9959b?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('chicken') && nome.includes('thighs') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('melanzane') && nome.includes('parmigiana') && nome.includes('keto')) return 'https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('beef') && nome.includes('lettuce') && nome.includes('wraps')) return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('cavolfiore') && nome.includes('rice') && nome.includes('bowl')) return 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('spinaci') && nome.includes('feta') && nome.includes('salad')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('pizza') && nome.includes('keto') && nome.includes('portobello')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('gamberi') && nome.includes('avocado') && nome.includes('salad')) return 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('lasagna') && nome.includes('keto') && nome.includes('zucchine')) return 'https://images.unsplash.com/photo-1619985668294-5c65eb56a76e?w=400&h=300&fit=crop&auto=format';
-    
-    // Cene
-    if (nome.includes('salmone') && nome.includes('burro') && nome.includes('erbe')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('bistecca') && nome.includes('verdure') && nome.includes('grill')) return 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('pollo') && nome.includes('parmigiano')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('trota') && nome.includes('limone') && nome.includes('burro')) return 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('maiale') && nome.includes('rosmarino')) return 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=400&h=300&fit=crop&auto=format';
-    
-    // Spuntini keto
-    if (nome.includes('fat') && nome.includes('bombs') && nome.includes('cioccolato')) return 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('olive') && nome.includes('marinate')) return 'https://images.unsplash.com/photo-1611532736434-5a6c91279370?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('cheese') && nome.includes('crisps') && nome.includes('parmigiano')) return 'https://images.unsplash.com/photo-1552767729-31925c632e3c?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('noci') && nome.includes('macadamia')) return 'https://images.unsplash.com/photo-1605812860427-4024433a70fd?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('mousse') && nome.includes('avocado') && nome.includes('cacao')) return 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('prosciutto') && nome.includes('mozzarella')) return 'https://images.unsplash.com/photo-1564834724105-918b73d1b9e0?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('guacamole')) return 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400&h=300&fit=crop&auto=format';
-    
-    // Fallback generale per parole chiave
-    if (nome.includes('avocado')) return 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('shake') || nome.includes('smoothie')) return 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('uova') || nome.includes('egg')) return 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('pancakes')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('salmone') || nome.includes('salmon')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('pollo') || nome.includes('chicken')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('insalata') || nome.includes('salad')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('bowl')) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format';
-    if (nome.includes('caffè') || nome.includes('coffee')) return 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop&auto=format';
-    
-    // Fallback per categoria con immagini corrette
+    // Mapping sicuro per categoria
     const categoryImages = {
       'colazione': 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop&auto=format',
       'pranzo': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format',
       'cena': 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400&h=300&fit=crop&auto=format',
       'spuntino': 'https://images.unsplash.com/photo-1541364983171-a8ba01e95cfc?w=400&h=300&fit=crop&auto=format'
     };
+    
+    // Mapping per ingredienti principali
+    if (nome.includes('avocado')) return 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('smoothie') || nome.includes('shake')) return 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('uova') || nome.includes('egg')) return 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('pancakes')) return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('salmone') || nome.includes('salmon')) return 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('pollo') || nome.includes('chicken')) return 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop&auto=format';
+    if (nome.includes('insalata') || nome.includes('salad')) return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop&auto=format';
     
     return categoryImages[recipe.categoria as keyof typeof categoryImages] || categoryImages['pranzo'];
   };
@@ -327,8 +304,8 @@ export default function RicettePage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-400 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold mb-2">🍳 Caricando Database Massiccio...</h2>
-          <p className="text-gray-400">420+ ricette fitness in arrivo!</p>
+          <h2 className="text-2xl font-bold mb-2">🍳 Caricando Database Completo...</h2>
+          <p className="text-gray-400">40 ricette fitness in arrivo!</p>
         </div>
       </div>
     );
@@ -359,10 +336,10 @@ export default function RicettePage() {
       <section className="bg-gradient-to-r from-green-600 to-blue-600 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            🍳 Database Ricette
+            🍳 Database Ricette FITNESS
           </h1>
           <p className="text-xl text-gray-100 mb-6 max-w-3xl mx-auto">
-            {recipes.length} ricette base + AI infinita per combinazioni illimitate. Crea ricette personalizzate istantaneamente!
+            {recipes.length} ricette complete + AI infinita per combinazioni illimitate. Trova la ricetta perfetta per i tuoi obiettivi!
           </p>
           <div className="bg-white bg-opacity-10 rounded-lg p-4 max-w-md mx-auto">
             <div className="text-sm text-gray-200">
@@ -375,7 +352,7 @@ export default function RicettePage() {
         </div>
       </section>
 
-      {/* Filtri SEMPRE VISIBILI */}
+      {/* Filtri SEMPRE VISIBILI - CORRETTI */}
       <section className="bg-gray-800 py-6 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Barra di ricerca + filtri visibili */}
@@ -392,7 +369,7 @@ export default function RicettePage() {
               />
             </div>
             
-            {/* Categoria */}
+            {/* Categoria CORRETTA */}
             <div>
               <select
                 value={selectedCategoria}
@@ -408,7 +385,7 @@ export default function RicettePage() {
               </select>
             </div>
 
-            {/* Difficoltà */}
+            {/* Difficoltà CORRETTA */}
             <div>
               <select
                 value={selectedDifficolta}
@@ -424,7 +401,7 @@ export default function RicettePage() {
               </select>
             </div>
 
-            {/* Tempo Max - DROPDOWN */}
+            {/* Tempo Max - CORRETTI */}
             <div>
               <select
                 value={maxTempo}
@@ -452,10 +429,7 @@ export default function RicettePage() {
                 </button>
               )}
               <button 
-                onClick={() => {
-                  // Apri Modal AI per generazione ricette personalizzate
-                  setShowAiModal(true);
-                }}
+                onClick={() => setShowAiModal(true)}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm font-semibold"
               >
                 🤖 Genera AI
@@ -463,9 +437,9 @@ export default function RicettePage() {
             </div>
           </div>
 
-          {/* Filtri Dieta - DROPDOWN */}
+          {/* Filtri Dieta + NUOVO PULSANTE SMOOTHIES */}
           <div className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <select
                   value={selectedDieta.length > 0 ? selectedDieta[0] : ''}
@@ -505,11 +479,21 @@ export default function RicettePage() {
                 </button>
               </div>
               
+              {/* 🍹 NUOVO PULSANTE SMOOTHIES & SPUNTINI FIT */}
+              <div>
+                <Link 
+                  href="/ricette/smoothies-spuntini"
+                  className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white px-3 py-2 rounded-lg transition-all duration-300 font-semibold text-center block"
+                >
+                  🍹 Smoothies & Spuntini FIT
+                </Link>
+              </div>
+              
               <div>
                 <button
                   onClick={() => {
-                    // Mostra ricette casuali MA COMPLETE
-                    console.log('🎲 [RICETTE] Generating random recipes with full data...');
+                    // Mostra ricette casuali COMPLETE
+                    console.log('🎲 [RICETTE] Generating random complete recipes...');
                     const completeRecipes = recipes.filter(recipe => 
                       recipe.ingredienti.length > 2 && 
                       recipe.preparazione.length > 50 &&
@@ -523,7 +507,7 @@ export default function RicettePage() {
                   }}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors"
                 >
-                  🎲 Sorprendimi! (Ricette Complete)
+                  🎲 Ricette Casuali
                 </button>
               </div>
             </div>
@@ -531,7 +515,7 @@ export default function RicettePage() {
         </div>
       </section>
 
-      {/* Grid Ricette MIGLIORATO */}
+      {/* Grid Ricette */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {currentRecipes.length === 0 ? (
@@ -551,7 +535,7 @@ export default function RicettePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {currentRecipes.map((recipe) => (
                   <div key={recipe.id} className="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                    {/* Immagine Ricetta MIGLIORATA */}
+                    {/* Immagine Ricetta */}
                     <div className="relative h-48 bg-gradient-to-br from-green-400 to-blue-500">
                       <img
                         src={getRecipeImage(recipe)}
@@ -653,7 +637,7 @@ export default function RicettePage() {
                         ))}
                       </div>
 
-                      {/* Bottone Visualizza MIGLIORATO */}
+                      {/* Bottone Visualizza */}
                       <button
                         onClick={() => openRecipeModal(recipe)}
                         className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors font-semibold flex items-center justify-center space-x-2"
@@ -727,7 +711,7 @@ export default function RicettePage() {
         </div>
       </section>
 
-      {/* Modal AI Generator */}
+      {/* Modal AI Generator CORRETTO */}
       {showAiModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -765,7 +749,7 @@ export default function RicettePage() {
 
                 {/* Grid per altri campi */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Obiettivo */}
+                  {/* Obiettivo CORRETTI */}
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">🎯 Obiettivo</label>
                     <select
@@ -773,9 +757,9 @@ export default function RicettePage() {
                       onChange={(e) => setAiFormData(prev => ({...prev, obiettivo: e.target.value}))}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="bilanciata">Bilanciata</option>
                       <option value="dimagrimento">Dimagrimento</option>
-                      <option value="massa">Aumento Massa</option>
+                      <option value="aumento-massa">Aumento Massa</option>
+                      <option value="bilanciata">Bilanciata</option>
                       <option value="keto">Chetogenica</option>
                       <option value="vegana">Vegana</option>
                       <option value="mediterranea">Mediterranea</option>
@@ -867,6 +851,8 @@ export default function RicettePage() {
           </div>
         </div>
       )}
+
+      {/* Modal Ricetta COMPLETO */}
       {showRecipeModal && selectedRecipe && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -956,92 +942,12 @@ export default function RicettePage() {
                     </div>
                   </div>
 
-                  {/* Preparazione COMPLETAMENTE NUOVA */}
+                  {/* Preparazione */}
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-white mb-4">👨‍🍳 Preparazione Dettagliata</h3>
+                    <h3 className="text-xl font-semibold text-white mb-4">👨‍🍳 Preparazione</h3>
                     <div className="bg-gray-700 rounded-lg p-4">
-                      <div className="space-y-4">
-                        {(() => {
-                          // Crea preparazione dettagliata basata sugli ingredienti
-                          const steps: string[] = [];
-                          
-                          // Step di preparazione intelligenti basati su ricetta
-                          if (selectedRecipe.ingredienti.length > 0) {
-                            steps.push(`Raccogli tutti gli ingredienti: ${selectedRecipe.ingredienti.slice(0, 3).join(', ')}${selectedRecipe.ingredienti.length > 3 ? ' e altri' : ''}`);
-                            
-                            // Aggiungi step specifici per categoria
-                            if (selectedRecipe.categoria === 'colazione') {
-                              if (selectedRecipe.nome.toLowerCase().includes('shake') || selectedRecipe.nome.toLowerCase().includes('smoothie')) {
-                                steps.push('Prepara il frullatore e aggiungi prima i liquidi');
-                                steps.push('Aggiungi proteine in polvere e altri ingredienti secchi');
-                                steps.push('Frulla per 30-60 secondi fino a ottenere consistenza cremosa');
-                                steps.push('Versa in un bicchiere alto e gusta immediatamente');
-                              } else if (selectedRecipe.nome.toLowerCase().includes('uova')) {
-                                steps.push('Scalda una padella antiaderente a fuoco medio-basso');
-                                steps.push('Sbatti le uova in una ciotola con un pizzico di sale');
-                                steps.push('Cuoci mescolando delicatamente per 2-3 minuti');
-                                steps.push('Servi caldo guarnendo con gli altri ingredienti');
-                              } else if (selectedRecipe.nome.toLowerCase().includes('avocado')) {
-                                steps.push('Taglia l\'avocado a metà e rimuovi il nocciolo');
-                                steps.push('Disponi gli ingredienti in una bowl in modo colorato');
-                                steps.push('Condisci con olio, sale e spezie a piacere');
-                                steps.push('Mescola delicatamente e gusta subito');
-                              } else {
-                                steps.push('Preriscalda gli strumenti necessari per la preparazione');
-                                steps.push('Segui l\'ordine degli ingredienti per il miglior risultato');
-                                steps.push('Cuoci seguendo i tempi indicati nella ricetta');
-                                steps.push('Controlla la cottura e aggiusta di sale/spezie');
-                              }
-                            } else if (selectedRecipe.categoria === 'pranzo' || selectedRecipe.categoria === 'cena') {
-                              if (selectedRecipe.nome.toLowerCase().includes('salad') || selectedRecipe.nome.toLowerCase().includes('insalata')) {
-                                steps.push('Lava e asciuga bene tutte le verdure fresche');
-                                steps.push('Taglia gli ingredienti nelle dimensioni desiderate');
-                                steps.push('Prepara il condimento mescolando olio, aceto e spezie');
-                                steps.push('Assembla l\'insalata e condisci solo al momento di servire');
-                              } else if (selectedRecipe.nome.toLowerCase().includes('salmone') || selectedRecipe.nome.toLowerCase().includes('pesce')) {
-                                steps.push('Preriscalda il forno a 180°C o prepara la padella');
-                                steps.push('Condisci il pesce con sale, pepe e spezie');
-                                steps.push('Cuoci per 12-15 minuti o fino a cottura desiderata');
-                                steps.push('Lascia riposare 2-3 minuti prima di servire');
-                              } else if (selectedRecipe.nome.toLowerCase().includes('pollo') || selectedRecipe.nome.toLowerCase().includes('chicken')) {
-                                steps.push('Preriscalda il forno a 200°C o la padella a fuoco medio');
-                                steps.push('Condisci la carne con spezie e marinala se possibile');
-                                steps.push('Cuoci girando una volta fino a doratura completa');
-                                steps.push('Verifica la cottura interna prima di servire');
-                              } else {
-                                steps.push('Prepara tutti gli ingredienti mise en place');
-                                steps.push('Preriscalda gli strumenti di cottura necessari');
-                                steps.push('Segui la sequenza di cottura per il miglior risultato');
-                                steps.push('Aggiusta sapori e presenta in modo accattivante');
-                              }
-                            } else if (selectedRecipe.categoria === 'spuntino') {
-                              steps.push('Prepara una superficie pulita per l\'assemblaggio');
-                              steps.push('Disponi gli ingredienti in porzioni equilibrate');
-                              steps.push('Se necessario, raffredda in frigo per 10-15 minuti');
-                              steps.push('Servi in porzioni singole per un controllo perfetto');
-                            }
-                            
-                            // Step finale sempre presente
-                            steps.push('Gusta la tua creazione e condividi la ricetta se ti è piaciuta!');
-                          } else {
-                            // Fallback generico
-                            steps.push('Prepara tutti gli ingredienti necessari');
-                            steps.push('Segui attentamente le istruzioni di preparazione');
-                            steps.push('Controlla la cottura e aggiusta i sapori');
-                            steps.push('Servi caldo e gusta la tua creazione');
-                          }
-                          
-                          return steps.map((step, index) => (
-                            <div key={index} className="flex items-start space-x-4">
-                              <div className="flex-shrink-0 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                {index + 1}
-                              </div>
-                              <div className="text-gray-200 leading-relaxed">
-                                {step}
-                              </div>
-                            </div>
-                          ));
-                        })()}
+                      <div className="text-gray-200 leading-relaxed whitespace-pre-line">
+                        {selectedRecipe.preparazione}
                       </div>
                       
                       {/* Tempo di preparazione highlighted */}
@@ -1057,16 +963,18 @@ export default function RicettePage() {
                   {/* Badge e Rating */}
                   <div className="space-y-4">
                     {/* Tipo Dieta */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-300 mb-2">Tipo Dieta</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedRecipe.tipoDieta.map((dieta) => (
-                          <span key={dieta} className="px-3 py-1 bg-green-600 text-white rounded-full text-sm">
-                            {dieta.charAt(0).toUpperCase() + dieta.slice(1)}
-                          </span>
-                        ))}
+                    {selectedRecipe.tipoDieta.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-2">Tipo Dieta</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedRecipe.tipoDieta.map((dieta) => (
+                            <span key={dieta} className="px-3 py-1 bg-green-600 text-white rounded-full text-sm">
+                              {dieta.charAt(0).toUpperCase() + dieta.slice(1)}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Rating */}
                     <div className="flex items-center space-x-2">
@@ -1094,10 +1002,10 @@ export default function RicettePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
             <ChefHat className="h-8 w-8 text-green-400" />
-            <h3 className="text-xl font-bold">Database Massiccio Ricette</h3>
+            <h3 className="text-xl font-bold">Database Completo Ricette FITNESS</h3>
           </div>
           <p className="text-gray-400 mb-4">
-            {recipes.length} ricette base + generazione AI illimitata per combinazioni infinite.
+            {recipes.length} ricette complete + generazione AI illimitata per combinazioni infinite.
           </p>
           <div className="flex justify-center gap-6">
             <Link href="/" className="text-gray-400 hover:text-green-400 transition-colors">Home</Link>
