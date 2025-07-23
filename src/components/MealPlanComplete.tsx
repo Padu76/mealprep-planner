@@ -203,30 +203,117 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
     totalCaloriesPlan = 0;
   }
 
-  // Genera immagine per ricetta usando Unsplash
+  // 🎯 FIX IMMAGINI: Mapping accurato ricette → immagini
   const generateRecipeImage = (recipeName: string): string => {
     const cleanName = recipeName.toLowerCase()
       .replace(/[^\w\s]/gi, '')
-      .replace(/\s+/g, '-');
+      .replace(/\s+/g, ' ')
+      .trim();
     
-    // Mappa ricette a query Unsplash specifiche
-    const imageMap: { [key: string]: string } = {
-      'power-breakfast-bowl': 'breakfast-bowl-healthy',
-      'pancakes-proteici': 'protein-pancakes-healthy',
-      'overnight-oats': 'overnight-oats-breakfast',
-      'smoothie-energetico': 'green-smoothie-healthy',
-      'chicken-power-bowl': 'chicken-bowl-healthy',
-      'risotto-fitness': 'risotto-healthy',
-      'salmone-teriyaki': 'salmon-teriyaki',
-      'buddha-bowl': 'buddha-bowl-healthy',
-      'lean-salmon-plate': 'grilled-salmon-vegetables',
-      'tagliata-fitness': 'grilled-beef-salad',
-      'curry-pollo': 'chicken-curry-healthy',
-      'orata-mediterranean': 'grilled-fish-mediterranean'
+    console.log('🖼️ [IMAGE] Generating image for:', cleanName);
+    
+    // 🔧 MAPPING SPECIFICO E ACCURATO
+    const specificMapping: { [key: string]: string } = {
+      // COLAZIONI
+      'pancake proteici': 'protein-pancakes-stack-berries',
+      'pancake proteici alla banana': 'banana-protein-pancakes-healthy',
+      'pancake proteici banana': 'banana-protein-pancakes-healthy',
+      'avena proteica': 'overnight-oats-protein-berries',
+      'overnight oats': 'overnight-oats-bowl-healthy',
+      'uova strapazzate': 'scrambled-eggs-spinach-healthy',
+      'frullato verde': 'green-smoothie-bowl-spinach',
+      'smoothie bowl': 'smoothie-bowl-berries-granola',
+      'porridge': 'oatmeal-porridge-cinnamon-apple',
+      'toast avocado': 'avocado-toast-egg-healthy',
+      'yogurt greco': 'greek-yogurt-berries-nuts',
+      'budino chia': 'chia-pudding-chocolate-healthy',
+      'frittata': 'italian-frittata-vegetables',
+      'frullato banana': 'banana-peanut-butter-smoothie',
+      
+      // PRANZI
+      'pollo teriyaki': 'teriyaki-chicken-quinoa-bowl',
+      'salmone grigliato': 'grilled-salmon-mediterranean-vegetables',
+      'insalata tacchino': 'turkey-avocado-salad-fresh',
+      'curry lenticchie': 'red-lentil-curry-coconut',
+      'tagliata manzo': 'beef-tagliata-arugula-italian',
+      'wrap tonno': 'tuna-avocado-wrap-healthy',
+      'risotto funghi': 'mushroom-risotto-italian',
+      'caesar salad': 'chicken-caesar-salad-classic',
+      'bowl vegano': 'vegan-buddha-bowl-tahini',
+      'orata al sale': 'salt-baked-fish-mediterranean',
+      'quinoa ceci': 'quinoa-chickpea-salad-fresh',
+      
+      // CENE
+      'branzino vapore': 'steamed-fish-vegetables-healthy',
+      'tofu grigliato': 'grilled-tofu-asian-vegetables',
+      'pollo erbe': 'herb-crusted-chicken-spinach',
+      'salmone cartoccio': 'salmon-parchment-vegetables',
+      'zuppa lenticchie': 'lentil-vegetable-soup-healthy',
+      'omelette funghi': 'mushroom-omelette-herbs',
+      'merluzzo crosta': 'herb-crusted-cod-green-beans',
+      'bistecca tonno': 'tuna-steak-ratatouille',
+      'zucchine ripiene': 'stuffed-zucchini-quinoa-healthy',
+      
+      // SPUNTINI
+      'palline energetiche': 'energy-balls-chocolate-dates',
+      'hummus verdure': 'hummus-vegetable-sticks-healthy',
+      'frullato detox': 'green-detox-smoothie-healthy',
+      'yogurt noci': 'yogurt-nuts-honey-healthy',
+      'barretta energetica': 'homemade-energy-bar-nuts',
+      'avocado toast': 'avocado-toast-egg-seeds',
+      'mix frutta secca': 'mixed-nuts-seeds-healthy',
+      'ricotta mirtilli': 'ricotta-blueberries-italian',
+      'chips verdure': 'baked-vegetable-chips-healthy'
     };
     
-    const query = imageMap[cleanName] || 'healthy-food-meal';
-    return `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop&auto=format&q=80&crop=center&${query}`;
+    // 🔍 TROVA MATCH SPECIFICO
+    let imageQuery = null;
+    
+    // Cerca match esatto o parziale
+    for (const [key, value] of Object.entries(specificMapping)) {
+      if (cleanName.includes(key)) {
+        imageQuery = value;
+        console.log(`✅ [IMAGE] Found specific match: ${key} → ${value}`);
+        break;
+      }
+    }
+    
+    // 🔧 FALLBACK INTELLIGENTE PER CATEGORIE
+    if (!imageQuery) {
+      if (cleanName.includes('pancake') || cleanName.includes('crepe')) {
+        imageQuery = 'protein-pancakes-healthy-breakfast';
+      } else if (cleanName.includes('salmone') || cleanName.includes('salmon')) {
+        imageQuery = 'grilled-salmon-healthy-dinner';
+      } else if (cleanName.includes('pollo') || cleanName.includes('chicken')) {
+        imageQuery = 'grilled-chicken-vegetables-healthy';
+      } else if (cleanName.includes('orata') || cleanName.includes('branzino') || cleanName.includes('pesce')) {
+        imageQuery = 'grilled-fish-mediterranean-healthy';
+      } else if (cleanName.includes('uova') || cleanName.includes('frittata') || cleanName.includes('omelette')) {
+        imageQuery = 'eggs-vegetables-healthy-breakfast';
+      } else if (cleanName.includes('insalata') || cleanName.includes('salad')) {
+        imageQuery = 'fresh-salad-vegetables-healthy';
+      } else if (cleanName.includes('zuppa') || cleanName.includes('soup')) {
+        imageQuery = 'vegetable-soup-healthy-bowl';
+      } else if (cleanName.includes('quinoa') || cleanName.includes('bowl')) {
+        imageQuery = 'quinoa-bowl-vegetables-healthy';
+      } else if (cleanName.includes('yogurt')) {
+        imageQuery = 'yogurt-berries-healthy-breakfast';
+      } else if (cleanName.includes('frullato') || cleanName.includes('smoothie')) {
+        imageQuery = 'green-smoothie-healthy-drink';
+      } else if (cleanName.includes('avocado')) {
+        imageQuery = 'avocado-toast-healthy-breakfast';
+      } else {
+        imageQuery = 'healthy-meal-plate-colorful';
+      }
+      
+      console.log(`🔧 [IMAGE] Using fallback category: ${imageQuery}`);
+    }
+    
+    // 🖼️ GENERA URL UNSPLASH OTTIMIZZATO
+    const unsplashUrl = `https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop&auto=format&q=75&crop=center&${encodeURIComponent(imageQuery)}`;
+    
+    console.log(`🎯 [IMAGE] Final URL generated:`, unsplashUrl);
+    return unsplashUrl;
   };
 
   // 🔧 FIX CRITICO: Genera lista spesa con controlli
@@ -524,17 +611,15 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
 
                         return (
                           <div key={key} className="bg-gray-600 rounded-lg p-4 hover:bg-gray-500 transition-colors">
-                            {/* Immagine ricetta */}
-                            {meal.imageUrl && (
-                              <img 
-                                src={meal.imageUrl}
-                                alt={meal.nome}
-                                className="w-full h-24 object-cover rounded-lg mb-3"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = generateRecipeImage(meal.nome);
-                                }}
-                              />
-                            )}
+                            {/* 🎯 FIX IMMAGINI: Dimensioni ridotte e ottimizzate */}
+                            <img 
+                              src={meal.imageUrl || generateRecipeImage(meal.nome)}
+                              alt={meal.nome}
+                              className="w-full h-20 object-cover rounded-lg mb-3"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = generateRecipeImage(meal.nome);
+                              }}
+                            />
                             
                             <div className="flex justify-between items-start mb-2">
                               <div className="flex items-center gap-2">
@@ -550,7 +635,7 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                               </button>
                             </div>
                             
-                            <h5 className="font-bold text-green-400 mb-2">{meal.nome}</h5>
+                            <h5 className="font-bold text-green-400 mb-2 text-sm">{meal.nome}</h5>
                             
                             <div className="text-xs text-gray-300 mb-2">
                               🔥 {nutrition.calories} kcal | ⏱️ {meal.tempo || 'N/A'} | 👥 {meal.porzioni || 1} porz.
@@ -594,11 +679,11 @@ const MealPlanComplete: React.FC<MealPlanCompleteProps> = ({
                   
                   return (
                     <div key={index} className="bg-gray-700 rounded-xl overflow-hidden">
-                      {/* Immagine ricetta */}
+                      {/* 🎯 FIX IMMAGINI: Dimensioni ottimizzate per le ricette */}
                       <img 
                         src={recipe.imageUrl || generateRecipeImage(recipe.nome)}
                         alt={recipe.nome}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-32 object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = generateRecipeImage(recipe.nome);
                         }}
