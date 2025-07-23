@@ -1,5 +1,4 @@
-      {
-        id: 'pra_003', nome: 'Insalata di Tacchino e Avocado', categoria: 'pranzo', tipoCucina: 'americana',// Database Ricette FITNESS - 40 Ricette Complete
+// Database Ricette FITNESS - 40 Ricette Complete
 export interface Recipe {
   id: string;
   nome: string;
@@ -144,7 +143,7 @@ export class RecipeDatabase {
         createdAt: new Date(), rating: 4.8, reviewCount: 203
       },
       {
-        id: 'pra_003', nome: 'Insalata Tacchino e Avocado', categoria: 'pranzo', tipoCucina: 'americana',
+        id: 'pra_003', nome: 'Insalata di Tacchino e Avocado', categoria: 'pranzo', tipoCucina: 'americana',
         difficolta: 'facile', tempoPreparazione: 15, porzioni: 1, calorie: 425, proteine: 32, carboidrati: 12, grassi: 28,
         ingredienti: ['120g tacchino arrosto', '1 avocado', '150g mix insalate', '100g pomodorini datterini', '50g cetrioli', '30g parmigiano scaglie', 'olio extravergine', 'aceto balsamico'],
         preparazione: 'Lava e asciuga insalate. Taglia tacchino a listarelle, avocado a fette. Dimezza pomodorini, taglia cetrioli. Prepara vinaigrette. Assembla insalata e condisci.',
