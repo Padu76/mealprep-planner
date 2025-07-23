@@ -1,9 +1,4 @@
-// 🍳 DATABASE RICETTE FITNESS COMPLETO - 40 RICETTE REALI
-// ✅ INTERFACCIA COMPATIBILE CON PAGINA ESISTENTE
-// ✅ PREPARAZIONI DETTAGLIATE STEP-BY-STEP
-// ✅ METODI COMPLETI: favorites, recentlyViewed, similarRecipes
-// 🔄 SINGLETON PATTERN + TUTTI I METODI RICHIESTI
-
+// Database Ricette FITNESS - 40 Ricette Complete
 export interface Recipe {
   id: string;
   nome: string;
@@ -46,645 +41,522 @@ export class RecipeDatabase {
     return RecipeDatabase.instance;
   }
 
-  // 🍳 INIZIALIZZA DATABASE CON 40 RICETTE REALI
   private initializeDatabase(): void {
     this.recipes = [
-      // 🌅 COLAZIONI (10 ricette)
+      // COLAZIONI
       {
-        id: 'col_001',
-        nome: 'Pancakes Proteici Banana e Avena',
-        categoria: 'colazione',
-        tipoCucina: 'americana',
-        difficolta: 'facile',
-        tempoPreparazione: 15,
-        porzioni: 1,
-        calorie: 385,
-        proteine: 28,
-        carboidrati: 45,
-        grassi: 8,
-        ingredienti: [
-          '80g fiocchi d\'avena',
-          '1 banana matura media',
-          '30g proteine whey vaniglia',
-          '2 albumi d\'uovo',
-          '150ml latte scremato',
-          '1 cucchiaino cannella',
-          '1 cucchiaino olio cocco'
-        ],
-        preparazione: 'Inizia frullando i fiocchi d\'avena fino ad ottenere una farina grossolana. In una ciotola capiente, schiaccia la banana con una forchetta fino a renderla completamente cremosa. Aggiungi le proteine in polvere, gli albumi e il latte scremato, mescolando energicamente con una frusta per evitare grumi. Incorpora gradualmente la farina d\'avena e la cannella, continuando a mescolare fino a ottenere un composto liscio e omogeneo. Scalda l\'olio di cocco in una padella antiaderente a fuoco medio-basso. Versa il composto formando piccoli pancakes di circa 8cm di diametro. Cuoci per 2-3 minuti per lato fino a doratura uniforme. Servi immediatamente ancora caldi, eventualmente con una spolverata di cannella extra.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['glutine', 'latte', 'uova'],
-        stagione: ['tutto_anno'],
-        tags: ['proteico', 'fitness', 'colazione', 'dolce'],
-        createdAt: new Date('2024-01-01'),
-        rating: 4.7,
-        reviewCount: 156
+        id: 'col_001', nome: 'Pancakes Proteici Banana e Avena', categoria: 'colazione', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 15, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 45, grassi: 8,
+        ingredienti: ['80g fiocchi avena', '1 banana matura', '30g proteine whey vaniglia', '2 albumi', '150ml latte scremato', 'cannella', 'olio cocco'],
+        preparazione: 'Frulla avena fino a farina grossolana. Schiaccia banana, aggiungi proteine, albumi e latte. Incorpora avena e cannella. Cuoci in padella con olio cocco 2-3 min per lato.',
+        tipoDieta: ['vegetariana'], allergie: ['glutine', 'latte', 'uova'], stagione: ['tutto_anno'], tags: ['proteico', 'fitness'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 156
       },
       {
-        id: 'col_002',
-        nome: 'Overnight Oats Proteici ai Frutti di Bosco',
-        categoria: 'colazione',
-        tipoCucina: 'internazionale',
-        difficolta: 'facile',
-        tempoPreparazione: 5,
-        porzioni: 1,
-        calorie: 425,
-        proteine: 25,
-        carboidrati: 52,
-        grassi: 12,
-        ingredienti: [
-          '60g fiocchi d\'avena',
-          '25g proteine whey ai frutti di bosco',
-          '200ml latte di mandorla non zuccherato',
-          '1 cucchiaio semi di chia',
-          '100g mirtilli freschi',
-          '50g lamponi',
-          '1 cucchiaio miele',
-          '10g mandorle a lamelle'
-        ],
-        preparazione: 'In un barattolo di vetro con coperchio, mescola accuratamente i fiocchi d\'avena con le proteine in polvere usando un cucchiaio. Versa gradualmente il latte di mandorla mescolando per evitare la formazione di grumi proteici. Aggiungi i semi di chia e mescola energicamente per 30 secondi. Incorpora il miele mescolando fino a completo scioglimento. Aggiungi metà dei frutti di bosco e mescola delicatamente per non schiacciarli. Chiudi ermeticamente il barattolo e conserva in frigorifero per almeno 4 ore o preferibilmente tutta la notte. Al mattino, mescola brevemente il contenuto, poi guarnisci con i frutti di bosco rimanenti e le mandorle a lamelle. Consuma direttamente dal barattolo per praticità.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['frutta_secca'],
-        stagione: ['primavera', 'estate'],
-        tags: ['overnight', 'proteico', 'make-ahead', 'frutti_bosco'],
-        createdAt: new Date('2024-01-02'),
-        rating: 4.8,
-        reviewCount: 203
+        id: 'col_002', nome: 'Overnight Oats Proteici Frutti di Bosco', categoria: 'colazione', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 425, proteine: 25, carboidrati: 52, grassi: 12,
+        ingredienti: ['60g fiocchi avena', '25g proteine whey frutti bosco', '200ml latte mandorla', 'semi chia', '100g mirtilli', '50g lamponi', 'miele', 'mandorle lamelle'],
+        preparazione: 'Mescola avena con proteine e latte mandorla. Aggiungi chia, miele e metà frutti. Riponi in frigo 4+ ore. Guarnisci con frutti rimasti e mandorle.',
+        tipoDieta: ['vegetariana'], allergie: ['frutta_secca'], stagione: ['estate'], tags: ['overnight', 'frutti_bosco'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 203
       },
       {
-        id: 'col_003',
-        nome: 'Scrambled Eggs Proteici con Spinaci',
-        categoria: 'colazione',
-        tipoCucina: 'internazionale',
-        difficolta: 'facile',
-        tempoPreparazione: 10,
-        porzioni: 1,
-        calorie: 320,
-        proteine: 26,
-        carboidrati: 8,
-        grassi: 20,
-        ingredienti: [
-          '3 uova intere fresche',
-          '2 albumi',
-          '100g spinaci freschi baby',
-          '50g ricotta magra',
-          '1 cucchiaio olio extravergine',
-          '50g pomodorini ciliegino',
-          'Sale marino e pepe nero q.b.',
-          'Erba cipollina fresca'
-        ],
-        preparazione: 'Lava accuratamente gli spinaci baby e asciugali delicatamente con carta da cucina. Taglia i pomodorini ciliegino a metà nel senso della lunghezza. In una padella antiaderente, scalda metà dell\'olio extravergine a fuoco medio e aggiungi gli spinaci. Saltali rapidamente per 1-2 minuti fino a quando iniziano ad appassire, poi rimuovili e tienili da parte. In una ciotola, sbatti energicamente le uova intere con gli albumi, aggiungendo sale e pepe a piacere. Nella stessa padella usata per gli spinaci, versa il composto di uova a fuoco basso. Mescola dolcemente con una spatola di silicone, spostando le uova dal bordo verso il centro per creare una consistenza cremosa. Negli ultimi 30 secondi di cottura, incorpora gli spinaci saltati, la ricotta a pezzetti e i pomodorini. Guarnisci con erba cipollina fresca tritata e servi immediatamente.',
-        tipoDieta: ['vegetariana', 'keto'],
-        allergie: ['uova', 'latte'],
-        stagione: ['tutto_anno'],
-        tags: ['proteico', 'keto', 'veloce', 'uova'],
-        createdAt: new Date('2024-01-03'),
-        rating: 4.5,
-        reviewCount: 128
+        id: 'col_003', nome: 'Scrambled Eggs Proteici con Spinaci', categoria: 'colazione', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 10, porzioni: 1, calorie: 320, proteine: 26, carboidrati: 8, grassi: 20,
+        ingredienti: ['3 uova intere', '2 albumi', '100g spinaci baby', '50g ricotta magra', 'olio extravergine', '50g pomodorini', 'erba cipollina'],
+        preparazione: 'Salta spinaci in padella. Sbatti uova con albumi. Cuoci uova a fuoco basso mescolando. Aggiungi spinaci, ricotta e pomodorini. Guarnisci con erba cipollina.',
+        tipoDieta: ['vegetariana', 'keto'], allergie: ['uova', 'latte'], stagione: ['tutto_anno'], tags: ['proteico', 'keto'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 128
       },
       {
-        id: 'col_004',
-        nome: 'Smoothie Bowl Verde Energetico',
-        categoria: 'colazione',
-        tipoCucina: 'internazionale',
-        difficolta: 'facile',
-        tempoPreparazione: 8,
-        porzioni: 1,
-        calorie: 445,
-        proteine: 22,
-        carboidrati: 38,
-        grassi: 24,
-        ingredienti: [
-          '1 banana congelata a pezzi',
-          '100g spinaci freschi',
-          '25g proteine vegetali vaniglia',
-          '200ml latte di cocco',
-          '1 cucchiaio burro di mandorle',
-          '1 kiwi maturo',
-          '15g granola senza zucchero',
-          '1 cucchiaio semi di zucca'
-        ],
-        preparazione: 'Nel frullatore ad alta potenza, aggiungi prima i liquidi: latte di cocco e burro di mandorle. Unisci la banana congelata tagliata a pezzi per facilitare la miscelazione. Aggiungi gli spinaci freschi lavati e asciugati, insieme alle proteine vegetali in polvere. Frulla alla massima velocità per 60-90 secondi fino ad ottenere una consistenza completamente cremosa e omogenea, senza grumi. Il colore dovrebbe essere verde brillante. Versa il smoothie denso in una bowl capiente e fredda. Pela il kiwi e taglialo a rondelle sottili di circa 3mm. Disponi artisticamente le rondelle di kiwi su metà della superficie del smoothie. Aggiungi la granola senza zucchero creando una striscia centrale, poi completa con i semi di zucca tostati. Servi immediatamente con un cucchiaio largo per gustare tutti i sapori insieme.',
-        tipoDieta: ['vegana'],
-        allergie: ['frutta_secca'],
-        stagione: ['tutto_anno'],
-        tags: ['smoothie_bowl', 'verde', 'energetico', 'vegano'],
-        createdAt: new Date('2024-01-04'),
-        rating: 4.6,
-        reviewCount: 189
+        id: 'col_004', nome: 'Smoothie Bowl Verde Energetico', categoria: 'colazione', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 1, calorie: 445, proteine: 22, carboidrati: 38, grassi: 24,
+        ingredienti: ['1 banana congelata', '100g spinaci', '25g proteine vegetali vaniglia', '200ml latte cocco', 'burro mandorle', '1 kiwi', 'granola', 'semi zucca'],
+        preparazione: 'Frulla banana, spinaci, proteine, latte cocco e burro mandorle. Versa in bowl. Guarnisci con kiwi a rondelle, granola e semi zucca.',
+        tipoDieta: ['vegana'], allergie: ['frutta_secca'], stagione: ['tutto_anno'], tags: ['smoothie_bowl', 'verde'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 189
       },
       {
-        id: 'col_005',
-        nome: 'Porridge Proteico Cannella e Mela',
-        categoria: 'colazione',
-        tipoCucina: 'internazionale',
-        difficolta: 'facile',
-        tempoPreparazione: 15,
-        porzioni: 1,
-        calorie: 465,
-        proteine: 30,
-        carboidrati: 58,
-        grassi: 12,
-        ingredienti: [
-          '70g fiocchi d\'avena integrali',
-          '25g proteine caseine vaniglia',
-          '300ml latte parzialmente scremato',
-          '1 mela Golden media',
-          '1 cucchiaino cannella in polvere',
-          '1 cucchiaio miele di acacia',
-          '15g noci sgusciate',
-          'Pizzico di sale marino'
-        ],
-        preparazione: 'Inizia pelando la mela Golden e tagliandola a cubetti piccoli e uniformi di circa 5mm. In un pentolino a fondo pesante, scalda il latte a fuoco medio-basso senza mai farlo bollire. Quando il latte inizia a fare le prime bollicine sui bordi, aggiungi i fiocchi d\'avena mescolando costantemente con un cucchiaio di legno. Continua a mescolare per 5 minuti mantenendo un bollore molto leggero. Incorpora i cubetti di mela e la cannella in polvere, mescolando delicatamente. Cuoci per altri 3-4 minuti fino a quando la mela inizia ad ammorbidirsi. Rimuovi dal fuoco e lascia raffreddare per 2 minuti esatti. Aggiungi le proteine caseine mescolando energicamente con una frusta per 30 secondi per evitare la formazione di grumi. Dolcifica con il miele e incorpora le noci tritate grossolanamente. Servi caldo in una ciotola preriscaldata.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['latte', 'frutta_secca'],
-        stagione: ['autunno', 'inverno'],
-        tags: ['porridge', 'mela', 'comfort_food', 'caldo'],
-        createdAt: new Date('2024-01-05'),
-        rating: 4.4,
-        reviewCount: 142
+        id: 'col_005', nome: 'Porridge Proteico Cannella e Mela', categoria: 'colazione', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 15, porzioni: 1, calorie: 465, proteine: 30, carboidrati: 58, grassi: 12,
+        ingredienti: ['70g fiocchi avena', '25g proteine caseine vaniglia', '300ml latte parzialmente scremato', '1 mela Golden', 'cannella', 'miele acacia', 'noci'],
+        preparazione: 'Cuoci avena nel latte 5 min. Aggiungi mela a cubetti e cannella, cuoci 3 min. Raffredda 2 min, incorpora proteine. Dolcifica con miele, guarnisci con noci.',
+        tipoDieta: ['vegetariana'], allergie: ['latte', 'frutta_secca'], stagione: ['autunno'], tags: ['porridge', 'comfort'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 142
       },
       {
-        id: 'col_006',
-        nome: 'Avocado Toast Proteico Integrale',
-        categoria: 'colazione',
-        tipoCucina: 'americana',
-        difficolta: 'facile',
-        tempoPreparazione: 12,
-        porzioni: 1,
-        calorie: 485,
-        proteine: 24,
-        carboidrati: 35,
-        grassi: 28,
-        ingredienti: [
-          '2 fette pane integrale spesso',
-          '1 avocado maturo medio',
-          '2 uova fresche',
-          '100g ricotta magra',
-          'Succo di 1/2 limone',
-          'Sale marino e pepe nero',
-          'Paprika dolce',
-          'Rucola fresca'
-        ],
-        preparazione: 'Tosta le fette di pane integrale in un tostapane o su una griglia fino a ottenere una doratura uniforme e croccante. Nel frattempo, porta a ebollizione una pentola d\'acqua con un cucchiaio di aceto bianco per le uova in camicia. Taglia l\'avocado a metà, rimuovi il nocciolo e schiaccia la polpa in una ciotola con una forchetta, lasciando alcuni pezzetti per la consistenza. Condisci immediatamente con succo di limone fresco, sale marino e pepe nero, mescolando bene. Crea un vortice nell\'acqua bollente e immergi delicatamente le uova una alla volta, cuocendo per 3-4 minuti per ottenere il tuorlo morbido. Su una delle fette di pane tostato, spalma uniformemente la ricotta magra. Distribuisci sopra il composto di avocado condito. Utilizzando un cucchiaio forato, preleva le uova in camicia e posizionale delicatamente sull\'avocado. Guarnisci con rucola fresca, una spolverata di paprika dolce e un pizzico di pepe nero. Servi immediatamente mentre le uova sono ancora calde.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['glutine', 'uova', 'latte'],
-        stagione: ['tutto_anno'],
-        tags: ['avocado_toast', 'uova_camicia', 'trendy', 'instagrammabile'],
-        createdAt: new Date('2024-01-06'),
-        rating: 4.7,
-        reviewCount: 167
+        id: 'col_006', nome: 'Avocado Toast Proteico Integrale', categoria: 'colazione', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 12, porzioni: 1, calorie: 485, proteine: 24, carboidrati: 35, grassi: 28,
+        ingredienti: ['2 fette pane integrale', '1 avocado maturo', '2 uova', '100g ricotta magra', 'succo limone', 'paprika', 'rucola'],
+        preparazione: 'Tosta pane. Schiaccia avocado con limone, sale e pepe. Cuoci uova in camicia. Spalma ricotta su pane, aggiungi avocado e uova. Guarnisci con rucola e paprika.',
+        tipoDieta: ['vegetariana'], allergie: ['glutine', 'uova', 'latte'], stagione: ['tutto_anno'], tags: ['avocado_toast', 'trendy'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 167
       },
       {
-        id: 'col_007',
-        nome: 'Greek Yogurt Bowl Proteico',
-        categoria: 'colazione',
-        tipoCucina: 'mediterranea',
-        difficolta: 'facile',
-        tempoPreparazione: 5,
-        porzioni: 1,
-        calorie: 395,
-        proteine: 35,
-        carboidrati: 18,
-        grassi: 20,
-        ingredienti: [
-          '200g yogurt greco 0% grassi',
-          '20g proteine whey neutro',
-          '30g mandorle tostate',
-          '15g semi di girasole',
-          '100g fragole fresche',
-          '1 cucchiaino estratto vaniglia',
-          'Stevia liquida q.b.',
-          'Foglie di menta fresca'
-        ],
-        preparazione: 'In una ciotola media, mescola lo yogurt greco con le proteine whey neutre utilizzando una frusta piccola per amalgamare perfettamente ed evitare grumi. Aggiungi l\'estratto di vaniglia e mescola nuovamente. Assaggia e dolcifica gradualmente con stevia liquida secondo il tuo gusto personale, mescolando bene dopo ogni aggiunta. Il composto deve risultare liscio e cremoso. Lava delicatamente le fragole sotto acqua corrente fredda e asciugale su carta da cucina. Rimuovi il picciolo e tagliale a fettine di circa 4-5mm di spessore. Trita grossolanamente le mandorle tostate mantenendo pezzi di varie dimensioni per dare consistenza. Versa il composto proteico di yogurt in una bowl da servizio. Disponi artisticamente le fettine di fragole su metà della superficie. Distribuisci le mandorle tritate e i semi di girasole sulla parte rimanente, creando sezioni colorate. Completa la decorazione con alcune foglioline di menta fresca al centro. Servi immediatamente per mantenere la freschezza degli ingredienti.',
-        tipoDieta: ['vegetariana', 'keto'],
-        allergie: ['latte', 'frutta_secca'],
-        stagione: ['primavera', 'estate'],
-        tags: ['yogurt_greco', 'proteico', 'fresh', 'keto_friendly'],
-        createdAt: new Date('2024-01-07'),
-        rating: 4.8,
-        reviewCount: 234
+        id: 'col_007', nome: 'Greek Yogurt Bowl Proteico', categoria: 'colazione', tipoCucina: 'mediterranea',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 395, proteine: 35, carboidrati: 18, grassi: 20,
+        ingredienti: ['200g yogurt greco 0%', '20g proteine whey neutro', '30g mandorle tostate', '15g semi girasole', '100g fragole', 'estratto vaniglia', 'stevia'],
+        preparazione: 'Mescola yogurt con proteine e vaniglia. Dolcifica con stevia. Taglia fragole a fettine. Trita mandorle. Componi bowl con fragole, mandorle e semi girasole.',
+        tipoDieta: ['vegetariana', 'keto'], allergie: ['latte', 'frutta_secca'], stagione: ['estate'], tags: ['yogurt_greco', 'fresh'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 234
       },
       {
-        id: 'col_008',
-        nome: 'Chia Pudding Cioccolato Proteico',
-        categoria: 'colazione',
-        tipoCucina: 'internazionale',
-        difficolta: 'facile',
-        tempoPreparazione: 10,
-        porzioni: 1,
-        calorie: 420,
-        proteine: 26,
-        carboidrati: 12,
-        grassi: 28,
-        ingredienti: [
-          '40g semi di chia',
-          '25g proteine cacao',
-          '300ml latte di mandorla non zuccherato',
-          '15g cacao amaro in polvere',
-          '1 cucchiaio olio MCT',
-          'Eritritolo in polvere q.b.',
-          '50g lamponi freschi',
-          '15g mandorle a lamelle'
-        ],
-        preparazione: 'In una ciotola di vetro, mescola accuratamente i semi di chia con il cacao amaro in polvere usando una frusta piccola per distribuire uniformemente il cacao ed evitare grumi. Aggiungi le proteine al cacao e mescola nuovamente tutti gli ingredienti secchi fino a completa amalgamazione. Versa gradualmente il latte di mandorla mentre mescoli costantemente con la frusta per evitare la formazione di grumi proteici. Continua a mescolare energicamente per almeno 1 minuto. Incorpora l\'olio MCT mescolando bene, poi dolcifica con eritritolo in polvere secondo il tuo gusto. Mescola vigorosamente per altri 2 minuti, poi lascia riposare 5 minuti e mescola nuovamente per evitare che i semi di chia si raggruppino. Copri la ciotola con pellicola trasparente e riponi in frigorifero per almeno 6 ore o preferibilmente tutta la notte. Al momento del consumo, mescola brevemente il pudding per uniformare la consistenza, quindi trasferiscilo in una ciotola da servizio. Guarnisci con lamponi freschi e mandorle a lamelle tostate. La consistenza deve essere densa e cremosa, simile a un budino.',
-        tipoDieta: ['vegana', 'keto'],
-        allergie: ['frutta_secca'],
-        stagione: ['tutto_anno'],
-        tags: ['chia_pudding', 'cioccolato', 'make_ahead', 'keto'],
-        createdAt: new Date('2024-01-08'),
-        rating: 4.5,
-        reviewCount: 156
+        id: 'col_008', nome: 'Chia Pudding Cioccolato Proteico', categoria: 'colazione', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 10, porzioni: 1, calorie: 420, proteine: 26, carboidrati: 12, grassi: 28,
+        ingredienti: ['40g semi chia', '25g proteine cacao', '300ml latte mandorla', '15g cacao amaro', 'olio MCT', 'eritritolo', '50g lamponi', 'mandorle lamelle'],
+        preparazione: 'Mescola chia con cacao e proteine. Aggiungi latte mandorla e olio MCT. Dolcifica con eritritolo. Riponi in frigo 6+ ore. Guarnisci con lamponi e mandorle.',
+        tipoDieta: ['vegana', 'keto'], allergie: ['frutta_secca'], stagione: ['tutto_anno'], tags: ['chia_pudding', 'cioccolato'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 156
       },
       {
-        id: 'col_009',
-        nome: 'Frittata Proteica agli Spinaci',
-        categoria: 'colazione',
-        tipoCucina: 'italiana',
-        difficolta: 'medio',
-        tempoPreparazione: 18,
-        porzioni: 1,
-        calorie: 445,
-        proteine: 32,
-        carboidrati: 6,
-        grassi: 32,
-        ingredienti: [
-          '4 uova intere biologiche',
-          '150g spinaci freschi',
-          '100g prosciutto crudo tagliato spesso',
-          '50g parmigiano reggiano grattugiato',
-          '2 cucchiai olio extravergine',
-          '1 scalogno medio',
-          'Sale marino e pepe nero',
-          'Basilico fresco'
-        ],
-        preparazione: 'Preriscalda il forno a 180°C con modalità statica. Lava accuratamente gli spinaci freschi in abbondante acqua fredda, poi asciugali completamente usando una centrifuga per insalata o tamponandoli con carta da cucina. Pela e trita finemente lo scalogno. Taglia il prosciutto crudo a listarelle di circa 1cm di larghezza. In una padella antiaderente da 24cm adatta al forno, scalda 1 cucchiaio di olio extravergine a fuoco medio. Aggiungi le listarelle di prosciutto e rosolale per 2 minuti fino a quando diventano leggermente croccanti. Unisci lo scalogno tritato e cuoci per altri 2 minuti mescolando, fino a quando diventa traslucido e profumato. Aggiungi gli spinaci e cuoci a fuoco vivace per 2-3 minuti, mescolando frequentemente, finché non si riducono completamente e perdono tutta l\'acqua di vegetazione. In una ciotola capiente, sbatti energicamente le uova con sale, pepe e metà del parmigiano grattugiato. Versa il composto di uova nella padella con gli spinaci, mescolando delicatamente per distribuire uniformemente gli ingredienti. Cuoci per 3-4 minuti a fuoco medio-basso senza mescolare, fino a quando i bordi iniziano a rapprendere. Cospargi la superficie con il parmigiano rimanente e trasferisci la padella in forno. Cuoci per 8-10 minuti fino a quando la frittata è dorata in superficie e ben soda al centro. Sforna e lascia riposare 2-3 minuti prima di servire. Guarnisci con foglie di basilico fresco e servi calda o tiepida.',
-        tipoDieta: ['keto'],
-        allergie: ['uova', 'latte'],
-        stagione: ['tutto_anno'],
-        tags: ['frittata', 'italiana', 'prosciutto', 'al_forno'],
-        createdAt: new Date('2024-01-09'),
-        rating: 4.6,
-        reviewCount: 198
+        id: 'col_009', nome: 'Frittata Proteica agli Spinaci', categoria: 'colazione', tipoCucina: 'italiana',
+        difficolta: 'medio', tempoPreparazione: 18, porzioni: 1, calorie: 445, proteine: 32, carboidrati: 6, grassi: 32,
+        ingredienti: ['4 uova biologiche', '150g spinaci', '100g prosciutto crudo', '50g parmigiano', 'olio extravergine', '1 scalogno', 'basilico'],
+        preparazione: 'Rosola prosciutto e scalogno. Aggiungi spinaci e cuoci fino appassimento. Sbatti uova con parmigiano. Versa in padella, cuoci 3-4 min. Finisci in forno 8-10 min.',
+        tipoDieta: ['keto'], allergie: ['uova', 'latte'], stagione: ['tutto_anno'], tags: ['frittata', 'italiana'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 198
       },
       {
-        id: 'col_010',
-        nome: 'Power Smoothie Banana e Burro di Arachidi',
-        categoria: 'colazione',
-        tipoCucina: 'americana',
-        difficolta: 'facile',
-        tempoPreparazione: 5,
-        porzioni: 1,
-        calorie: 520,
-        proteine: 35,
-        carboidrati: 42,
-        grassi: 22,
-        ingredienti: [
-          '1 banana media molto matura',
-          '30g proteine whey vaniglia',
-          '250ml latte scremato freddo',
-          '2 cucchiai burro di arachidi naturale',
-          '1 cucchiaio semi di lino macinati',
-          '100g ghiaccio tritato',
-          '1 cucchiaino miele',
-          'Cannella in polvere per guarnire'
-        ],
-        preparazione: 'Pela la banana e tagliala a rondelle di circa 2cm per facilitare la miscelazione nel frullatore. Assicurati che sia molto matura per ottenere la massima dolcezza naturale e cremosità. Nel frullatore ad alta potenza, versa prima il latte scremato freddo e il burro di arachidi naturale (senza zuccheri aggiunti). Aggiungi le rondelle di banana, poi le proteine whey alla vaniglia. Incorpora i semi di lino macinati e il miele. Infine, aggiungi il ghiaccio tritato che aiuterà a creare una consistenza densa e rinfrescante. Frulla alla massima velocità per 60-90 secondi, fermandoti a metà per controllare che non ci siano grumi di proteine o pezzi di ghiaccio non tritati. Il smoothie deve risultare completamente liscio e cremoso, con un colore beige omogeneo. Assaggia e aggiungi altro miele se desideri maggiore dolcezza, frullando per altri 15 secondi. Versa immediatamente in un bicchiere alto e largo, preferibilmente pre-raffreddato. Spolverizza la superficie con un pizzico di cannella in polvere per il tocco finale. Servi con una cannuccia larga e consuma entro 10 minuti per mantenere la consistenza ottimale e evitare la separazione degli ingredienti.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['latte', 'arachidi'],
-        stagione: ['tutto_anno'],
-        tags: ['power_smoothie', 'post_workout', 'banana', 'energizzante'],
-        createdAt: new Date('2024-01-10'),
-        rating: 4.9,
-        reviewCount: 289
+        id: 'col_010', nome: 'Power Smoothie Banana e Burro Arachidi', categoria: 'colazione', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 520, proteine: 35, carboidrati: 42, grassi: 22,
+        ingredienti: ['1 banana matura', '30g proteine whey vaniglia', '250ml latte scremato', '2 cucchiai burro arachidi naturale', 'semi lino macinati', 'ghiaccio', 'miele', 'cannella'],
+        preparazione: 'Frulla banana, latte, proteine, burro arachidi, semi lino e miele. Aggiungi ghiaccio e frulla. Versa in bicchiere e spolverizza con cannella.',
+        tipoDieta: ['vegetariana'], allergie: ['latte', 'arachidi'], stagione: ['tutto_anno'], tags: ['power_smoothie', 'energizzante'],
+        createdAt: new Date(), rating: 4.9, reviewCount: 289
       },
 
-      // 🍽️ PRANZI (10 ricette)
+      // PRANZI
       {
-        id: 'pra_001',
-        nome: 'Bowl di Pollo Teriyaki con Quinoa',
-        categoria: 'pranzo',
-        tipoCucina: 'asiatica',
-        difficolta: 'medio',
-        tempoPreparazione: 35,
-        porzioni: 1,
-        calorie: 485,
-        proteine: 38,
-        carboidrati: 45,
-        grassi: 16,
-        ingredienti: [
-          '150g petto di pollo senza pelle',
-          '80g quinoa tricolore',
-          '100g edamame sgusciati surgelati',
-          '1 carota media',
-          '100g cavolo rosso',
-          '3 cucchiai salsa teriyaki light',
-          '1 cucchiaio olio di sesamo',
-          '1 cucchiaino zenzero fresco grattugiato',
-          'Semi di sesamo tostati per guarnire'
-        ],
-        preparazione: 'Inizia sciacquando la quinoa tricolore sotto acqua corrente fredda usando un colino fine per rimuovere la saponina naturale che può dare sapore amaro. In una pentola media, porta a ebollizione 200ml di acqua salata, aggiungi la quinoa e cuoci per 15 minuti a fuoco medio-basso con coperchio. Una volta cotta, spegni il fuoco e lascia riposare 5 minuti senza aprire, poi sgrana con una forchetta e lascia raffreddare completamente. Nel frattempo, taglia il petto di pollo a strisce spesse circa 1cm. In una ciotola, marina le strisce di pollo con 2 cucchiai di salsa teriyaki e lo zenzero grattugiato fresco per almeno 15 minuti, mescolando occasionalmente per far assorbire i sapori. Prepara le verdure: taglia la carota a julienne sottili usando un pelapatate o una mandolina, e affetta il cavolo rosso a listarelle molto fini. Sbollenta gli edamame in acqua salata bollente per 3 minuti esatti, poi scolali e sciacquali sotto acqua fredda per fermare la cottura. In una padella antiaderente o wok, scalda l\'olio di sesamo a fuoco medio-alto. Aggiungi il pollo marinato (senza la marinata) e cuoci per 6-8 minuti, girando le strisce per dorarle uniformemente. Negli ultimi 2 minuti, aggiungi la marinata rimasta e fai caramellare leggermente. Per assemblare la bowl: disponi la quinoa raffreddata come base in una ciotola capiente. Crea sezioni separate con le verdure crude (carota julienne, cavolo rosso) e gli edamame. Posiziona il pollo teriyaki ancora caldo al centro. Irrora con il cucchiaio rimanente di salsa teriyaki e completa con una generosa spolverata di semi di sesamo tostati. Servi immediatamente per contrasto di temperature.',
-        tipoDieta: ['senza_glutine'],
-        allergie: ['soia', 'sesamo'],
-        stagione: ['tutto_anno'],
-        tags: ['bowl', 'asiatico', 'teriyaki', 'quinoa', 'completo'],
-        createdAt: new Date('2024-01-11'),
-        rating: 4.7,
-        reviewCount: 156
+        id: 'pra_001', nome: 'Bowl Pollo Teriyaki con Quinoa', categoria: 'pranzo', tipoCucina: 'asiatica',
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 1, calorie: 485, proteine: 38, carboidrati: 45, grassi: 16,
+        ingredienti: ['150g petto pollo', '80g quinoa tricolore', '100g edamame', '1 carota', '100g cavolo rosso', 'salsa teriyaki light', 'olio sesamo', 'zenzero', 'semi sesamo'],
+        preparazione: 'Cuoci quinoa 15 min. Marina pollo con teriyaki e zenzero. Prepara verdure a julienne. Cuoci pollo in wok con olio sesamo 6-8 min. Assembla bowl con tutti ingredienti.',
+        tipoDieta: ['senza_glutine'], allergie: ['soia', 'sesamo'], stagione: ['tutto_anno'], tags: ['bowl', 'asiatico'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 156
       },
       {
-        id: 'pra_002',
-        nome: 'Salmone Grigliato con Verdure Mediterranee',
-        categoria: 'pranzo',
-        tipoCucina: 'mediterranea',
-        difficolta: 'medio',
-        tempoPreparazione: 30,
-        porzioni: 1,
-        calorie: 520,
-        proteine: 35,
-        carboidrati: 42,
-        grassi: 24,
-        ingredienti: [
-          '150g filetto di salmone con pelle',
-          '1 zucchina media',
-          '1 melanzana piccola',
-          '100g pomodorini ciliegino',
-          '80g riso integrale',
-          '4 cucchiai olio extravergine d\'oliva',
-          'Succo di 1 limone',
-          'Origano secco e timo fresco',
-          'Sale marino grosso e pepe nero'
-        ],
-        preparazione: 'Inizia cuocendo il riso integrale: sciacqualo bene e mettilo in una pentola con acqua salata in rapporto 1:2. Porta a ebollizione, poi riduci a fuoco minimo, copri e cuoci per 20 minuti senza mai sollevare il coperchio. Spegni e lascia riposare 5 minuti. Nel frattempo, preriscalda una griglia o una piastra a fuoco medio-alto. Lava e asciuga tutte le verdure. Taglia la zucchina a rondelle di 1cm di spessore nel senso della lunghezza. Taglia la melanzana a fette rotonde di 8mm. Dimezza i pomodorini ciliegino. In una ciotola grande, condisci tutte le verdure con 2 cucchiai di olio extravergine, sale marino, pepe nero e origano secco. Mescola delicatamente con le mani per distribuire uniformemente il condimento. Griglia le verdure sulla piastra calda: inizia con melanzane e zucchine (4-5 minuti per lato), poi aggiungi i pomodorini (2-3 minuti per lato). Le verdure devono risultare tenere dentro e leggermente caramellate fuori. Tienile in caldo. Per il salmone: asciugalo con carta da cucina, poi condiscilo su entrambi i lati con 1 cucchiaio di olio, sale grosso, pepe e timo fresco spezzettato. Griglia il salmone sulla piastra molto calda per 4 minuti sul lato della polpa (senza pelle), poi giralo delicatamente e cuoci altri 3-4 minuti sul lato della pelle. Il salmone deve rimanere rosato al centro. Nel frattempo, condisci il riso cotto con il rimanente olio extravergine e metà del succo di limone. Per servire: disponi il riso condito come base nel piatto, adagia sopra le verdure grigliate creando un letto colorato, poi posiziona il filetto di salmone al centro. Completa irrorando con il succo di limone rimanente e una spolverata di timo fresco.',
-        tipoDieta: ['mediterranea', 'senza_glutine'],
-        allergie: ['pesce'],
-        stagione: ['estate', 'primavera'],
-        tags: ['salmone', 'grigliato', 'mediterraneo', 'omega3'],
-        createdAt: new Date('2024-01-12'),
-        rating: 4.8,
-        reviewCount: 203
+        id: 'pra_002', nome: 'Salmone Grigliato Verdure Mediterranee', categoria: 'pranzo', tipoCucina: 'mediterranea',
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 1, calorie: 520, proteine: 35, carboidrati: 42, grassi: 24,
+        ingredienti: ['150g filetto salmone', '1 zucchina', '1 melanzana piccola', '100g pomodorini', '80g riso integrale', 'olio extravergine', 'limone', 'origano', 'timo'],
+        preparazione: 'Cuoci riso integrale 20 min. Taglia verdure a rondelle, condisci con olio e origano. Griglia verdure 4-5 min per lato. Griglia salmone 4 min per lato. Componi piatto.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce'], stagione: ['estate'], tags: ['salmone', 'grigliato'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 203
       },
       {
-        id: 'pra_003',
-        nome: 'Insalata di Tacchino e Avocado',
-        categoria: 'pranzo',
-        tipoCucina: 'americana',
-        difficolta: 'facile',
-        tempoPreparazione: 15,
-        porzioni: 1,
-        calorie: 425,
-        proteine: 32,
-        carboidrati: 12,
-        grassi: 28,
-        ingredienti: [
-          '120g petto di tacchino arrosto affettato',
-          '1 avocado maturo medio',
-          '150g mix di insalate baby',
-          '100g pomodorini datterini',
-          '50g cetrioli',
-          '30g parmigiano reggiano a scaglie',
-          '3 cucchiai olio extravergine d\'oliva',
-          '1 cucchiaio aceto balsamico di Modena',
-          'Sale marino e pepe nero macinato fresco'
-        ],
-        preparazione: 'Inizia lavando accuratamente il mix di insalate baby in una bacinella con acqua fredda, cambiando l\'acqua 2-3 volte fino a quando non è completamente pulita. Asciuga perfettamente le foglie usando una centrifuga per insalata o tamponandole delicatamente con carta da cucina - questo è fondamentale per far aderire bene il condimento. Taglia il petto di tacchino arrosto a listarelle di media grandezza, mantenendo uno spessore uniforme di circa 1cm. Pela l\'avocado maturo tagliandolo a metà, rimuovi il nocciolo e affettalo a fette spesse circa 8mm. Per evitare che annerisca, bagnalo immediatamente con qualche goccia di aceto balsamico. Lava i pomodorini datterini e tagliali a metà nel senso della lunghezza per far fuoriuscire i sapori. Pela il cetriolo e taglialo a rondelle sottili di 3-4mm usando possibilmente una mandolina per uniformità. In una ciotolina, prepara la vinaigrette mescolando energicamente con una forchetta l\'olio extravergine, l\'aceto balsamico, un pizzico di sale marino e pepe nero macinato fresco. La consistenza deve essere ben emulsionata. In una bowl capiente e fredda, disponi il mix di insalate baby come base verde. Distribuisci armoniosamente le listarelle di tacchino, le fette di avocado, i pomodorini e le rondelle di cetriolo, creando una composizione colorata e invitante. Aggiungi le scaglie di parmigiano reggiano come tocco finale. Versa la vinaigrette solo al momento di servire, mescolando delicatamente con le mani o con posate da insalata per non spezzare le foglie. Servi immediatamente in piatti freddi per mantenere la croccantezza.',
-        tipoDieta: ['keto'],
-        allergie: ['latte'],
-        stagione: ['tutto_anno'],
-        tags: ['insalata', 'tacchino', 'avocado', 'fresh', 'keto'],
-        createdAt: new Date('2024-01-13'),
-        rating: 4.5,
-        reviewCount: 134
+        id: 'pra_003', nome: 'Insalata Tacchino e Avocado', categoria: 'pranzo', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 15, porzioni: 1, calorie: 425, proteine: 32, carboidrati: 12, grassi: 28,
+        ingredienti: ['120g tacchino arrosto', '1 avocado', '150g mix insalate', '100g pomodorini datterini', '50g cetrioli', '30g parmigiano scaglie', 'olio extravergine', 'aceto balsamico'],
+        preparazione: 'Lava e asciuga insalate. Taglia tacchino a listarelle, avocado a fette. Dimezza pomodorini, taglia cetrioli. Prepara vinaigrette. Assembla insalata e condisci.',
+        tipoDieta: ['keto'], allergie: ['latte'], stagione: ['tutto_anno'], tags: ['insalata', 'fresh'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 134
       },
       {
-        id: 'pra_004',
-        nome: 'Curry di Lenticchie Rosse Proteico',
-        categoria: 'pranzo',
-        tipoCucina: 'asiatica',
-        difficolta: 'medio',
-        tempoPreparazione: 35,
-        porzioni: 1,
-        calorie: 465,
-        proteine: 28,
-        carboidrati: 48,
-        grassi: 16,
-        ingredienti: [
-          '120g lenticchie rosse secche',
-          '25g proteine vegetali neutre',
-          '200ml latte di cocco',
-          '1 cipolla media',
-          '2 spicchi d\'aglio',
-          '1 cucchiaio pasta di curry medio',
-          '1 cucchiaino curcuma in polvere',
-          '200g spinaci freschi',
-          'Coriandolo fresco per guarnire'
-        ],
-        preparazione: 'Inizia sciacquando accuratamente le lenticchie rosse sotto acqua corrente fredda in un colino fine, rimuovendo eventuali impurità, fino a quando l\'acqua non esce limpida. Pela e trita finemente la cipolla e gli spicchi d\'aglio - il trito deve essere molto fine per integrarsi perfettamente nel curry. In una pentola a fondo pesante, scalda 1 cucchiaio di olio di cocco (o olio neutro) a fuoco medio. Aggiungi la cipolla tritata e cuoci per 4-5 minuti mescolando spesso, fino a quando diventa traslucida e leggermente dorata. Unisci l\'aglio tritato e cuoci per altri 30 secondi fino a quando diventa profumato, facendo attenzione a non farlo bruciare. Aggiungi la pasta di curry e la curcuma in polvere, mescolando costantemente per 1 minuto per far tostare le spezie e rilasciare tutti gli aromi. Incorpora le lenticchie rosse sciacquate, mescolando bene per farle insaporire con le spezie. Versa il latte di cocco e 300ml di acqua calda. Porta a ebollizione a fuoco medio-alto, poi riduci a fuoco medio-basso e copri parzialmente. Cuoci per 15-18 minuti, mescolando occasionalmente, fino a quando le lenticchie si sono completamente sfatte e il curry ha raggiunto una consistenza cremosa. Se necessario, aggiungi altra acqua calda per raggiungere la consistenza desiderata. Togli dal fuoco e lascia raffreddare per 2-3 minuti. Incorpora le proteine vegetali mescolando energicamente con una frusta per evitare grumi. Aggiungi gli spinaci freschi lavati negli ultimi 2-3 minuti di cottura, mescolando fino a quando non si sono completamente appassiti. Aggiusta di sale e pepe. Servi caldo in una ciotola preriscaldata, guarnendo abbondantemente con coriandolo fresco tritato grossolanamente.',
-        tipoDieta: ['vegana', 'senza_glutine'],
-        allergie: [],
-        stagione: ['autunno', 'inverno'],
-        tags: ['curry', 'lenticchie', 'speziato', 'comfort_food'],
-        createdAt: new Date('2024-01-14'),
-        rating: 4.6,
-        reviewCount: 178
+        id: 'pra_004', nome: 'Curry Lenticchie Rosse Proteico', categoria: 'pranzo', tipoCucina: 'asiatica',
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 1, calorie: 465, proteine: 28, carboidrati: 48, grassi: 16,
+        ingredienti: ['120g lenticchie rosse', '25g proteine vegetali', '200ml latte cocco', '1 cipolla', '2 spicchi aglio', 'pasta curry', 'curcuma', '200g spinaci', 'coriandolo'],
+        preparazione: 'Soffriggi cipolla e aglio. Aggiungi curry e curcuma. Incorpora lenticchie, latte cocco e acqua. Cuoci 15-18 min. Aggiungi proteine e spinaci. Guarnisci con coriandolo.',
+        tipoDieta: ['vegana'], allergie: [], stagione: ['inverno'], tags: ['curry', 'speziato'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 178
       },
       {
-        id: 'pra_005',
-        nome: 'Tagliata di Manzo con Rucola',
-        categoria: 'pranzo',
-        tipoCucina: 'italiana',
-        difficolta: 'medio',
-        tempoPreparazione: 25,
-        porzioni: 1,
-        calorie: 440,
-        proteine: 38,
-        carboidrati: 8,
-        grassi: 28,
-        ingredienti: [
-          '150g tagliata di manzo (controfiletto)',
-          '100g rucola selvatica',
-          '100g pomodorini pachino',
-          '50g grana padano a scaglie',
-          '3 cucchiai olio extravergine d\'oliva',
-          '1 cucchiaio aceto balsamico invecchiato',
-          'Sale grosso marino',
-          'Pepe nero macinato fresco',
-          'Rosmarino fresco'
-        ],
-        preparazione: 'Togli la carne dal frigorifero almeno 30 minuti prima della cottura per portarla a temperatura ambiente - questo garantisce una cottura uniforme. Asciuga perfettamente la tagliata con carta da cucina e massaggiala su entrambi i lati con sale grosso marino, pepe nero macinato fresco e aghi di rosmarino tritati finemente. Lascia riposare per 10 minuti per far penetrare i sapori. Nel frattempo, lava delicatamente la rucola selvatica in acqua fredda e asciugala completamente. Lava i pomodorini pachino e tagliali a metà. Scalda una piastra in ghisa o una padella antiaderente pesante a fuoco molto alto - deve essere bollente. Spennella la carne con un filo d\'olio extravergine. Cuoci la tagliata per 2-3 minuti per lato senza mai muoverla durante la cottura, per creare una bella crosticina caramellizzata mantenendo l\'interno al sangue (la temperatura interna deve raggiungere 50-52°C per una cottura al sangue perfetta). Durante la cottura, non premere mai la carne con la spatola. Una volta cotta, trasferisci immediatamente la tagliata su un tagliere e coprila completamente con carta stagnola. Lascia riposare per 5-7 minuti esatti - questo passaggio è fondamentale per redistribuire i succhi e ottenere una carne succosa. Mentre la carne riposa, prepara il condimento mescolando in una ciotolina il rimanente olio extravergine con l\'aceto balsamico invecchiato. Taglia la tagliata con un coltello molto affilato a fette oblique di 1cm di spessore, tagliando sempre contro fibra per massimizzare la tenerezza. Disponi la rucola selvatica in un piatto da portata, adagia sopra le fette di tagliata ancora tiepide, distribuisci i pomodorini e le scaglie di grana padano. Irrora con il condimento preparato e servi immediatamente.',
-        tipoDieta: ['keto'],
-        allergie: ['latte'],
-        stagione: ['tutto_anno'],
-        tags: ['tagliata', 'manzo', 'italiana', 'gourmet'],
-        createdAt: new Date('2024-01-15'),
-        rating: 4.7,
-        reviewCount: 189
+        id: 'pra_005', nome: 'Tagliata Manzo con Rucola', categoria: 'pranzo', tipoCucina: 'italiana',
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 440, proteine: 38, carboidrati: 8, grassi: 28,
+        ingredienti: ['150g controfiletto manzo', '100g rucola selvatica', '100g pomodorini pachino', '50g grana scaglie', 'olio extravergine', 'aceto balsamico', 'rosmarino'],
+        preparazione: 'Porta carne a temperatura ambiente. Condisci con sale, pepe e rosmarino. Cuoci in piastra 2-3 min per lato. Riposa 5 min. Taglia a fette. Servi su rucola con pomodorini e grana.',
+        tipoDieta: ['keto'], allergie: ['latte'], stagione: ['tutto_anno'], tags: ['tagliata', 'gourmet'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 189
       },
       {
-        id: 'pra_006',
-        nome: 'Wrap Proteico di Tonno e Avocado',
-        categoria: 'pranzo',
-        tipoCucina: 'americana',
-        difficolta: 'facile',
-        tempoPreparazione: 12,
-        porzioni: 1,
-        calorie: 395,
-        proteine: 35,
-        carboidrati: 28,
-        grassi: 16,
-        ingredienti: [
-          '1 tortilla integrale grande (circa 25cm)',
-          '150g tonno in scatola al naturale (sgocciolato)',
-          '1/2 avocado maturo',
-          '50g yogurt greco 0% grassi',
-          '1 carota media grattugiata',
-          '4-5 foglie di lattuga iceberg',
-          '1 cucchiaio succo di limone fresco',
-          'Sale marino e pepe nero q.b.',
-          'Paprika dolce per guarnire'
-        ],
-        preparazione: 'Scola perfettamente il tonno in scatola usando un colino, poi trasferiscilo in una ciotola e sminuzzalo finemente con una forchetta fino a ottenere una consistenza uniforme. Aggiungi lo yogurt greco e mescola energicamente fino a creare una crema omogenea e spalmabile. Condisci con un pizzico di sale e pepe nero. In una ciotolina separata, schiaccia la polpa di mezzo avocado con una forchetta, lasciando alcuni piccoli pezzetti per dare consistenza. Aggiungi immediatamente il succo di limone fresco per evitare l\'ossidazione, poi condisci con sale e pepe. Mescola bene fino ad ottenere una crema verdognola omogenea. Prepara la carota grattugiandola finemente con una grattugia a fori piccoli, poi condiscila con qualche goccia di limone per mantenerla fresca e croccante. Lava e asciuga accuratamente le foglie di lattuga iceberg, eliminando il nervo centrale se troppo spesso. Se la tortilla è fredda, scaldala leggermente in una padella antiaderente per 20-30 secondi per lato - questo la renderà più morbida e facile da arrotolare. Disponi la tortilla su una superficie pulita. Spalma uniformemente la crema di avocado su tutta la superficie, lasciando un bordo di 2cm. Distribuisci la lattuga al centro della tortilla, poi aggiungi la crema di tonno e yogurt in una striscia centrale. Completa con la carota grattugiata per il crunch. Per arrotolare: piega prima i lati corti di circa 3cm verso l\'interno, poi arrotola strettamente partendo dal lato più vicino a te, mantenendo gli ingredienti compatti. Avvolgi il wrap in carta da forno o pellicola trasparente e taglia a metà in diagonale con un coltello affilato. Spolverizza con paprika dolce e servi immediatamente.',
-        tipoDieta: ['mediterranea'],
-        allergie: ['glutine', 'pesce', 'latte'],
-        stagione: ['tutto_anno'],
-        tags: ['wrap', 'tonno', 'portatile', 'veloce'],
-        createdAt: new Date('2024-01-16'),
-        rating: 4.4,
-        reviewCount: 145
+        id: 'pra_006', nome: 'Wrap Proteico Tonno Avocado', categoria: 'pranzo', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 12, porzioni: 1, calorie: 395, proteine: 35, carboidrati: 28, grassi: 16,
+        ingredienti: ['1 tortilla integrale', '150g tonno naturale', '1/2 avocado', '50g yogurt greco 0%', '1 carota grattugiata', 'lattuga iceberg', 'succo limone', 'paprika'],
+        preparazione: 'Sminuzza tonno e mescola con yogurt. Schiaccia avocado con limone. Scalda tortilla. Spalma avocado, aggiungi lattuga, tonno e carota. Arrotola stretto e taglia a metà.',
+        tipoDieta: ['mediterranea'], allergie: ['glutine', 'pesce'], stagione: ['tutto_anno'], tags: ['wrap', 'portatile'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 145
       },
       {
-        id: 'pra_007',
-        nome: 'Risotto Proteico ai Funghi Porcini',
-        categoria: 'pranzo',
-        tipoCucina: 'italiana',
-        difficolta: 'difficile',
-        tempoPreparazione: 35,
-        porzioni: 1,
-        calorie: 485,
-        proteine: 26,
-        carboidrati: 52,
-        grassi: 18,
-        ingredienti: [
-          '80g riso Arborio per risotti',
-          '25g proteine caseine neutre',
-          '200g funghi porcini freschi',
-          '500ml brodo vegetale caldo',
-          '1 scalogno medio',
-          '50ml vino bianco secco',
-          '30g parmigiano reggiano grattugiato',
-          '2 cucchiai olio extravergine d\'oliva',
-          'Prezzemolo fresco tritato'
-        ],
-        preparazione: 'Inizia preparando i funghi porcini: puliscili delicatamente con un pennellino per rimuovere terra e residui, evitando di lavarli. Taglia i gambi e affettali a rondelle di 5mm, mentre i cappelli vanno tagliati a fette spesse circa 8mm. Tieni separati gambi e cappelli. Prepara il brodo vegetale e mantienilo sempre caldo in un pentolino a parte - questo è fondamentale per la riuscita del risotto. Pela e trita finemente lo scalogno. In una casseruola a fondo pesante, scalda 1 cucchiaio di olio extravergine a fuoco medio. Aggiungi prima i gambi dei porcini e rosoli per 3-4 minuti fino a doratura, poi unisci i cappelli e cuoci altri 2-3 minuti. I funghi devono perdere la loro acqua di vegetazione e concentrare i sapori. Rimuovi metà dei funghi e tienili da parte per la mantecatura finale. Nella stessa casseruola, aggiungi lo scalogno tritato ai funghi rimasti e soffriggi per 2 minuti fino a trasparenza. Unisci il riso Arborio e tosta per 2 minuti mescolando costantemente con un cucchiaio di legno - i chicchi devono diventare leggermente traslucidi ai bordi. Alza la fiamma e sfuma con il vino bianco, mescolando fino a completa evaporazione dell\'alcool (circa 1 minuto). Inizia ad aggiungere il brodo caldo un mestolo alla volta, mescolando costantemente. Ogni mestolo deve essere assorbito prima di aggiungere il successivo. Continua per 16-18 minuti, assaggiando il riso per verificare la cottura: deve essere cremoso fuori ma con anima leggermente al dente. Negli ultimi 2 minuti, aggiungi i funghi tenuti da parte. Togli dal fuoco e lascia riposare 1 minuto. Per la mantecatura proteica: incorpora le proteine caseine mescolando energicamente, poi aggiungi il parmigiano grattugiato e il rimanente olio extravergine. Mescola vigorosamente per 30 secondi per creare la cremosità tipica del risotto. La consistenza deve essere all\'onda. Completa con prezzemolo fresco tritato e servi immediatamente in piatti preriscaldati.',
-        tipoDieta: ['vegetariana'],
-        allergie: ['latte'],
-        stagione: ['autunno', 'inverno'],
-        tags: ['risotto', 'porcini', 'cremoso', 'gourmet'],
-        createdAt: new Date('2024-01-17'),
-        rating: 4.8,
-        reviewCount: 167
+        id: 'pra_007', nome: 'Risotto Proteico Funghi Porcini', categoria: 'pranzo', tipoCucina: 'italiana',
+        difficolta: 'difficile', tempoPreparazione: 35, porzioni: 1, calorie: 485, proteine: 26, carboidrati: 52, grassi: 18,
+        ingredienti: ['80g riso Arborio', '25g proteine caseine', '200g funghi porcini', '500ml brodo vegetale', '1 scalogno', 'vino bianco', '30g parmigiano', 'prezzemolo'],
+        preparazione: 'Pulisci e affetta funghi. Soffriggi scalogno e funghi. Tosta riso 2 min. Sfuma con vino. Aggiungi brodo caldo a mestoli. Cuoci 16-18 min. Manteca con proteine e parmigiano.',
+        tipoDieta: ['vegetariana'], allergie: ['latte'], stagione: ['autunno'], tags: ['risotto', 'gourmet'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 167
       },
       {
-        id: 'pra_008',
-        nome: 'Caesar Salad Proteica con Pollo',
-        categoria: 'pranzo',
-        tipoCucina: 'americana',
-        difficolta: 'medio',
-        tempoPreparazione: 25,
-        porzioni: 1,
-        calorie: 385,
-        proteine: 42,
-        carboidrati: 8,
-        grassi: 20,
-        ingredienti: [
-          '150g petto di pollo senza pelle',
-          '200g lattuga romana (cuori)',
-          '30g parmigiano reggiano',
-          '2 cucchiai yogurt greco 0%',
-          '1 cucchiaio senape di Digione',
-          '1 spicchio d\'aglio',
-          'Succo di 1/2 limone',
-          '2 cucchiai olio extravergine d\'oliva',
-          '2 filetti di acciughe sott\'olio (opzionali)'
-        ],
-        preparazione: 'Inizia marinando il petto di pollo: condiscilo con 1 cucchiaio di olio extravergine, sale, pepe e qualche goccia di succo di limone. Lascia marinare per almeno 15 minuti a temperatura ambiente per far penetrare i sapori. Nel frattempo, prepara la salsa Caesar: in una ciotolina, schiaccia lo spicchio d\'aglio con la lama di un coltello, poi tritalo finemente. Se usi le acciughe, schiacciale con una forchetta fino a ridurle in pasta. Mescola yogurt greco, senape di Digione, aglio (e acciughe se usate), succo di limone. Aggiungi gradualmente il rimanente olio extravergine emulsionando con una piccola frusta fino ad ottenere una consistenza cremosa e omogenea. Assaggia e aggiusta di sale e pepe. La salsa deve essere saporita e leggermente piccante. Scalda una piastra o padella antiaderente a fuoco medio-alto. Cuoci il petto di pollo per 6-7 minuti per lato, controllando che raggiunga una temperatura interna di 74°C. La superficie deve essere dorata e l\'interno succoso. Lascia riposare il pollo per 5 minuti coperto con alluminio, poi taglialo a strisce oblique di 1cm di spessore, sempre contro fibra. Per la lattuga: rimuovi le foglie esterne più dure, tieni solo i cuori teneri. Lavale accuratamente in acqua ghiacciata, poi asciugale perfettamente con centrifuga o carta da cucina. Tagliala a listarelle larghe circa 3cm. In una bowl capiente e fredda, condisci la lattuga romana con la salsa Caesar preparata, mescolando delicatamente con le mani per non spezzare le foglie. Ogni foglia deve essere leggermente rivestita di salsa. Trasferisci l\'insalata condita in un piatto da portata, distribuisci sopra le strisce di pollo ancora tiepide e completa con scaglie di parmigiano reggiano fatte con un pelapatate. Servi immediatamente per mantenere il contrasto di temperature e la croccantezza della lattuga.',
-        tipoDieta: ['keto'],
-        allergie: ['latte', 'pesce'],
-        stagione: ['tutto_anno'],
-        tags: ['caesar_salad', 'pollo', 'classica', 'proteica'],
-        createdAt: new Date('2024-01-18'),
-        rating: 4.6,
-        reviewCount: 198
+        id: 'pra_008', nome: 'Caesar Salad Proteica Pollo', categoria: 'pranzo', tipoCucina: 'americana',
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 385, proteine: 42, carboidrati: 8, grassi: 20,
+        ingredienti: ['150g petto pollo', '200g lattuga romana', '30g parmigiano', '2 cucchiai yogurt greco', 'senape Digione', '1 spicchio aglio', 'succo limone', 'olio extravergine'],
+        preparazione: 'Marina e cuoci pollo 6-7 min per lato. Prepara salsa Caesar con yogurt, senape, aglio e limone. Taglia lattuga a listarelle. Condisci lattuga, aggiungi pollo a strisce e parmigiano.',
+        tipoDieta: ['keto'], allergie: ['latte'], stagione: ['tutto_anno'], tags: ['caesar_salad', 'classica'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 198
       },
       {
-        id: 'pra_009',
-        nome: 'Bowl Vegano di Ceci e Tahina',
-        categoria: 'pranzo',
-        tipoCucina: 'mediorientale',
-        difficolta: 'facile',
-        tempoPreparazione: 20,
-        porzioni: 1,
-        calorie: 465,
-        proteine: 22,
-        carboidrati: 54,
-        grassi: 18,
-        ingredienti: [
-          '150g ceci lessati (o in scatola)',
-          '80g quinoa cotta',
-          '100g carote baby',
-          '100g cetrioli',
-          '50g hummus di tahina',
-          '2 cucchiai tahina pura',
-          '1 cucchiaio succo di limone',
-          '1 cucchiaino paprika dolce',
-          'Foglie di menta fresca',
-          'Semi di zucca tostati'
-        ],
-        preparazione: 'Se usi ceci secchi, lasciali in ammollo per almeno 12 ore, poi cuocili in abbondante acqua salata per 45-60 minuti fino a completa tenerezza. Se usi ceci in scatola, sciacquali accuratamente sotto acqua corrente per eliminare il liquido di conservazione. Per la quinoa: se non è già cotta, sciacquala e cuocila in acqua salata (rapporto 1:2) per 12-15 minuti, poi lasciala raffreddare completamente e sgranala con una forchetta. Prepara le verdure: lava le carote baby e tagliale a bastoncini sottili di circa 5cm di lunghezza. Pela i cetrioli e tagliali a tocchetti irregolari di circa 1cm. Tieni tutto in acqua ghiacciata per mantenere la croccantezza. Prepara la salsa di tahina: in una ciotolina, mescola la tahina pura con il succo di limone fresco. Aggiungi gradualmente 2-3 cucchiai di acqua tiepida, mescolando costantemente con una forchetta fino ad ottenere una consistenza fluida ma non troppo liquida - simile a una crema leggera. La tahina si addensa inizialmente con il limone, poi si ammorbidisce con l\'acqua. Aggiusta di sale e un pizzico di pepe bianco. Per assemblare la bowl: usa una ciotola ampia e profonda. Disponi la quinoa raffreddata come base occupando circa metà del fondo. Crea sezioni distinte con i ceci, le carote baby a bastoncini e i tocchetti di cetriolo - l\'effetto visivo deve essere colorato e ordinato. Aggiungi l\'hummus di tahina in una sezione separata come se fosse un condimento. Irrora tutta la bowl con la salsa di tahina preparata, creando dei rivoli che colleghino i diversi ingredienti. Spolverizza uniformemente con paprika dolce per dare colore e sapore. Completa con semi di zucca tostati sparsi su tutta la superficie e foglie di menta fresca spezzettate a mano. Servi con un cucchiaio largo e mescola tutti gli ingredienti al momento di gustare per amalgamare sapori e consistenze.',
-        tipoDieta: ['vegana', 'senza_glutine'],
-        allergie: ['sesamo'],
-        stagione: ['tutto_anno'],
-        tags: ['bowl', 'vegano', 'medio_orientale', 'tahina'],
-        createdAt: new Date('2024-01-19'),
-        rating: 4.5,
-        reviewCount: 156
+        id: 'pra_009', nome: 'Bowl Vegano Ceci Tahina', categoria: 'pranzo', tipoCucina: 'mediorientale',
+        difficolta: 'facile', tempoPreparazione: 20, porzioni: 1, calorie: 465, proteine: 22, carboidrati: 54, grassi: 18,
+        ingredienti: ['150g ceci lessati', '80g quinoa cotta', '100g carote baby', '100g cetrioli', '50g hummus tahina', '2 cucchiai tahina pura', 'succo limone', 'paprika', 'menta', 'semi zucca'],
+        preparazione: 'Prepara verdure a bastoncini. Prepara salsa tahina con limone e acqua. Assembla bowl con quinoa, ceci, verdure e hummus. Irrora con salsa tahina, spolverizza paprika e semi.',
+        tipoDieta: ['vegana'], allergie: ['sesamo'], stagione: ['tutto_anno'], tags: ['bowl', 'mediorientale'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 156
       },
       {
-        id: 'pra_010',
-        nome: 'Orata al Sale con Verdure Grigliate',
-        categoria: 'pranzo',
-        tipoCucina: 'mediterranea',
-        difficolta: 'difficile',
-        tempoPreparazione: 40,
-        porzioni: 1,
-        calorie: 425,
-        proteine: 35,
-        carboidrati: 15,
-        grassi: 26,
-        ingredienti: [
-          '1 orata intera da 300-350g (pulita)',
-          '500g sale grosso marino',
-          '2 albumi d\'uovo',
-          '1 zucchina media',
-          '1 peperone rosso',
-          '1 melanzana piccola',
-          'Rosmarino e timo freschi',
-          '4 cucchiai olio extravergine d\'oliva',
-          'Limone per servire'
-        ],
-        preparazione: 'Preriscalda il forno a 200°C in modalità statica. Chiedi al pescivendolo di pulire l\'orata mantenendo le squame - sono fondamentali per trattenere l\'umidità durante la cottura al sale. Asciuga il pesce all\'interno e all\'esterno con carta da cucina. Riempi la cavità addominale con rametti di rosmarino e timo freschi. In una ciotola capiente, mescola il sale grosso marino con gli albumi d\'uovo montati a neve non troppo ferma - il composto deve essere umido e compatto, simile alla sabbia bagnata. Se troppo asciutto, aggiungi un altro albume. Stendi metà del composto di sale su una teglia rivestita di carta forno, creando un letto delle dimensioni del pesce. Adagia l\'orata sopra il sale, poi ricoprila completamente con il rimanente composto, pressando delicatamente per sigillare bene. Il pesce deve essere completamente avvolto - non devono vedersi parti di squame. Inforna per 25-30 minuti esatti senza mai aprire il forno. Nel frattempo, prepara le verdure: taglia la zucchina a rondelle di 1cm, il peperone a strisce larghe eliminando semi e filamenti bianchi, la melanzana a fette di 8mm. Spennella tutte le verdure con olio extravergine e condisci con sale, pepe e erbe aromatiche. Negli ultimi 15 minuti di cottura del pesce, griglia le verdure su una piastra ben calda per 4-5 minuti per lato, fino a quando sono tenere e leggermente caramellate. Per servire: rompi la crosta di sale colpendola delicatamente con il dorso di un coltello - si aprirà facilmente rilasciando vapore profumato. Rimuovi tutti i residui di sale, poi elimina delicatamente la pelle dell\'orata che si staccherà facilmente. Il pesce risulterà incredibilmente umido e saporito. Filetta con cura evitando le lische e servi immediatamente con le verdure grigliate ancora calde, spicchi di limone e un filo di olio extravergine a crudo.',
-        tipoDieta: ['mediterranea'],
-        allergie: ['pesce', 'uova'],
-        stagione: ['tutto_anno'],
-        tags: ['orata', 'al_sale', 'gourmet', 'tecnica_avanzata'],
-        createdAt: new Date('2024-01-20'),
-        rating: 4.9,
-        reviewCount: 234
+        id: 'pra_010', nome: 'Orata al Sale Verdure Grigliate', categoria: 'pranzo', tipoCucina: 'mediterranea',
+        difficolta: 'difficile', tempoPreparazione: 40, porzioni: 1, calorie: 425, proteine: 35, carboidrati: 15, grassi: 26,
+        ingredienti: ['1 orata 300g', '500g sale grosso', '2 albumi', '1 zucchina', '1 peperone rosso', '1 melanzana', 'rosmarino', 'timo', 'olio extravergine', 'limone'],
+        preparazione: 'Riempi orata con erbe. Mescola sale con albumi. Avvolgi orata nel sale. Cuoci in forno 25-30 min. Griglia verdure condite. Rompi crosta sale e filetta pesce. Servi con verdure.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce', 'uova'], stagione: ['tutto_anno'], tags: ['orata', 'tecnica_avanzata'],
+        createdAt: new Date(), rating: 4.9, reviewCount: 234
       },
 
-      // 🥜 SPUNTINI (10 ricette)
+      // SPUNTINI
       {
-        id: 'spu_001',
-        nome: 'Energy Balls Proteiche al Cioccolato',
-        categoria: 'spuntino',
+        id: 'spu_001', nome: 'Energy Balls Proteiche Cioccolato', categoria: 'spuntino', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 15, porzioni: 8, calorie: 85, proteine: 4, carboidrati: 12, grassi: 3,
+        ingredienti: ['100g datteri Medjoul', '30g proteine whey cioccolato', '40g mandorle tostate', '20g cacao amaro', 'burro mandorle', 'olio cocco', 'cocco rapé'],
+        preparazione: 'Ammolla datteri 10 min. Frulla datteri, proteine, mandorle e cacao. Aggiungi burro mandorle e olio cocco. Forma palline e rotola nel cocco. Riponi in frigo 30 min.',
+        tipoDieta: ['vegetariana'], allergie: ['frutta_secca'], stagione: ['tutto_anno'], tags: ['energy_balls', 'portatile'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 189
+      },
+      {
+        id: 'spu_002', nome: 'Hummus Proteico Verdure Crude', categoria: 'spuntino', tipoCucina: 'mediorientale',
+        difficolta: 'facile', tempoPreparazione: 10, porzioni: 4, calorie: 95, proteine: 6, carboidrati: 8, grassi: 4,
+        ingredienti: ['150g ceci lessati', '20g proteine vegetali', '2 cucchiai tahina', 'succo limone', '1 spicchio aglio', 'acqua cottura ceci', 'carote', 'cetrioli', 'paprika'],
+        preparazione: 'Frulla ceci, aglio e tahina. Aggiungi limone e proteine. Diluisci con acqua cottura fino consistenza cremosa. Servi con bastoncini verdure crude. Spolverizza con paprika.',
+        tipoDieta: ['vegana'], allergie: ['sesamo'], stagione: ['tutto_anno'], tags: ['hummus', 'dip'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 134
+      },
+      {
+        id: 'spu_003', nome: 'Smoothie Proteico Verde Detox', categoria: 'spuntino', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 185, proteine: 22, carboidrati: 8, grassi: 8,
+        ingredienti: ['25g proteine whey vaniglia', '100g spinaci baby', '1/2 avocado piccolo', '200ml acqua cocco', 'succo limone', 'zenzero fresco', 'ghiaccio', 'stevia'],
+        preparazione: 'Frulla tutti ingredienti ad alta velocità 60 sec. Aggiungi ghiaccio e frulla 30 sec. Dolcifica con stevia se necessario. Consuma immediatamente.',
+        tipoDieta: ['vegetariana', 'keto'], allergie: ['latte'], stagione: ['tutto_anno'], tags: ['smoothie', 'detox'],
+        createdAt: new Date(), rating: 4.3, reviewCount: 98
+      },
+      {
+        id: 'spu_004', nome: 'Yogurt Greco Noci Miele', categoria: 'spuntino', tipoCucina: 'mediterranea',
+        difficolta: 'facile', tempoPreparazione: 3, porzioni: 1, calorie: 265, proteine: 20, carboidrati: 22, grassi: 12,
+        ingredienti: ['150g yogurt greco 0%', '30g noci sgusciate', '1 cucchiaio miele millefiori', 'cannella', '15g semi girasole', 'buccia arancia', 'menta'],
+        preparazione: 'Versa yogurt in ciotola. Trita noci grossolanamente. Irrora con miele. Completa con noci, semi girasole, buccia arancia e cannella. Guarnisci con menta.',
+        tipoDieta: ['vegetariana'], allergie: ['latte', 'frutta_secca'], stagione: ['tutto_anno'], tags: ['yogurt', 'mediterraneo'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 167
+      },
+      {
+        id: 'spu_005', nome: 'Barretta Energetica Fatta Casa', categoria: 'spuntino', tipoCucina: 'internazionale',
+        difficolta: 'medio', tempoPreparazione: 20, porzioni: 8, calorie: 145, proteine: 6, carboidrati: 18, grassi: 6,
+        ingredienti: ['50g mandorle crude', '30g nocciole crude', '80g datteri Medjoul', '20g semi girasole', '15g semi zucca', 'burro mandorle', 'estratto vaniglia'],
+        preparazione: 'Tosta frutta secca 8-10 min. Frulla datteri fino pasta densa. Mescola tutto, impasta bene. Stendi tra carta forno spessore 1,5cm. Refrigera 2 ore. Taglia a barrette.',
+        tipoDieta: ['vegana'], allergie: ['frutta_secca'], stagione: ['tutto_anno'], tags: ['barretta', 'homemade'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 145
+      },
+      {
+        id: 'spu_006', nome: 'Shake Post-Workout Banana Avena', categoria: 'spuntino', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 35, grassi: 14,
+        ingredienti: ['30g proteine whey vaniglia', '1 banana matura', '30g fiocchi avena', '250ml latte mandorla', 'burro arachidi naturale', 'creatina', 'cannella', 'ghiaccio'],
+        preparazione: 'Ammolla avena in latte 2 min. Aggiungi banana, proteine, burro arachidi e creatina. Frulla 90 sec. Aggiungi ghiaccio e frulla 30 sec. Consuma entro 30 min da workout.',
+        tipoDieta: ['vegetariana'], allergie: ['arachidi', 'latte'], stagione: ['tutto_anno'], tags: ['post_workout', 'recovery'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 223
+      },
+      {
+        id: 'spu_007', nome: 'Toast Avocado Uovo Sodo', categoria: 'spuntino', tipoCucina: 'americana',
+        difficolta: 'facile', tempoPreparazione: 12, porzioni: 1, calorie: 255, proteine: 12, carboidrati: 18, grassi: 16,
+        ingredienti: ['1 fetta pane integrale', '1/2 avocado', '1 uovo fresco', 'succo limone', 'sale', 'pepe', 'paprika affumicata', 'semi sesamo', 'erba cipollina'],
+        preparazione: 'Cuoci uovo sodo 8 min. Tosta pane. Schiaccia avocado con limone, sale e pepe. Spalma avocado su pane. Taglia uovo a rondelle. Completa con paprika, sesamo ed erba cipollina.',
+        tipoDieta: ['vegetariana'], allergie: ['glutine', 'uova'], stagione: ['tutto_anno'], tags: ['toast', 'saziante'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 156
+      },
+      {
+        id: 'spu_008', nome: 'Mix Frutta Secca Semi', categoria: 'spuntino', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 5, calorie: 165, proteine: 6, carboidrati: 4, grassi: 14,
+        ingredienti: ['20g mandorle crude', '15g noci Brasile', '15g nocciole tostate', '10g semi zucca', '10g semi girasole', '5g semi lino', 'sale marino', 'paprika dolce'],
+        preparazione: 'Tosta mandorle e nocciole 3-4 min se necessario. Tosta semi zucca e girasole 2-3 min. Mescola tutto con sale e paprika. Conserva in contenitore ermetico max 5 giorni.',
+        tipoDieta: ['vegana', 'keto'], allergie: ['frutta_secca'], stagione: ['tutto_anno'], tags: ['trail_mix', 'energizzante'],
+        createdAt: new Date(), rating: 4.2, reviewCount: 89
+      },
+      {
+        id: 'spu_009', nome: 'Ricotta Mirtilli Cannella', categoria: 'spuntino', tipoCucina: 'italiana',
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 225, proteine: 16, carboidrati: 20, grassi: 8,
+        ingredienti: ['120g ricotta fresca', '100g mirtilli freschi', '1 cucchiaino miele', 'cannella Ceylon', '15g mandorle lamelle', 'buccia limone', 'menta'],
+        preparazione: 'Lavora ricotta con miele e cannella. Lava mirtilli. Disponi ricotta in bowl, aggiungi mirtilli e mandorle. Completa con buccia limone, cannella e menta.',
+        tipoDieta: ['vegetariana'], allergie: ['latte', 'frutta_secca'], stagione: ['estate'], tags: ['ricotta', 'antiossidanti'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 134
+      },
+      {
+        id: 'spu_010', nome: 'Chips Verdure al Forno', categoria: 'spuntino', tipoCucina: 'internazionale',
+        difficolta: 'medio', tempoPreparazione: 45, porzioni: 4, calorie: 75, proteine: 2, carboidrati: 12, grassi: 3,
+        ingredienti: ['1 barbabietola', '2 carote grandi', '1 zucchina', 'olio extravergine', 'sale marino', 'paprika dolce', 'curcuma', 'rosmarino secco'],
+        preparazione: 'Preriscalda forno 180°C. Taglia verdure a fette sottilissime 2mm. Immergile in acqua 10 min. Asciuga bene. Condisci con olio e spezie. Cuoci 25-30 min girando a metà.',
+        tipoDieta: ['vegana'], allergie: [], stagione: ['tutto_anno'], tags: ['chips', 'croccante'],
+        createdAt: new Date(), rating: 4.3, reviewCount: 112
+      },
+
+      // CENE
+      {
+        id: 'cen_001', nome: 'Filetto Branzino Verdure Vapore', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 325, proteine: 28, carboidrati: 18, grassi: 16,
+        ingredienti: ['150g filetto branzino', '200g broccoli', '150g zucchine', '100g carote baby', 'olio extravergine', 'succo limone', '2 spicchi aglio', 'timo'],
+        preparazione: 'Cuoci verdure al vapore 12-15 min. Condisci branzino con sale, pepe e timo. Cuoci in padella 4 min per lato. Condisci verdure con olio, aglio e limone. Componi piatto.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce'], stagione: ['tutto_anno'], tags: ['branzino', 'light'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 178
+      },
+      {
+        id: 'cen_002', nome: 'Tofu Grigliato Verdure Asiatiche', categoria: 'cena', tipoCucina: 'asiatica',
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 285, proteine: 22, carboidrati: 15, grassi: 16,
+        ingredienti: ['150g tofu compatto', '100g pak choi', '100g germogli soia', '1 peperone rosso', 'salsa soia light', 'olio sesamo', 'zenzero', 'aglio', 'semi sesamo'],
+        preparazione: 'Pressa tofu 15 min. Marina con salsa soia. Griglia tofu 3 min per lato. Salta verdure in wok con olio sesamo, aglio e zenzero 4-5 min. Completa con semi sesamo.',
+        tipoDieta: ['vegana'], allergie: ['soia', 'sesamo'], stagione: ['tutto_anno'], tags: ['tofu', 'asiatico'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 134
+      },
+      {
+        id: 'cen_003', nome: 'Petto Pollo Erbe Spinaci', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'facile', tempoPreparazione: 20, porzioni: 1, calorie: 315, proteine: 35, carboidrati: 8, grassi: 16,
+        ingredienti: ['150g petto pollo', '200g spinaci freschi', '50g ricotta light', 'olio extravergine', 'origano', 'rosmarino', '2 spicchi aglio', 'pomodorini'],
+        preparazione: 'Batti pollo per uniformare spessore. Condisci con erbe e spezie. Cuoci 6-7 min per lato. Salta aglio e pomodorini, aggiungi spinaci. Incorpora ricotta. Servi pollo su spinaci.',
+        tipoDieta: ['mediterranea'], allergie: ['latte'], stagione: ['tutto_anno'], tags: ['pollo', 'protein_rich'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 189
+      },
+      {
+        id: 'cen_004', nome: 'Salmone Cartoccio Verdure', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 1, calorie: 365, proteine: 32, carboidrati: 12, grassi: 22,
+        ingredienti: ['150g filetto salmone', '1 zucchina', '100g asparagi', '100g pomodorini', 'olio extravergine', 'succo limone', 'aneto fresco', 'carta forno'],
+        preparazione: 'Taglia verdure e condisci con olio. Disponi su carta forno. Adagia salmone condito con limone e aneto. Chiudi cartoccio sigillando bene. Cuoci in forno 200°C per 18-20 min.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce'], stagione: ['primavera'], tags: ['salmone', 'cartoccio'],
+        createdAt: new Date(), rating: 4.8, reviewCount: 203
+      },
+      {
+        id: 'cen_005', nome: 'Zuppa Lenticchie Verdure', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'facile', tempoPreparazione: 35, porzioni: 1, calorie: 285, proteine: 18, carboidrati: 38, grassi: 8,
+        ingredienti: ['100g lenticchie rosse', '1 carota', '1 costa sedano', '1 cipolla piccola', '500ml brodo vegetale', '100g spinaci', 'olio extravergine', 'curcuma'],
+        preparazione: 'Trita verdure finemente. Soffriggi in olio 5 min. Aggiungi lenticchie e curcuma. Versa brodo e cuoci 15 min. Aggiungi spinaci ultimi 3 min. Aggiusta di sale e pepe.',
+        tipoDieta: ['vegana'], allergie: [], stagione: ['inverno'], tags: ['zuppa', 'comfort_food'],
+        createdAt: new Date(), rating: 4.3, reviewCount: 156
+      },
+      {
+        id: 'cen_006', nome: 'Omelette Proteica Funghi', categoria: 'cena', tipoCucina: 'francese',
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 6, grassi: 28,
+        ingredienti: ['3 uova intere', '2 albumi', '150g funghi misti', '50g formaggio spalmabile light', 'olio extravergine', '1 scalogno', 'prezzemolo', 'erba cipollina'],
+        preparazione: 'Affetta funghi e scalogno. Salta in padella 6-8 min. Sbatti uova con albumi. Cuoci omelette a fuoco medio-basso. Riempi con funghi e formaggio. Piega a metà e guarnisci.',
+        tipoDieta: ['vegetariana', 'keto'], allergie: ['uova', 'latte'], stagione: ['tutto_anno'], tags: ['omelette', 'cremosa'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 167
+      },
+      {
+        id: 'cen_007', nome: 'Merluzzo Crosta Erbe', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 295, proteine: 32, carboidrati: 18, grassi: 12,
+        ingredienti: ['150g filetto merluzzo', '30g pangrattato integrale', 'olio extravergine', '1 spicchio aglio', 'prezzemolo', 'basilico', 'timo', 'succo limone', '200g fagiolini', 'pomodorini'],
+        preparazione: 'Mescola pangrattato con erbe, aglio e olio. Pressa su merluzzo condito con limone. Cuoci in forno 190°C per 12-15 min. Sbollenta fagiolini, salta con pomodorini. Servi insieme.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce', 'glutine'], stagione: ['tutto_anno'], tags: ['merluzzo', 'crosta_erbe'],
+        createdAt: new Date(), rating: 4.6, reviewCount: 143
+      },
+      {
+        id: 'cen_008', nome: 'Insalata Proteica Quinoa Ceci', categoria: 'cena', tipoCucina: 'internazionale',
+        difficolta: 'facile', tempoPreparazione: 20, porzioni: 1, calorie: 425, proteine: 16, carboidrati: 48, grassi: 18,
+        ingredienti: ['80g quinoa', '150g ceci lessati', '100g cetrioli', '100g pomodorini', '50g olive taggiasche', 'olio extravergine', 'aceto mele', 'menta', 'basilico'],
+        preparazione: 'Cuoci quinoa 12-15 min e raffredda. Taglia verdure a dadini. Mescola quinoa con ceci, verdure e olive. Prepara vinaigrette con olio e aceto. Condisci e aggiungi erbe fresche.',
+        tipoDieta: ['vegana'], allergie: [], stagione: ['tutto_anno'], tags: ['quinoa', 'fresh'],
+        createdAt: new Date(), rating: 4.4, reviewCount: 189
+      },
+      {
+        id: 'cen_009', nome: 'Bistecca Tonno Ratatouille', categoria: 'cena', tipoCucina: 'mediterranea',
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 1, calorie: 385, proteine: 35, carboidrati: 20, grassi: 18,
+        ingredienti: ['150g bistecca tonno', '1 melanzana piccola', '1 zucchina', '1 peperone rosso', '200g pomodorini', '1 cipolla', 'olio extravergine', 'timo', 'origano'],
+        preparazione: 'Taglia verdure a cubetti uniformi. Soffriggi cipolla, aggiungi verdure in sequenza. Cuoci ratatouille 15 min. Griglia tonno 2 min per lato per cottura al sangue. Servi insieme.',
+        tipoDieta: ['mediterranea'], allergie: ['pesce'], stagione: ['estate'], tags: ['tonno', 'provenzale'],
+        createdAt: new Date(), rating: 4.7, reviewCount: 198
+      },
+      {
+        id: 'cen_010', nome: 'Zucchine Ripiene Proteiche', categoria: 'cena', tipoCucina: 'italiana',
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 1, calorie: 345, proteine: 28, carboidrati: 22, grassi: 16,
+        ingredienti: ['2 zucchine grandi', '100g tacchino macinato', '30g quinoa', '50g ricotta magra', '1 uovo', '30g parmigiano', '1 spicchio aglio', 'basilico'],
+        preparazione: 'Svuota zucchine creando barchette. Pre-cuoci in forno 10 min. Cuoci quinoa. Rosola tacchino con aglio e polpa zucchine. Mescola con quinoa, ricotta, uovo e parmigiano. Riempi zucchine e cuoci 18-20 min.',
+        tipoDieta: ['mediterranea'], allergie: ['uova', 'latte'], stagione: ['estate'], tags: ['zucchine_ripiene', 'family_style'],
+        createdAt: new Date(), rating: 4.5, reviewCount: 156
+      }
+    ];
+
+    console.log(`✅ Database inizializzato con ${this.recipes.length} ricette complete`);
+  }
+
+  // METODI RICERCA E FILTRI
+  searchRecipes(filters: {
+    query?: string;
+    categoria?: string;
+    tipoCucina?: string;
+    difficolta?: string;
+    maxTempo?: number;
+    maxCalorie?: number;
+    tipoDieta?: string[];
+    allergie?: string[];
+    tags?: string[];
+    rating?: number;
+  } = {}): Recipe[] {
+    return this.recipes.filter(recipe => {
+      if (filters.query) {
+        const query = filters.query.toLowerCase();
+        if (!recipe.nome.toLowerCase().includes(query) &&
+            !recipe.ingredienti.some(ing => ing.toLowerCase().includes(query)) &&
+            !recipe.tags.some(tag => tag.toLowerCase().includes(query))) {
+          return false;
+        }
+      }
+
+      if (filters.categoria && recipe.categoria !== filters.categoria) return false;
+      if (filters.tipoCucina && recipe.tipoCucina !== filters.tipoCucina) return false;
+      if (filters.difficolta && recipe.difficolta !== filters.difficolta) return false;
+      if (filters.maxTempo && recipe.tempoPreparazione > filters.maxTempo) return false;
+      if (filters.maxCalorie && recipe.calorie > filters.maxCalorie) return false;
+      if (filters.rating && recipe.rating && recipe.rating < filters.rating) return false;
+
+      if (filters.tipoDieta && filters.tipoDieta.length > 0) {
+        if (!filters.tipoDieta.some(diet => recipe.tipoDieta.includes(diet as any))) return false;
+      }
+
+      if (filters.allergie && filters.allergie.length > 0) {
+        if (filters.allergie.some(allergia => recipe.allergie.includes(allergia))) return false;
+      }
+
+      if (filters.tags && filters.tags.length > 0) {
+        if (!filters.tags.some(tag => recipe.tags.includes(tag))) return false;
+      }
+
+      return true;
+    });
+  }
+
+  getRecipeById(id: string): Recipe | undefined {
+    return this.recipes.find(recipe => recipe.id === id);
+  }
+
+  getRecipesByCategory(categoria: string): Recipe[] {
+    return this.recipes.filter(recipe => recipe.categoria === categoria);
+  }
+
+  getRecommendedRecipes(limit: number = 10): Recipe[] {
+    return this.recipes
+      .filter(recipe => recipe.rating && recipe.rating >= 4.5)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, limit);
+  }
+
+  getSeasonalRecipes(season: string): Recipe[] {
+    return this.recipes.filter(recipe => 
+      recipe.stagione.includes(season as any) || 
+      recipe.stagione.includes('tutto_anno')
+    );
+  }
+
+  // GESTIONE PREFERITI
+  addToFavorites(recipeId: string): void {
+    this.favorites.add(recipeId);
+    this.saveFavorites();
+  }
+
+  removeFromFavorites(recipeId: string): void {
+    this.favorites.delete(recipeId);
+    this.saveFavorites();
+  }
+
+  isFavorite(recipeId: string): boolean {
+    return this.favorites.has(recipeId);
+  }
+
+  getFavoriteRecipes(): Recipe[] {
+    return Array.from(this.favorites)
+      .map(id => this.getRecipeById(id))
+      .filter(recipe => recipe !== undefined) as Recipe[];
+  }
+
+  private saveFavorites(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('recipe_favorites', JSON.stringify(Array.from(this.favorites)));
+    }
+  }
+
+  private loadFavorites(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('recipe_favorites');
+        if (saved) {
+          this.favorites = new Set(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    }
+  }
+
+  // GESTIONE CRONOLOGIA
+  addToRecentlyViewed(recipe: Recipe): void {
+    this.recentlyViewed = this.recentlyViewed.filter(r => r.id !== recipe.id);
+    this.recentlyViewed.unshift(recipe);
+    this.recentlyViewed = this.recentlyViewed.slice(0, 10);
+  }
+
+  getRecentlyViewed(): Recipe[] {
+    return this.recentlyViewed;
+  }
+
+  // RICETTE SIMILI
+  getSimilarRecipes(recipe: Recipe, limit: number = 5): Recipe[] {
+    return this.recipes
+      .filter(r => r.id !== recipe.id)
+      .filter(r => 
+        r.categoria === recipe.categoria ||
+        r.tipoCucina === recipe.tipoCucina ||
+        r.tags.some(tag => recipe.tags.includes(tag))
+      )
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, limit);
+  }
+
+  // STATISTICHE
+  getStats(): {
+    total: number;
+    byCategory: { [key: string]: number };
+    byCuisine: { [key: string]: number };
+    byDifficulty: { [key: string]: number };
+    averageRating: number;
+  } {
+    const stats = {
+      total: this.recipes.length,
+      byCategory: {} as { [key: string]: number },
+      byCuisine: {} as { [key: string]: number },
+      byDifficulty: {} as { [key: string]: number },
+      averageRating: 0
+    };
+
+    let totalRating = 0;
+    let ratedRecipes = 0;
+
+    this.recipes.forEach(recipe => {
+      stats.byCategory[recipe.categoria] = (stats.byCategory[recipe.categoria] || 0) + 1;
+      stats.byCuisine[recipe.tipoCucina] = (stats.byCuisine[recipe.tipoCucina] || 0) + 1;
+      stats.byDifficulty[recipe.difficolta] = (stats.byDifficulty[recipe.difficolta] || 0) + 1;
+      
+      if (recipe.rating) {
+        totalRating += recipe.rating;
+        ratedRecipes++;
+      }
+    });
+
+    stats.averageRating = ratedRecipes > 0 ? totalRating / ratedRecipes : 0;
+    return stats;
+  }
+
+  // OPZIONI FILTRI
+  getFilterOptions(): {
+    categories: string[];
+    cuisines: string[];
+    difficulties: string[];
+    diets: string[];
+    allergies: string[];
+    tags: string[];
+  } {
+    return {
+      categories: [...new Set(this.recipes.map(r => r.categoria))],
+      cuisines: [...new Set(this.recipes.map(r => r.tipoCucina))],
+      difficulties: [...new Set(this.recipes.map(r => r.difficolta))],
+      diets: [...new Set(this.recipes.flatMap(r => r.tipoDieta))],
+      allergies: [...new Set(this.recipes.flatMap(r => r.allergie))],
+      tags: [...new Set(this.recipes.flatMap(r => r.tags))]
+    };
+  }
+}
