@@ -430,15 +430,19 @@ export default function SmoothiesSpuntiniPage() {
                 value={selectedTipo}
                 onChange={(e) => setSelectedTipo(e.target.value)}
                 className="w-full bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{
+                  backgroundImage: 'none',
+                  color: 'white'
+                }}
               >
-                <option value="">Tutti i tipi</option>
-                <option value="smoothie">🥤 Smoothie</option>
-                <option value="frullato">🥛 Frullato</option>
-                <option value="shake">💪 Shake</option>
-                <option value="bowl">🍯 Bowl</option>
-                <option value="energy_ball">⚡ Energy Ball</option>
-                <option value="barretta">🍫 Barretta</option>
-                <option value="spuntino_solido">🍪 Spuntino</option>
+                <option value="" style={{ backgroundColor: '#1f2937', color: 'white' }}>Tutti i tipi</option>
+                <option value="smoothie" style={{ backgroundColor: '#1f2937', color: 'white' }}>🥤 Smoothie</option>
+                <option value="frullato" style={{ backgroundColor: '#1f2937', color: 'white' }}>🥛 Frullato</option>
+                <option value="shake" style={{ backgroundColor: '#1f2937', color: 'white' }}>💪 Shake</option>
+                <option value="bowl" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍯 Bowl</option>
+                <option value="energy_ball" style={{ backgroundColor: '#1f2937', color: 'white' }}>⚡ Energy Ball</option>
+                <option value="barretta" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍫 Barretta</option>
+                <option value="spuntino_solido" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍪 Spuntino</option>
               </select>
             </div>
 
@@ -447,14 +451,18 @@ export default function SmoothiesSpuntiniPage() {
                 value={selectedMomento}
                 onChange={(e) => setSelectedMomento(e.target.value)}
                 className="w-full bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{
+                  backgroundImage: 'none',
+                  color: 'white'
+                }}
               >
-                <option value="">Momento</option>
-                <option value="pre_workout">🏃‍♂️ Pre-Workout</option>
-                <option value="post_workout">💪 Post-Workout</option>
-                <option value="colazione">🌅 Colazione</option>
-                <option value="merenda">🍎 Merenda</option>
-                <option value="sera">🌙 Sera</option>
-                <option value="qualsiasi">⏰ Qualsiasi</option>
+                <option value="" style={{ backgroundColor: '#1f2937', color: 'white' }}>Momento</option>
+                <option value="pre_workout" style={{ backgroundColor: '#1f2937', color: 'white' }}>🏃‍♂️ Pre-Workout</option>
+                <option value="post_workout" style={{ backgroundColor: '#1f2937', color: 'white' }}>💪 Post-Workout</option>
+                <option value="colazione" style={{ backgroundColor: '#1f2937', color: 'white' }}>🌅 Colazione</option>
+                <option value="merenda" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍎 Merenda</option>
+                <option value="sera" style={{ backgroundColor: '#1f2937', color: 'white' }}>🌙 Sera</option>
+                <option value="qualsiasi" style={{ backgroundColor: '#1f2937', color: 'white' }}>⏰ Qualsiasi</option>
               </select>
             </div>
 
@@ -463,15 +471,19 @@ export default function SmoothiesSpuntiniPage() {
                 value={selectedSapore}
                 onChange={(e) => setSelectedSapore(e.target.value)}
                 className="w-full bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{
+                  backgroundImage: 'none',
+                  color: 'white'
+                }}
               >
-                <option value="">Sapore</option>
-                <option value="dolce">🍯 Dolce</option>
-                <option value="fruttato">🍓 Fruttato</option>
-                <option value="cioccolato">🍫 Cioccolato</option>
-                <option value="vaniglia">🌟 Vaniglia</option>
-                <option value="tropicale">🥥 Tropicale</option>
-                <option value="verde">🥬 Verde</option>
-                <option value="neutro">⚪ Neutro</option>
+                <option value="" style={{ backgroundColor: '#1f2937', color: 'white' }}>Sapore</option>
+                <option value="dolce" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍯 Dolce</option>
+                <option value="fruttato" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍓 Fruttato</option>
+                <option value="cioccolato" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍫 Cioccolato</option>
+                <option value="vaniglia" style={{ backgroundColor: '#1f2937', color: 'white' }}>🌟 Vaniglia</option>
+                <option value="tropicale" style={{ backgroundColor: '#1f2937', color: 'white' }}>🥥 Tropicale</option>
+                <option value="verde" style={{ backgroundColor: '#1f2937', color: 'white' }}>🥬 Verde</option>
+                <option value="neutro" style={{ backgroundColor: '#1f2937', color: 'white' }}>⚪ Neutro</option>
               </select>
             </div>
 
@@ -494,12 +506,16 @@ export default function SmoothiesSpuntiniPage() {
                 value={selectedConsistenza}
                 onChange={(e) => setSelectedConsistenza(e.target.value)}
                 className="w-full bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                style={{
+                  backgroundImage: 'none',
+                  color: 'white'
+                }}
               >
-                <option value="">Consistenza</option>
-                <option value="liquido">💧 Liquido</option>
-                <option value="cremoso">🥛 Cremoso</option>
-                <option value="denso">🍯 Denso</option>
-                <option value="solido">🍪 Solido</option>
+                <option value="" style={{ backgroundColor: '#1f2937', color: 'white' }}>Consistenza</option>
+                <option value="liquido" style={{ backgroundColor: '#1f2937', color: 'white' }}>💧 Liquido</option>
+                <option value="cremoso" style={{ backgroundColor: '#1f2937', color: 'white' }}>🥛 Cremoso</option>
+                <option value="denso" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍯 Denso</option>
+                <option value="solido" style={{ backgroundColor: '#1f2937', color: 'white' }}>🍪 Solido</option>
               </select>
             </div>
             
