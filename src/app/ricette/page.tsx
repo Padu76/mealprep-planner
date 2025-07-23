@@ -492,22 +492,15 @@ export default function RicettePage() {
               <div>
                 <button
                   onClick={() => {
-                    // Mostra ricette casuali COMPLETE
-                    console.log('🎲 [RICETTE] Generating random complete recipes...');
-                    const completeRecipes = recipes.filter(recipe => 
-                      recipe.ingredienti.length > 2 && 
-                      recipe.preparazione.length > 50 &&
-                      recipe.nome.length > 5
-                    );
-                    const shuffled = [...completeRecipes].sort(() => 0.5 - Math.random());
-                    const randomSelection = shuffled.slice(0, 12);
-                    setFilteredRecipes(randomSelection);
+                    // Mostra ricette più proteiche (>25g proteine)
+                    const proteinRichRecipes = recipes.filter(recipe => recipe.proteine >= 25);
+                    setFilteredRecipes(proteinRichRecipes);
                     setCurrentPage(1);
-                    console.log(`✅ [RICETTE] Selected ${randomSelection.length} complete random recipes`);
+                    console.log(`🥩 [RICETTE] Showing ${proteinRichRecipes.length} high-protein recipes`);
                   }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg transition-colors font-medium"
                 >
-                  🎲 Ricette Casuali
+                  🥩 Alto Contenuto Proteico
                 </button>
               </div>
             </div>
