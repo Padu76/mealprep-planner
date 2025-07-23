@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, Clock, Users, Star, ChefHat, Filter, Search, X, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 // 🍳 IMPORT CORRETTO PER RICETTE PAGE - DATABASE COMPLETO 40 RICETTE
-import { RecipeDatabase, Recipe } from '../../utils/recipeDatabase';
+import { RecipeDatabase, Recipe } from '../../../utils/recipeDatabase';
 
 export default function RicettePage() {
   // 🍳 STATI PRINCIPALI
