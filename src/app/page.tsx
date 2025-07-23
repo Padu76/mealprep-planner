@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Header from './components/header';
+import Header from '@/components/header';
 import Features from '../components/Features';
 import MealForm from '../components/MealForm';
 import MealPreview from '../components/MealPreview';
