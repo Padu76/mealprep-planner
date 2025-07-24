@@ -1,5 +1,5 @@
 // 🍳 DATABASE RICETTE MASSIVE - 520+ RICETTE FITNESS ITALIANE
-// Versione definitiva con espansione spuntini fitness da influencer
+// Versione definitiva con nomi italiani e termini fitness internazionali
 
 export interface Recipe {
   id: string;
@@ -182,12 +182,12 @@ const CENE_FITNESS: Recipe[] = [
   }
 ];
 
-// 🍎 SPUNTINI FITNESS MASSIVI (160+ ricette da fit influencer)
+// 🍎 SPUNTINI FITNESS MASSIVI (160+ ricette da fit influencer con nomi italiani)
 const SPUNTINI_FITNESS: Recipe[] = [
   // 🥛 SMOOTHIES & SMOOTHIE BOWLS VIRALI
   {
     id: 'smoothie_001',
-    nome: 'Green Goddess Smoothie',
+    nome: 'Smoothie Verde Proteico',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['bilanciata-40-30-30', 'vegetariana'],
@@ -212,7 +212,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'smoothie_002',
-    nome: 'Chocolate Peanut Butter Smoothie',
+    nome: 'Smoothie Cioccolato e Burro di Arachidi',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'bilanciata-40-30-30'],
@@ -237,7 +237,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'smoothie_003',
-    nome: 'Berry Protein Bowl',
+    nome: 'Bowl Proteico ai Frutti di Bosco',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['bilanciata-40-30-30', 'vegetariana'],
@@ -262,7 +262,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'smoothie_004',
-    nome: 'Mango Lassi Proteico',
+    nome: 'Smoothie Mango e Cocco Proteico',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['bilanciata-40-30-30', 'vegetariana'],
@@ -339,7 +339,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'dolci_003',
-    nome: 'Brownies di Fagioli Neri',
+    nome: 'Brownies Proteici ai Fagioli Neri',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegana', 'proteica'],
@@ -366,7 +366,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🧀 COTTAGE CHEESE MANIA
   {
     id: 'cottage_001',
-    nome: 'Cottage Cheese Bowl Frutti Rossi',
+    nome: 'Bowl di Cottage Cheese ai Frutti Rossi',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'bilanciata-40-30-30'],
@@ -391,7 +391,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'cottage_002',
-    nome: 'Cottage "Gelato" Vaniglia',
+    nome: 'Gelato Proteico al Cottage Cheese',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'bilanciata-40-30-30'],
@@ -416,7 +416,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'cottage_003',
-    nome: 'Pancakes Cottage Cheese',
+    nome: 'Pancake Proteici al Cottage Cheese',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'bilanciata-40-30-30'],
@@ -443,7 +443,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🍫 BARRETTE HOMEMADE
   {
     id: 'barrette_001',
-    nome: 'Protein Bars Cioccolato Arachidi',
+    nome: 'Protein Bars Cioccolato e Arachidi',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'bilanciata-40-30-30'],
@@ -468,7 +468,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'barrette_002',
-    nome: 'Granola Bars Cocco e Cranberries',
+    nome: 'Barrette di Granola con Cocco e Mirtilli',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegana', 'bilanciata-40-30-30'],
@@ -482,7 +482,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
     ingredienti: [
       '120g avena integrale',
       '50g cocco rapé',
-      '40g cranberries secche',
+      '40g mirtilli secchi',
       '40g mandorle tritate',
       '60ml sciroppo d\'acero',
       '30ml olio cocco'
@@ -495,7 +495,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🥣 OVERNIGHT OATS CREATIVI
   {
     id: 'oats_001',
-    nome: 'Overnight Oats Tiramisu',
+    nome: 'Overnight Oats al Tiramisù',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegetariana', 'bilanciata-40-30-30'],
@@ -520,7 +520,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'oats_002',
-    nome: 'Overnight Oats Apple Pie',
+    nome: 'Overnight Oats Torta di Mele',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegetariana', 'bilanciata-40-30-30'],
@@ -545,7 +545,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'oats_003',
-    nome: 'Overnight Oats Chocolate Banana',
+    nome: 'Overnight Oats Cioccolato e Banana',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegana', 'bilanciata-40-30-30'],
@@ -572,7 +572,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🍰 CHIA PUDDING VARIATIONS
   {
     id: 'chia_001',
-    nome: 'Chia Pudding Mango Coconut',
+    nome: 'Budino di Chia Mango e Cocco',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegana', 'proteica'],
@@ -599,7 +599,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🍌 NICE CREAM
   {
     id: 'nicecream_001',
-    nome: 'Nice Cream Cookies & Cream',
+    nome: 'Nice Cream Biscotti e Crema',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['vegetariana', 'proteica'],
@@ -626,7 +626,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // 🥜 INNOVATIVE FITNESS SNACKS
   {
     id: 'innovative_001',
-    nome: 'Burro di Mandorle Proteico',
+    nome: 'Burro di Mandorle Proteico Fatto in Casa',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'vegana'],
@@ -651,7 +651,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'innovative_002',
-    nome: 'Gummies Proteici ai Frutti Rossi',
+    nome: 'Caramelle Gommose Proteiche ai Frutti Rossi',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'vegetariana'],
@@ -676,7 +676,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'innovative_003',
-    nome: 'Cracker ai Semi Proteici',
+    nome: 'Cracker Proteici ai Semi',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'vegana'],
@@ -701,7 +701,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   },
   {
     id: 'innovative_004',
-    nome: 'Cioccolatini Proteici Dark',
+    nome: 'Cioccolatini Proteici Fondenti',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['proteica', 'chetogenica'],
@@ -728,7 +728,7 @@ const SPUNTINI_FITNESS: Recipe[] = [
   // RICETTE BASE ORIGINALI (per mantenere compatibilità)
   {
     id: 'spuntino_001',
-    nome: 'Smoothie Proteico Verde',
+    nome: 'Smoothie Proteico Verde Classico',
     categoria: 'spuntino',
     tipoCucina: 'ricette_fit',
     tipoDieta: ['bilanciata-40-30-30'],
