@@ -2,17 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-const AIRTABLE_TABLE_NAME = 'Meal_Requests';
+const AIRTABLE_MEAL_REQUESTS_TABLE = 'Meal_Requests';
+const AIRTABLE_MEAL_PLANS_TABLE = 'meal_plans'; // Tabella per piani salvati dashboard
 
-const AIRTABLE_BASE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+const AIRTABLE_BASE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}`;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, data, email } = body;
+    const { action, data, email, table, fields, recordId } = body;
 
     console.log('🔍 Airtable API called with action:', action);
-    console.log('📝 Request data:', data);
+    console.log('🔍 Table requested:', table);
+    console.log('🔍 Request data:', data || fields);
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
       return NextResponse.json(
@@ -21,7 +23,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // NUOVE ACTIONS PER DASHBOARD
     switch (action) {
+      // Dashboard meal_plans actions
+      case 'read':
+        return await readRecords(table || 'meal_plans');
+      
+      case 'create':
+        return await createRecord(table || 'meal_plans', fields || data);
+      
+      case 'delete':
+        return await deleteRecord(table || 'meal_plans', recordId);
+
+      // Esistenti meal requests actions
       case 'saveMealRequest':
         return await saveMealRequest(data);
       
@@ -65,7 +79,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, recordId } = body;
+    const { action, recordId, table } = body;
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
       return NextResponse.json(
@@ -76,6 +90,10 @@ export async function DELETE(request: NextRequest) {
 
     if (action === 'deletePlan') {
       return await deletePlan(recordId);
+    }
+
+    if (action === 'delete') {
+      return await deleteRecord(table || 'meal_plans', recordId);
     }
 
     return NextResponse.json(
@@ -91,12 +109,190 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
+// 🆕 READ RECORDS - Nuova funzione per dashboard
+async function readRecords(tableName: string) {
+  try {
+    console.log('📖 Reading records from table:', tableName);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${tableName}`;
+    const url = `${tableUrl}?sort[0][field]=createdAt&sort[0][direction]=desc&maxRecords=100`;
+    
+    console.log('🔗 Read URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const responseText = await response.text();
+    console.log('📡 Read response status:', response.status);
+
+    if (!response.ok) {
+      // Se la tabella non esiste, crea una risposta vuota
+      if (response.status === 404) {
+        console.log('⚠️ Table not found, returning empty records');
+        return NextResponse.json({
+          success: true,
+          records: [],
+          message: 'Table not found - empty result'
+        });
+      }
+
+      console.error('❌ Airtable read Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to read from Airtable',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log(`✅ Read ${result.records?.length || 0} records from ${tableName}`);
+
+    return NextResponse.json({
+      success: true,
+      records: result.records || [],
+      total: result.records?.length || 0
+    });
+
+  } catch (error) {
+    console.error('💥 Error reading records:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to read records',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 🆕 CREATE RECORD - Nuova funzione per dashboard
+async function createRecord(tableName: string, fields: any) {
+  try {
+    console.log('💾 Creating record in table:', tableName);
+    console.log('📝 Fields to create:', fields);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${tableName}`;
+    
+    const response = await fetch(tableUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fields: fields
+      })
+    });
+
+    const responseText = await response.text();
+    console.log('📡 Create response status:', response.status);
+
+    if (!response.ok) {
+      console.error('❌ Airtable create Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to create record in Airtable',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log('✅ Record created successfully:', result.id);
+
+    return NextResponse.json({
+      success: true,
+      recordId: result.id,
+      record: result,
+      message: 'Record created successfully'
+    });
+
+  } catch (error) {
+    console.error('💥 Error creating record:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to create record',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 🆕 DELETE RECORD - Nuova funzione per dashboard
+async function deleteRecord(tableName: string, recordId: string) {
+  try {
+    console.log('🗑️ Deleting record:', recordId, 'from table:', tableName);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${tableName}`;
+    
+    const response = await fetch(`${tableUrl}/${recordId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+      }
+    });
+
+    const responseText = await response.text();
+    console.log('📡 Delete response status:', response.status);
+
+    if (!response.ok) {
+      console.error('❌ Airtable delete Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to delete record from Airtable',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log('✅ Record deleted successfully:', recordId);
+
+    return NextResponse.json({
+      success: true,
+      deletedId: result.id,
+      message: 'Record deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('💥 Error deleting record:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to delete record',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
 // 🧪 TEST CONNECTION - SEMPLIFICATO
 async function testConnection() {
   try {
     console.log('🔗 Testing Airtable connection...');
     
-    const response = await fetch(`${AIRTABLE_BASE_URL}?maxRecords=1`, {
+    const testUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}?maxRecords=1`;
+    
+    const response = await fetch(testUrl, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
         'Content-Type': 'application/json'
@@ -115,7 +311,7 @@ async function testConnection() {
         message: 'Airtable connection working',
         status: 'connected',
         recordsFound: result.records?.length || 0,
-        tableName: AIRTABLE_TABLE_NAME
+        tableName: AIRTABLE_MEAL_REQUESTS_TABLE
       });
     } else {
       console.log('❌ Airtable connection failed:', responseText);
@@ -124,7 +320,7 @@ async function testConnection() {
         error: 'Airtable connection failed',
         status: response.status,
         details: responseText,
-        tableName: AIRTABLE_TABLE_NAME
+        tableName: AIRTABLE_MEAL_REQUESTS_TABLE
       }, { status: response.status });
     }
   } catch (connectionError) {
@@ -141,6 +337,8 @@ async function testConnection() {
 async function saveMealRequest(data: any) {
   try {
     console.log('💾 Saving meal request with data:', data);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
     
     // Dati minimi obbligatori per evitare 422
     const cleanedData = {
@@ -165,7 +363,7 @@ async function saveMealRequest(data: any) {
 
     console.log('🧹 Cleaned data for Airtable:', cleanedData);
 
-    const response = await fetch(AIRTABLE_BASE_URL, {
+    const response = await fetch(tableUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -220,6 +418,8 @@ async function saveMealPlan(data: any) {
   try {
     console.log('📋 Saving meal plan with data:', data);
     
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+    
     // SOLO CAMPI ESISTENTI IN AIRTABLE - MAPPING DIRETTO
     const cleanedData = {
       Nome: String(data.nome || data.name || 'Utente'),
@@ -266,7 +466,7 @@ async function saveMealPlan(data: any) {
 
     console.log('🧹 Final cleaned data for Airtable:', cleanedData);
 
-    const response = await fetch(AIRTABLE_BASE_URL, {
+    const response = await fetch(tableUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -321,11 +521,13 @@ async function getUserPlans(email: string) {
   try {
     console.log('👤 Getting user plans for email:', email);
     
-    let url = `${AIRTABLE_BASE_URL}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=50`;
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+    
+    let url = `${tableUrl}?sort[0][field]=Created&sort[0][direction]=desc&maxRecords=50`;
     
     if (email && email !== 'default@user.com' && email !== 'noemail@test.com') {
       const filterFormula = encodeURIComponent(`{Email} = "${email}"`);
-      url = `${AIRTABLE_BASE_URL}?filterByFormula=${filterFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
+      url = `${tableUrl}?filterByFormula=${filterFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
     }
 
     console.log('🔗 Request URL:', url);
@@ -406,8 +608,10 @@ async function getMealRequests() {
   try {
     console.log('📋 Getting all meal requests for admin dashboard...');
     
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+    
     // URL SEMPLIFICATA per evitare errori di filtro
-    const url = `${AIRTABLE_BASE_URL}?maxRecords=100`;
+    const url = `${tableUrl}?maxRecords=100`;
     console.log('🔗 Simple URL for getMealRequests:', url);
     
     const response = await fetch(url, {
@@ -501,7 +705,9 @@ async function getDashboardMetrics() {
   try {
     console.log('📊 Getting dashboard metrics...');
     
-    const response = await fetch(AIRTABLE_BASE_URL, {
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+    
+    const response = await fetch(tableUrl, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
         'Content-Type': 'application/json'
@@ -624,9 +830,11 @@ async function getUserMealRequests(data: any) {
       }, { status: 400 });
     }
 
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+
     const filterFormula = `{Email} = "${email}"`;
     const encodedFormula = encodeURIComponent(filterFormula);
-    const url = `${AIRTABLE_BASE_URL}?filterByFormula=${encodedFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
+    const url = `${tableUrl}?filterByFormula=${encodedFormula}&sort[0][field]=Created&sort[0][direction]=desc`;
     
     console.log('🔗 User requests URL:', url);
 
@@ -713,7 +921,9 @@ async function updateStatus(data: any) {
       }, { status: 400 });
     }
 
-    const response = await fetch(`${AIRTABLE_BASE_URL}/${recordId}`, {
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+
+    const response = await fetch(`${tableUrl}/${recordId}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -765,12 +975,14 @@ async function updateStatus(data: any) {
   }
 }
 
-// 🗑️ ELIMINA PIANO
+// 🗑️ ELIMINA PIANO (funzione legacy)
 async function deletePlan(recordId: string) {
   try {
     console.log('🗑️ Deleting plan:', recordId);
     
-    const response = await fetch(`${AIRTABLE_BASE_URL}/${recordId}`, {
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_MEAL_REQUESTS_TABLE}`;
+    
+    const response = await fetch(`${tableUrl}/${recordId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
@@ -819,8 +1031,12 @@ async function deletePlan(recordId: string) {
 export async function GET() {
   return NextResponse.json({
     status: 'Airtable API is running',
-    tableName: AIRTABLE_TABLE_NAME,
+    mealRequestsTable: AIRTABLE_MEAL_REQUESTS_TABLE,
+    mealPlansTable: AIRTABLE_MEAL_PLANS_TABLE,
     availableActions: [
+      // Dashboard actions
+      'read', 'create', 'delete',
+      // Legacy actions  
       'testConnection',
       'saveMealRequest', 
       'saveMealPlan',
@@ -831,6 +1047,6 @@ export async function GET() {
       'updateStatus'
     ],
     timestamp: new Date().toISOString(),
-    version: '5.0.0-campo-fix'
+    version: '6.0.0-dashboard-support'
   });
 }
