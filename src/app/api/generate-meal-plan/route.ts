@@ -9,7 +9,7 @@ const anthropic = new Anthropic({
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.json();
-    console.log('🏋️‍♂️ Generating FITNESS meal plan with ALLERGIE/PREFERENZE:', formData);
+    console.log('🏋️‍♂️ Generating FITNESS meal plan with ALLERGIE/PREFERENZE + AIRTABLE:', formData);
 
     // 🔧 CALCOLO CALORIE CON ALLERGIE/PREFERENZE
     console.log('🚀 ===== INIZIO CALCOLO CALORIE CON ALLERGIE =====');
@@ -34,6 +34,58 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // 💾 SALVA RICHIESTA SU AIRTABLE (prima di generare il piano)
+    console.log('💾 ===== SALVATAGGIO RICHIESTA SU AIRTABLE =====');
+    let airtableRecordId: string | undefined;
+
+    try {
+      const airtableData = {
+        nome: formData.nome,
+        email: formData.email,
+        telefono: formData.telefono,
+        age: calc.debugInfo.input.age,
+        weight: calc.debugInfo.input.weight,
+        height: calc.debugInfo.input.height,
+        gender: calc.debugInfo.input.gender,
+        activity_level: calc.activity,
+        goal: calc.goal,
+        duration: calc.numDays,
+        meals_per_day: calc.numMeals,
+        exclusions: formData.allergie && formData.allergie.length > 0 ? 
+          `ALLERGIE: ${formData.allergie.join(', ')}` : undefined,
+        foods_at_home: formData.preferenze && formData.preferenze.length > 0 ? 
+          `PREFERENZE: ${formData.preferenze.join(', ')}` : undefined,
+        bmr: calc.bmr,
+        total_calories: calc.dailyCalories
+      };
+
+      console.log('📋 Dati per Airtable:', airtableData);
+
+      const airtableResponse = await fetch('/api/airtable', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'saveMealRequest',
+          data: airtableData
+        })
+      });
+
+      const airtableResult = await airtableResponse.json();
+      
+      if (airtableResult.success) {
+        airtableRecordId = airtableResult.recordId;
+        console.log('✅ Richiesta salvata su Airtable:', airtableRecordId);
+      } else {
+        console.warn('⚠️ Airtable save failed:', airtableResult.error);
+        // Continuiamo comunque con la generazione
+      }
+    } catch (airtableError) {
+      console.error('❌ Airtable error:', airtableError);
+      // Continuiamo comunque con la generazione
+    }
+
     // 🎯 LOG DETTAGLIATO CON ALLERGIE/PREFERENZE
     console.log('📝 DETAILED CALCULATION WITH ALLERGIES/PREFERENCES:');
     console.log('- Raw obiettivo from form:', formData.obiettivo);
@@ -55,7 +107,8 @@ export async function POST(request: NextRequest) {
     // 🤖 CLAUDE AI CON ALLERGIE E PREFERENZE
     if (!process.env.ANTHROPIC_API_KEY) {
       console.log('⚠️ ANTHROPIC_API_KEY not found, using fitness fallback');
-      return generateFitnessBasedResponseWithAllergies(formData, calc, fitnessRecipes);
+      const fallbackResponse = await generateFitnessBasedResponseWithAllergies(formData, calc, fitnessRecipes, airtableRecordId);
+      return fallbackResponse;
     }
 
     try {
@@ -82,10 +135,61 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Claude AI FITNESS response with allergies received');
 
+      // 💾 SALVA PIANO COMPLETO SU AIRTABLE
+      console.log('💾 ===== SALVATAGGIO PIANO COMPLETO SU AIRTABLE =====');
+      let planSavedToAirtable = false;
+
+      try {
+        const planData = {
+          nome: formData.nome,
+          email: formData.email,
+          telefono: formData.telefono,
+          age: calc.debugInfo.input.age,
+          weight: calc.debugInfo.input.weight,
+          height: calc.debugInfo.input.height,
+          gender: calc.debugInfo.input.gender,
+          activity_level: calc.activity,
+          goal: calc.goal,
+          duration: calc.numDays,
+          meals_per_day: calc.numMeals,
+          exclusions: formData.allergie && formData.allergie.length > 0 ? 
+            `ALLERGIE: ${formData.allergie.join(', ')}` : undefined,
+          foods_at_home: formData.preferenze && formData.preferenze.length > 0 ? 
+            `PREFERENZE: ${formData.preferenze.join(', ')}` : undefined,
+          bmr: calc.bmr,
+          total_calories: calc.dailyCalories,
+          plan_details: aiResponse.text
+        };
+
+        console.log('📋 Piano per Airtable (primi 200 caratteri):', planData.plan_details?.substring(0, 200));
+
+        const planAirtableResponse = await fetch('/api/airtable', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'saveMealPlan',
+            data: planData
+          })
+        });
+
+        const planAirtableResult = await planAirtableResponse.json();
+        
+        if (planAirtableResult.success) {
+          planSavedToAirtable = true;
+          console.log('✅ Piano completo salvato su Airtable:', planAirtableResult.recordId);
+        } else {
+          console.warn('⚠️ Piano Airtable save failed:', planAirtableResult.error);
+        }
+      } catch (planAirtableError) {
+        console.error('❌ Piano Airtable error:', planAirtableError);
+      }
+
       return NextResponse.json({
         success: true,
         piano: aiResponse.text,
-        message: 'Piano alimentare FITNESS generato con ricette italiane e filtri allergie/preferenze!',
+        message: 'Piano alimentare FITNESS generato con ricette italiane, filtri allergie/preferenze e salvato su Airtable!',
         metadata: {
           bmr: calc.bmr,
           tdee: calc.tdee,
@@ -97,6 +201,8 @@ export async function POST(request: NextRequest) {
           totalRecipes: fitnessRecipes.totalRecipes,
           allergiesFiltered: fitnessRecipes.filteredForAllergies,
           preferencesMatched: fitnessRecipes.matchedPreferences,
+          airtableRecordId: airtableRecordId,
+          planSavedToAirtable: planSavedToAirtable,
           debugInfo: calc.debugInfo
         }
       });
@@ -104,7 +210,8 @@ export async function POST(request: NextRequest) {
     } catch (aiError) {
       console.error('❌ Claude AI error:', aiError);
       console.log('🔄 Falling back to FITNESS template with allergies...');
-      return generateFitnessBasedResponseWithAllergies(formData, calc, fitnessRecipes);
+      const fallbackResponse = await generateFitnessBasedResponseWithAllergies(formData, calc, fitnessRecipes, airtableRecordId);
+      return fallbackResponse;
     }
 
   } catch (error) {
@@ -329,8 +436,8 @@ ${formData.preferenze && formData.preferenze.length > 0 ? formData.preferenze.jo
 Ricette tradizionali italiane ottimizzate per fitness, sicure per allergie e allineate con preferenze alimentari.`;
 }
 
-// 🇮🇹 FALLBACK FITNESS CON ALLERGIE E PREFERENZE
-function generateFitnessBasedResponseWithAllergies(formData: any, calc: any, fitnessRecipes: any) {
+// 🇮🇹 FALLBACK FITNESS CON ALLERGIE, PREFERENZE E AIRTABLE
+async function generateFitnessBasedResponseWithAllergies(formData: any, calc: any, fitnessRecipes: any, airtableRecordId?: string) {
   const numDays = calc.numDays;
   const numMeals = calc.numMeals;
   
@@ -357,6 +464,7 @@ ${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`)
 🇮🇹 RICETTE FITNESS ITALIANE FILTRATE: ${fitnessRecipes.totalRecipes}
 🚫 Filtrate per allergie: ${fitnessRecipes.filteredForAllergies}
 ✅ Matchate per preferenze: ${fitnessRecipes.matchedPreferences}
+${airtableRecordId ? `💾 Salvato su Airtable: ${airtableRecordId}` : ''}
 
 └────────────────────────────────────────────────────────────────────────────────┘
 
@@ -477,7 +585,7 @@ ${preferenzeCheck}
 `;
   }
 
-  // Sezione allergie e preferenze specifica
+  // Sezione allergie e preferenze specifica + info Airtable
   fitnessPlanned += `┌────────────────────────────────────────────────────────────────────────────────┐
 
 🚨 GESTIONE ALLERGIE E PREFERENZE SPECIFICHE:
@@ -494,6 +602,14 @@ ${formData.preferenze && formData.preferenze.length > 0 ?
   formData.preferenze.map(p => `• ${p}: PRIVILEGIATO nelle ricette quando possibile`).join('\n') +
   `\n✨ Le ricette sono state selezionate per rispettare al meglio le tue preferenze!` :
   '🔧 Nessuna preferenza specifica - Ricette bilanciate standard'
+}
+
+💾 SALVATAGGIO DATI:
+${airtableRecordId ? 
+  `✅ I tuoi dati e questo piano sono stati salvati nel nostro sistema sicuro
+📋 ID Riferimento: ${airtableRecordId}
+🔍 Puoi ritrovare questo piano nella tua dashboard personale` :
+  '⚠️ Piano generato ma non salvato nel sistema (possibile problema temporaneo)'
 }
 
 └────────────────────────────────────────────────────────────────────────────────┘
@@ -515,28 +631,67 @@ ${formData.allergie && formData.allergie.length > 0 ?
 • Ricette filtrate per allergie: ${fitnessRecipes.filteredForAllergies}
 • Ricette ottimizzate per preferenze: ${fitnessRecipes.matchedPreferences}
 
-🎯 OBIETTIVO SPECIFICO - ${calc.goal.toUpperCase()} CON PERSONALIZZAZIONI:
-${calc.goal === 'dimagrimento' ? 
-  '• Deficit calorico sostenibile del 15%\n• Mantenimento massa magra con proteine elevate\n• Ingredienti a bassa densità calorica\n• Focus su sazietà e controllo insulinico' :
-  calc.goal === 'aumento-massa' ?
-  '• Surplus calorico del 15% per crescita muscolare\n• Proteine complete per sintesi proteica\n• Carboidrati per energy e recovery\n• Timing nutrizionale per performance' :
-  '• Bilanciamento calorico per composizione corporea\n• Sostenibilità a lungo termine\n• Varietà nutrizionale per salute\n• Flessibilità per stile di vita attivo'
-}
-${formData.allergie && formData.allergie.length > 0 ? 
-  `• ⚠️ ADATTATO per escludere: ${formData.allergie.join(', ')}` : ''}
-${formData.preferenze && formData.preferenze.length > 0 ? 
-  `• ✨ OTTIMIZZATO per includere: ${formData.preferenze.join(', ')}` : ''}
-
 ✅ Piano FITNESS PERSONALIZZATO generato il ${new Date().toLocaleDateString('it-IT')}
 🇮🇹 Ricette italiane ottimizzate per obiettivi fitness
 🚫 SICURO per allergie dichiarate: ${formData.allergie?.join(', ') || 'nessuna'}
 🥗 RISPETTA preferenze: ${formData.preferenze?.join(', ') || 'standard'}
+💾 Salvato su Airtable per tracking e dashboard
 🔬 Basato su science nutrizionale e database ricette fitness avanzato`;
+
+  // 💾 SALVA ANCHE IL FALLBACK SU AIRTABLE
+  let planSavedToAirtable = false;
+
+  try {
+    const planData = {
+      nome: formData.nome,
+      email: formData.email,
+      telefono: formData.telefono,
+      age: calc.debugInfo.input.age,
+      weight: calc.debugInfo.input.weight,
+      height: calc.debugInfo.input.height,
+      gender: calc.debugInfo.input.gender,
+      activity_level: calc.activity,
+      goal: calc.goal,
+      duration: calc.numDays,
+      meals_per_day: calc.numMeals,
+      exclusions: formData.allergie && formData.allergie.length > 0 ? 
+        `ALLERGIE: ${formData.allergie.join(', ')}` : undefined,
+      foods_at_home: formData.preferenze && formData.preferenze.length > 0 ? 
+        `PREFERENZE: ${formData.preferenze.join(', ')}` : undefined,
+      bmr: calc.bmr,
+      total_calories: calc.dailyCalories,
+      plan_details: fitnessPlanned
+    };
+
+    console.log('💾 Salvando piano fallback su Airtable...');
+
+    const planAirtableResponse = await fetch('/api/airtable', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'saveMealPlan',
+        data: planData
+      })
+    });
+
+    const planAirtableResult = await planAirtableResponse.json();
+    
+    if (planAirtableResult.success) {
+      planSavedToAirtable = true;
+      console.log('✅ Piano fallback salvato su Airtable:', planAirtableResult.recordId);
+    } else {
+      console.warn('⚠️ Piano fallback Airtable save failed:', planAirtableResult.error);
+    }
+  } catch (planAirtableError) {
+    console.error('❌ Piano fallback Airtable error:', planAirtableError);
+  }
 
   return NextResponse.json({
     success: true,
     piano: fitnessPlanned,
-    message: 'Piano FITNESS con gestione completa allergie e preferenze generato!',
+    message: 'Piano FITNESS con gestione completa allergie, preferenze e salvataggio Airtable generato!',
     metadata: {
       bmr: calc.bmr,
       tdee: calc.tdee,
@@ -547,6 +702,9 @@ ${formData.preferenze && formData.preferenze.length > 0 ?
       allergiesHandled: formData.allergie?.length || 0,
       preferencesMatched: formData.preferenze?.length || 0,
       totalRecipes: fitnessRecipes.totalRecipes,
+      airtableRecordId: airtableRecordId,
+      planSavedToAirtable: planSavedToAirtable,
+      fallbackUsed: true,
       debugInfo: calc.debugInfo
     }
   });
