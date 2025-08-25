@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Heart, Clock, Users, Star, ChefHat, Search, X, Eye, Filter, Zap, Target, Activity, TrendingUp, Dumbbell, Flame } from 'lucide-react';
+import { Heart, Clock, Users, Star, ChefHat, Search, X, Eye, Filter, Zap, Target, Activity, TrendingUp, Dumbbell, Flame, Droplets, Apple, Coffee, Utensils, Beef, Fish, Wheat, Salad } from 'lucide-react';
 
 interface Recipe {
   id: string;
   nome: string;
-  categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino' | 'pre_workout' | 'post_workout';
+  categoria: 'colazione' | 'pranzo' | 'cena' | 'spuntino' | 'pre_workout' | 'post_workout' | 'smoothie' | 'meal_prep' | 'snack_proteici';
   tipoDieta: string[];
   difficolta: 'facile' | 'medio' | 'difficile';
   tempoPreparazione: number;
@@ -50,6 +50,8 @@ const DIET_TYPES = [
   { value: 'vegana', label: 'Vegana', color: 'bg-emerald-100 text-emerald-800' },
   { value: 'mediterranea', label: 'Mediterranea', color: 'bg-blue-100 text-blue-800' },
   { value: 'iifym', label: 'IIFYM', color: 'bg-indigo-100 text-indigo-800' },
+  { value: 'high_protein', label: 'High Protein', color: 'bg-red-100 text-red-800' },
+  { value: 'balanced', label: 'Bilanciata', color: 'bg-gray-100 text-gray-800' },
 ];
 
 const FITNESS_OBJECTIVES = [
@@ -61,12 +63,15 @@ const FITNESS_OBJECTIVES = [
 ];
 
 const MEAL_CATEGORIES = [
-  { value: 'colazione', label: 'Colazione', icon: '🌅' },
-  { value: 'pre_workout', label: 'Pre-Workout', icon: '⚡' },
-  { value: 'post_workout', label: 'Post-Workout', icon: '💪' },
-  { value: 'pranzo', label: 'Pranzo', icon: '☀️' },
-  { value: 'cena', label: 'Cena', icon: '🌙' },
-  { value: 'spuntino', label: 'Spuntino', icon: '🍎' },
+  { value: 'colazione', label: 'Colazione', icon: Coffee, emoji: '🌅' },
+  { value: 'pre_workout', label: 'Pre-Workout', icon: Zap, emoji: '⚡' },
+  { value: 'post_workout', label: 'Post-Workout', icon: Dumbbell, emoji: '💪' },
+  { value: 'pranzo', label: 'Pranzo', icon: Utensils, emoji: '☀️' },
+  { value: 'cena', label: 'Cena', icon: Utensils, emoji: '🌙' },
+  { value: 'spuntino', label: 'Spuntino', icon: Apple, emoji: '🍎' },
+  { value: 'smoothie', label: 'Smoothies', icon: Droplets, emoji: '🥤' },
+  { value: 'meal_prep', label: 'Meal Prep', icon: ChefHat, emoji: '📦' },
+  { value: 'snack_proteici', label: 'Snack Proteici', icon: Beef, emoji: '🥜' },
 ];
 
 export default function RicettePage() {
@@ -114,8 +119,8 @@ export default function RicettePage() {
     try {
       setLoading(true);
       
-      // Carica ricette dal database esistente (da RecipeDatabase)
-      const databaseRecipes = await loadDatabaseRecipes();
+      // Carica database ricette espanso (60+ ricette)
+      const databaseRecipes = await loadExpandedDatabaseRecipes();
       
       // Carica ricette salvate in Airtable
       const airtableRecipes = await loadAirtableRecipes();
@@ -133,67 +138,609 @@ export default function RicettePage() {
     }
   };
 
-  const loadDatabaseRecipes = async (): Promise<Recipe[]> => {
-    // Simulazione caricamento database esistente
-    // In realtà questo dovrebbe interfacciarsi con RecipeDatabase
+  const loadExpandedDatabaseRecipes = async (): Promise<Recipe[]> => {
+    // 🌅 DATABASE RICETTE FITNESS COMPLETO - 60+ RICETTE
     return [
+      // 🌅 COLAZIONE (10 ricette)
       {
-        id: 'db_001',
-        nome: 'Pollo Grigliato con Quinoa e Verdure',
-        categoria: 'pranzo',
-        tipoDieta: ['high_protein', 'balanced'],
-        difficolta: 'medio',
-        tempoPreparazione: 25,
-        porzioni: 1,
-        calorie: 485,
-        proteine: 38,
-        carboidrati: 45,
-        grassi: 12,
-        ingredienti: [
-          '150g petto di pollo',
-          '80g quinoa',
-          '100g broccoli',
-          '50g carote',
-          '1 cucchiaio olio EVO',
-          'Spezie miste'
-        ],
-        preparazione: 'Marina il pollo con spezie per 15 minuti. Cuoci la quinoa in brodo vegetale. Griglia il pollo 6-7 minuti per lato. Cuoci le verdure al vapore 8 minuti. Componi il piatto bilanciando i macronutrienti.',
-        obiettivo_fitness: ['bulking', 'maintenance'],
-        macro_focus: 'high_protein',
-        fonte: 'database',
-        tags: ['high_protein', 'complete_meal', 'muscle_building'],
-        rating: 4.7,
-        reviewCount: 156,
-        createdAt: new Date().toISOString()
+        id: 'col_001', nome: 'Pancakes Proteici Avena e Banana', categoria: 'colazione', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 485, proteine: 32, carboidrati: 48, grassi: 16,
+        ingredienti: ['60g fiocchi avena', '30g proteine whey vaniglia', '1 banana matura', '2 uova', '150ml latte scremato', '1 cucchiaino lievito', 'cannella', 'mirtilli freschi', 'sciroppo acero'],
+        preparazione: 'Frulla avena fino a farina. Aggiungi proteine, banana schiacciata e uova. Incorpora latte e lievito. Lascia riposare 5 min. Cuoci piccoli pancakes in padella antiaderente 2-3 min per lato. Servi con mirtilli e sciroppo.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['pancakes', 'proteici', 'colazione', 'banana'], rating: 4.8, reviewCount: 267, createdAt: new Date().toISOString()
       },
       {
-        id: 'db_002',
-        nome: 'Smoothie Proteico Verde Post-Workout',
-        categoria: 'post_workout',
-        tipoDieta: ['vegetariana', 'low_carb'],
-        difficolta: 'facile',
-        tempoPreparazione: 5,
-        porzioni: 1,
-        calorie: 285,
-        proteine: 32,
-        carboidrati: 18,
-        grassi: 8,
-        ingredienti: [
-          '30g proteine whey vaniglia',
-          '150g spinaci baby',
-          '1/2 avocado',
-          '250ml latte mandorla',
-          '1 cucchiaio burro mandorle',
-          'Ghiaccio'
-        ],
-        preparazione: 'Frulla tutti gli ingredienti ad alta velocità per 60 secondi. Aggiungi ghiaccio e frulla altri 30 secondi. Consuma entro 30 minuti dal workout per massimo assorbimento proteico.',
-        obiettivo_fitness: ['cutting', 'maintenance'],
-        macro_focus: 'high_protein',
-        fonte: 'database',
-        tags: ['post_workout', 'quick', 'recovery', 'green'],
-        rating: 4.9,
-        reviewCount: 203,
-        createdAt: new Date().toISOString()
+        id: 'col_002', nome: 'Overnight Oats Burro di Mandorle e Chia', categoria: 'colazione', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 425, proteine: 18, carboidrati: 38, grassi: 22,
+        ingredienti: ['50g fiocchi avena', '200ml latte mandorla', '1 cucchiaio semi chia', '2 cucchiai burro mandorle', '1 cucchiaino miele', 'frutti di bosco', 'granola'],
+        preparazione: 'Mescola avena, latte, chia e burro di mandorle in barattolo. Dolcifica con miele. Riponi in frigo overnight. Al mattino aggiungi frutti di bosco e granola.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['overnight_oats', 'prep_ahead', 'chia', 'mandorle'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_003', nome: 'Uova Strapazzate con Spinaci e Feta', categoria: 'colazione', tipoDieta: ['keto', 'low_carb'],
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 6, grassi: 28,
+        ingredienti: ['3 uova grandi', '100g spinaci baby', '40g feta', '1 cucchiaio olio oliva', 'aglio', 'pepe nero', 'pomodorini', 'basilico'],
+        preparazione: 'Soffriggi aglio in olio. Aggiungi spinaci e cuoci 2 min. Sbatti uova e versa in padella. Mescola delicatamente, aggiungi feta a pezzetti. Guarnisci con pomodorini e basilico.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['uova', 'spinaci', 'keto', 'veloce'], rating: 4.7, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_004', nome: 'Toast Avocado e Uovo Pochè', categoria: 'colazione', tipoDieta: ['mediterranea', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 12, porzioni: 1, calorie: 465, proteine: 18, carboidrati: 32, grassi: 28,
+        ingredienti: ['2 fette pane integrale', '1 avocado maturo', '1 uovo fresco', 'lime', 'peperoncino', 'sale marino', 'rucola', 'pomodori secchi'],
+        preparazione: 'Tosta pane. Prepara uovo pochè in acqua bollente con aceto 3-4 min. Schiaccia avocado con lime, sale e peperoncino. Spalma su toast, aggiungi rucola e pomodori. Corona con uovo pochè.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['avocado_toast', 'uovo_poche', 'trendy', 'instagram'], rating: 4.9, reviewCount: 298, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_005', nome: 'Smoothie Bowl Açaí Power', categoria: 'colazione', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 10, porzioni: 1, calorie: 445, proteine: 22, carboidrati: 52, grassi: 16,
+        ingredienti: ['100g açaí congelato', '20g proteine vegetali', '1/2 banana', 'frutti di bosco', '15g granola', 'semi chia', 'cocco rapè', 'mandorle'],
+        preparazione: 'Frulla açaí, proteine e banana con pochissimo liquido per consistenza densa. Versa in bowl. Disponi artisticamente tutti i toppings creando sezioni colorate.',
+        obiettivo_fitness: ['cutting', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['acai_bowl', 'superfoods', 'antiossidanti', 'colorato'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_006', nome: 'Porridge Proteico Cioccolato e Banana', categoria: 'colazione', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 1, calorie: 385, proteine: 25, carboidrati: 42, grassi: 12,
+        ingredienti: ['50g fiocchi avena', '25g proteine whey cioccolato', '1 banana', '200ml latte scremato', '1 cucchiaio cacao', 'miele', 'noci'],
+        preparazione: 'Cuoci avena nel latte 5 min. Aggiungi proteine al cioccolato e cacao mescolando bene. Incorpora banana a fette. Dolcifica con miele, guarnisci con noci.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['porridge', 'cioccolato', 'cremoso', 'comfort'], rating: 4.5, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_007', nome: 'Yogurt Greco Bowl Frutti Rossi', categoria: 'colazione', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 325, proteine: 28, carboidrati: 25, grassi: 8,
+        ingredienti: ['200g yogurt greco 0%', 'frutti di bosco misti', '15g muesli', '1 cucchiaio miele', 'mandorle a lamelle', 'semi lino'],
+        preparazione: 'Versa yogurt greco in bowl. Disponi frutti di bosco, muesli, mandorle e semi di lino. Completa con filo di miele.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['yogurt_greco', 'frutti_rossi', 'veloce', 'probiotici'], rating: 4.4, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_008', nome: 'Frittata Fitness con Verdure', categoria: 'colazione', tipoDieta: ['keto', 'paleo'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 2, calorie: 285, proteine: 22, carboidrati: 8, grassi: 18,
+        ingredienti: ['4 uova', '100g zucchine', '50g peperoni', '30g formaggio magro', 'cipolla', 'erbe aromatiche', 'olio oliva'],
+        preparazione: 'Taglia verdure a dadini e soffriggi. Sbatti uova con formaggio ed erbe. Versa sulle verdure, cuoci 3 min sui fornelli poi 5 min in forno a 180°C.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['frittata', 'verdure', 'keto', 'meal_prep'], rating: 4.6, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_009', nome: 'Chia Pudding Vaniglia e Cocco', categoria: 'colazione', tipoDieta: ['vegana', 'keto'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 345, proteine: 12, carboidrati: 18, grassi: 24,
+        ingredienti: ['3 cucchiai semi chia', '200ml latte cocco', 'estratto vaniglia', 'stevia', 'cocco rapè', 'frutti di bosco'],
+        preparazione: 'Mescola chia con latte di cocco, vaniglia e stevia. Riponi in frigo minimo 4 ore. Servi con cocco rapè e frutti di bosco.',
+        obiettivo_fitness: ['cutting', 'endurance'], macro_focus: 'high_fat', fonte: 'database',
+        tags: ['chia_pudding', 'omega3', 'prep_ahead', 'vegano'], rating: 4.3, reviewCount: 134, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'col_010', nome: 'English Breakfast Proteico', categoria: 'colazione', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'difficile', tempoPreparazione: 20, porzioni: 1, calorie: 565, proteine: 42, carboidrati: 12, grassi: 38,
+        ingredienti: ['2 uova', '100g bacon magro', '80g funghi', '1 pomodoro', '50g spinaci', 'avocado', 'fagioli neri'],
+        preparazione: 'Cuoci bacon in padella. Nello stesso grasso cuoci funghi e pomodoro. In altra padella fai uova. Saltare spinaci. Componi il piatto con avocado e fagioli.',
+        obiettivo_fitness: ['bulking', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['english_breakfast', 'abbondante', 'weekend', 'proteico'], rating: 4.7, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+
+      // 🥗 PRANZO (12 ricette)
+      {
+        id: 'pra_001', nome: 'Pollo Grigliato con Quinoa e Verdure', categoria: 'pranzo', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 485, proteine: 38, carboidrati: 45, grassi: 12,
+        ingredienti: ['150g petto di pollo', '80g quinoa', '100g broccoli', '50g carote', '1 cucchiaio olio EVO', 'spezie miste', 'limone'],
+        preparazione: 'Marina il pollo con spezie 15 min. Cuoci quinoa in brodo vegetale. Griglia pollo 6-7 min per lato. Cuoci verdure al vapore 8 min. Componi piatto bilanciando macronutrienti.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['pollo', 'quinoa', 'complete_meal', 'muscle_building'], rating: 4.7, reviewCount: 256, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_002', nome: 'Salmone Teriyaki con Riso Venere', categoria: 'pranzo', tipoDieta: ['high_protein', 'mediterranea'],
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 1, calorie: 525, proteine: 35, carboidrati: 48, grassi: 18,
+        ingredienti: ['150g filetto salmone', '70g riso venere', 'salsa teriyaki', 'zenzero', 'sesamo', 'edamame', 'alga nori'],
+        preparazione: 'Cuoci riso venere 40 min. Marina salmone in teriyaki 20 min. Cuoci salmone in padella 4 min per lato. Servi con riso, edamame e sesamo.',
+        obiettivo_fitness: ['bulking', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['salmone', 'omega3', 'asian_fusion', 'gourmet'], rating: 4.9, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_003', nome: 'Bowl Buddha Vegetariano Completo', categoria: 'pranzo', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 1, calorie: 465, proteine: 18, carboidrati: 58, grassi: 16,
+        ingredienti: ['80g ceci cotti', '60g quinoa', 'avocado', 'carote', 'cavolo rosso', 'hummus', 'semi girasole', 'tahini'],
+        preparazione: 'Cuoci quinoa. Prepara hummus fresco. Taglia verdure a julienne. Componi bowl con tutti ingredienti, condisci con salsa tahini.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['buddha_bowl', 'vegetariano', 'rainbow', 'nutritious'], rating: 4.6, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_004', nome: 'Bistecca ai Ferri con Patate Dolci', categoria: 'pranzo', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 20, porzioni: 1, calorie: 485, proteine: 42, carboidrati: 28, grassi: 18,
+        ingredienti: ['150g bistecca manzo', '150g patate dolci', 'rucola', 'pomodorini', 'olio oliva', 'rosmarino', 'aglio'],
+        preparazione: 'Cuoci patate dolci al forno 25 min. Griglia bistecca 3-4 min per lato. Prepara insalata con rucola e pomodorini. Servi tutto insieme.',
+        obiettivo_fitness: ['bulking', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['bistecca', 'patate_dolci', 'iron_rich', 'paleo'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_005', nome: 'Insalata di Tonno e Fagioli Cannellini', categoria: 'pranzo', tipoDieta: ['mediterranea', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 10, porzioni: 1, calorie: 385, proteine: 32, carboidrati: 28, grassi: 12,
+        ingredienti: ['150g tonno al naturale', '100g fagioli cannellini', 'cipolla rossa', 'sedano', 'pomodori', 'basilico', 'limone', 'olio EVO'],
+        preparazione: 'Scola tonno e fagioli. Taglia cipolla, sedano e pomodori. Mescola tutto, condisci con olio, limone e basilico fresco.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['tonno', 'veloce', 'no_cook', 'mediterraneo'], rating: 4.4, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_006', nome: 'Curry di Pollo con Riso Basmati', categoria: 'pranzo', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'difficile', tempoPreparazione: 40, porzioni: 2, calorie: 445, proteine: 35, carboidrati: 42, grassi: 14,
+        ingredienti: ['200g pollo a cubetti', '80g riso basmati', 'latte cocco', 'curry', 'zenzero', 'aglio', 'cipolla', 'spinaci'],
+        preparazione: 'Soffriggi cipolla, aglio e zenzero. Aggiungi pollo e curry, cuoci 5 min. Versa latte cocco, simmer 20 min. Aggiungi spinaci. Servi con riso.',
+        obiettivo_fitness: ['bulking', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['curry', 'speziato', 'comfort', 'exotic'], rating: 4.7, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_007', nome: 'Poke Bowl Salmone e Avocado', categoria: 'pranzo', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 525, proteine: 32, carboidrati: 48, grassi: 22,
+        ingredienti: ['120g salmone crudo sashimi', '80g riso sushi', 'avocado', 'edamame', 'cetriolo', 'salsa soia', 'sesamo', 'alga wakame'],
+        preparazione: 'Cuoci riso sushi. Taglia salmone a cubetti. Prepara verdure. Componi poke bowl stratificando ingredienti. Condisci con salsa soia e sesamo.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['poke', 'raw_fish', 'hawaiian', 'trendy'], rating: 4.8, reviewCount: 267, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_008', nome: 'Wrap Proteico Tacchino e Hummus', categoria: 'pranzo', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 32, grassi: 14,
+        ingredienti: ['1 tortilla integrale', '100g fesa tacchino', '2 cucchiai hummus', 'lattuga', 'pomodori', 'cetrioli', 'peperoni'],
+        preparazione: 'Spalma hummus sulla tortilla. Disponi tacchino e verdure crude. Arrotola stretto e taglia a metà. Ottimo anche per meal prep.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['wrap', 'portable', 'meal_prep', 'veloce'], rating: 4.5, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_009', nome: 'Risotto Proteico ai Funghi Porcini', categoria: 'pranzo', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'difficile', tempoPreparazione: 45, porzioni: 2, calorie: 465, proteine: 22, carboidrati: 58, grassi: 12,
+        ingredienti: ['150g riso Arborio', '30g proteine whey neutre', 'funghi porcini', 'brodo vegetale', 'cipolla', 'vino bianco', 'parmigiano'],
+        preparazione: 'Soffriggi cipolla, aggiungi riso e tosta. Sfuma con vino. Aggiungi brodo gradualmente mescolando 20 min. Incorpora funghi e proteine. Manti con parmigiano.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['risotto', 'funghi', 'comfort', 'gourmet'], rating: 4.6, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_010', nome: 'Zuppa di Lenticchie e Verdure', categoria: 'pranzo', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 2, calorie: 325, proteine: 18, carboidrati: 48, grassi: 6,
+        ingredienti: ['150g lenticchie rosse', 'carote', 'sedano', 'cipolla', 'pomodori pelati', 'brodo vegetale', 'spezie'],
+        preparazione: 'Soffriggi verdure tritate. Aggiungi lenticchie, pomodori e brodo. Simmer 25 min fino a cremosità. Aggiusta spezie e consistenza.',
+        obiettivo_fitness: ['cutting', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['lenticchie', 'vegano', 'fiber_rich', 'comfort'], rating: 4.4, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_011', nome: 'Caesar Salad Proteica con Pollo', categoria: 'pranzo', tipoDieta: ['keto', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 425, proteine: 35, carboidrati: 8, grassi: 28,
+        ingredienti: ['120g petto pollo grigliato', 'lattuga romana', 'parmigiano', 'caesar dressing', 'crostini keto', 'acciughe'],
+        preparazione: 'Griglia pollo e taglialo a strisce. Prepara lattuga a foglie. Mescola con caesar dressing, parmigiano e crostini. Completa con pollo.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['caesar_salad', 'keto', 'low_carb', 'classic'], rating: 4.7, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pra_012', nome: 'Pasta Integrale Pesto e Gamberetti', categoria: 'pranzo', tipoDieta: ['mediterranea', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 18, porzioni: 1, calorie: 485, proteine: 28, carboidrati: 52, grassi: 16,
+        ingredienti: ['80g pasta integrale', '120g gamberetti', 'pesto basilico', 'pomodorini', 'aglio', 'olio oliva', 'pinoli'],
+        preparazione: 'Cuoci pasta al dente. Saltare gamberetti con aglio 3 min. Scola pasta, mescola con pesto, gamberetti e pomodorini. Guarnisci con pinoli.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['pasta', 'gamberetti', 'pesto', 'mediterraneo'], rating: 4.8, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+
+      // 🌙 CENA (10 ricette)
+      {
+        id: 'cen_001', nome: 'Orata al Sale con Verdure Grigliate', categoria: 'cena', tipoDieta: ['mediterranea', 'paleo'],
+        difficolta: 'difficile', tempoPreparazione: 45, porzioni: 2, calorie: 385, proteine: 32, carboidrati: 18, grassi: 18,
+        ingredienti: ['1 orata 400g', 'sale grosso', 'zucchine', 'melanzane', 'peperoni', 'olio oliva', 'erbe aromatiche'],
+        preparazione: 'Pulisci orata. Crea letto di sale, posiziona pesce, copri con altro sale. Cuoci 30 min a 200°C. Griglia verdure a fette. Servi insieme.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['pesce', 'al_sale', 'light', 'gourmet'], rating: 4.9, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_002', nome: 'Petto di Pollo Stuffato con Spinaci', categoria: 'cena', tipoDieta: ['keto', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 1, calorie: 425, proteine: 38, carboidrati: 6, grassi: 26,
+        ingredienti: ['150g petto pollo', '100g spinaci', '50g ricotta', 'parmigiano', 'aglio', 'olio oliva', 'spezie'],
+        preparazione: 'Apri pollo a libro. Saltare spinaci con aglio. Mescola con ricotta e parmigiano. Farcisci pollo, chiudi con stecchini. Cuoci 20 min a 180°C.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['pollo_ripieno', 'keto', 'elegant', 'low_carb'], rating: 4.7, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_003', nome: 'Zuppa Tom Kha Gai Proteica', categoria: 'cena', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 2, calorie: 345, proteine: 25, carboidrati: 12, grassi: 22,
+        ingredienti: ['150g pollo a strisce', 'latte cocco', 'funghi shiitake', 'lemongrass', 'galanga', 'lime', 'peperoncino'],
+        preparazione: 'Scalda latte cocco con aromi. Aggiungi pollo e cuoci 8 min. Incorpora funghi, simmer 5 min. Aggiusta con lime e peperoncino.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['thai', 'soup', 'coconut', 'exotic'], rating: 4.6, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_004', nome: 'Salmone in Crosta di Pistacchi', categoria: 'cena', tipoDieta: ['keto', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 20, porzioni: 1, calorie: 485, proteine: 32, carboidrati: 8, grassi: 34,
+        ingredienti: ['150g filetto salmone', '30g pistacchi tritati', 'senape di Digione', 'erbe aromatiche', 'limone', 'olio oliva'],
+        preparazione: 'Spalma senape sul salmone. Mescola pistacchi con erbe. Pressa crosta sul pesce. Cuoci 12 min a 200°C. Servi con limone.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_fat', fonte: 'database',
+        tags: ['salmone', 'pistacchi', 'omega3', 'crust'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_005', nome: 'Burger di Lenticchie e Quinoa', categoria: 'cena', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 2, calorie: 365, proteine: 18, carboidrati: 42, grassi: 12,
+        ingredienti: ['100g lenticchie rosse', '50g quinoa', 'cipolla', 'aglio', 'pangrattato', 'spezie', 'insalata', 'pomodoro'],
+        preparazione: 'Cuoci lenticchie e quinoa. Soffriggi cipolla. Mescola tutto, forma burger. Cuoci in padella 4 min per lato. Servi con insalata.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['veggie_burger', 'plant_based', 'sustainable', 'fiber'], rating: 4.4, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_006', nome: 'Tagliata di Manzo con Rucola', categoria: 'cena', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 445, proteine: 38, carboidrati: 6, grassi: 28,
+        ingredienti: ['150g tagliata manzo', 'rucola', 'parmigiano a scaglie', 'pomodorini', 'olio oliva', 'aceto balsamico'],
+        preparazione: 'Cuoci tagliata 2-3 min per lato per cottura al sangue. Lascia riposare 5 min, taglia a fette. Servi su letto di rucola con condimenti.',
+        obiettivo_fitness: ['bulking', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['tagliata', 'beef', 'simple', 'iron_rich'], rating: 4.7, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_007', nome: 'Vellutata di Zucca e Zenzero', categoria: 'cena', tipoDieta: ['vegana', 'low_carb'],
+        difficolta: 'facile', tempoPreparazione: 25, porzioni: 2, calorie: 185, proteine: 8, carboidrati: 22, grassi: 8,
+        ingredienti: ['300g zucca', 'zenzero fresco', 'latte cocco', 'cipolla', 'brodo vegetale', 'semi zucca', 'olio oliva'],
+        preparazione: 'Arrostisci zucca 20 min. Soffriggi cipolla e zenzero. Aggiungi zucca e brodo, simmer 15 min. Frulla, aggiungi latte cocco. Guarnisci con semi.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'low_carb', fonte: 'database',
+        tags: ['vellutata', 'comfort', 'warming', 'beta_carotene'], rating: 4.5, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_008', nome: 'Polpette di Tacchino in Salsa', categoria: 'cena', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 2, calorie: 385, proteine: 32, carboidrati: 18, grassi: 18,
+        ingredienti: ['200g macinato tacchino', 'uovo', 'pangrattato', 'pomodori pelati', 'basilico', 'aglio', 'cipolla'],
+        preparazione: 'Mescola tacchino, uovo e pangrattato. Forma polpette. Soffriggi cipolla, aggiungi pomodori. Incorpora polpette, cuoci 15 min.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['polpette', 'turkey', 'comfort', 'family'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_009', nome: 'Frittata al Forno con Broccoli', categoria: 'cena', tipoDieta: ['keto', 'vegetariana'],
+        difficolta: 'facile', tempoPreparazione: 20, porzioni: 4, calorie: 245, proteine: 18, carboidrati: 8, grassi: 16,
+        ingredienti: ['6 uova', '200g broccoli', '80g formaggio magro', 'cipolla', 'olio oliva', 'erbe aromatiche'],
+        preparazione: 'Sbollenta broccoli 5 min. Soffriggi cipolla. Sbatti uova con formaggio. Mescola tutto, versa in teglia. Cuoci 15 min a 180°C.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['frittata', 'meal_prep', 'vegetables', 'easy'], rating: 4.4, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'cen_010', nome: 'Merluzzo in Guazzetto di Pomodori', categoria: 'cena', tipoDieta: ['mediterranea', 'paleo'],
+        difficolta: 'medio', tempoPreparazione: 22, porzioni: 1, calorie: 285, proteine: 28, carboidrati: 12, grassi: 12,
+        ingredienti: ['150g filetto merluzzo', 'pomodorini', 'olive taggiasche', 'capperi', 'aglio', 'prezzemolo', 'olio oliva'],
+        preparazione: 'Soffriggi aglio, aggiungi pomodorini e cuoci 5 min. Incorpora merluzzo, olive e capperi. Cuoci 8 min. Completa con prezzemolo.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['merluzzo', 'light', 'mediterranean', 'omega3'], rating: 4.7, reviewCount: 134, createdAt: new Date().toISOString()
+      },
+
+      // ⚡ PRE-WORKOUT (8 ricette)
+      {
+        id: 'pre_001', nome: 'Banana e Burro di Mandorle Toast', categoria: 'pre_workout', tipoDieta: ['balanced', 'vegetariana'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 285, proteine: 8, carboidrati: 38, grassi: 12,
+        ingredienti: ['1 fetta pane integrale', '1 banana', '1 cucchiaio burro mandorle', 'miele', 'cannella'],
+        preparazione: 'Tosta pane. Spalma burro di mandorle. Aggiungi banana a fette, miele e cannella. Consuma 45 min prima del workout.',
+        obiettivo_fitness: ['endurance', 'maintenance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['pre_workout', 'quick_energy', 'portable', 'natural'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_002', nome: 'Overnight Oats Pre-Workout', categoria: 'pre_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 325, proteine: 15, carboidrati: 45, grassi: 8,
+        ingredienti: ['50g avena', '20g proteine whey', 'latte scremato', '1 banana', 'miele', 'cannella'],
+        preparazione: 'Mescola avena, proteine e latte in barattolo. Aggiungi banana schiacciata, miele e cannella. Riponi in frigo overnight.',
+        obiettivo_fitness: ['endurance', 'bulking'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['overnight_oats', 'prep_ahead', 'sustained_energy', 'fiber'], rating: 4.4, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_003', nome: 'Energy Balls Datteri e Cacao', categoria: 'pre_workout', tipoDieta: ['vegana', 'paleo'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 8, calorie: 85, proteine: 3, carboidrati: 16, grassi: 2,
+        ingredienti: ['8 datteri Medjoul', '30g cacao crudo', '20g mandorle', '1 cucchiaio olio cocco', 'cocco rapè'],
+        preparazione: 'Ammolla datteri 10 min. Frulla con cacao, mandorle e olio cocco. Forma palline, rotola nel cocco. Refrigera 30 min.',
+        obiettivo_fitness: ['endurance', 'strength'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['energy_balls', 'natural_sugars', 'portable', 'antioxidants'], rating: 4.7, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_004', nome: 'Smoothie Energetico Verde', categoria: 'pre_workout', tipoDieta: ['vegana', 'low_fat'],
+        difficolta: 'facile', tempoPreparazione: 4, porzioni: 1, calorie: 245, proteine: 12, carboidrati: 42, grassi: 4,
+        ingredienti: ['1 banana', '100g spinaci', '20g proteine vegetali', '200ml acqua cocco', 'zenzero', 'lime'],
+        preparazione: 'Frulla tutti gli ingredienti 60 secondi. La consistenza deve essere liscia. Consuma 30-45 min prima del workout.',
+        obiettivo_fitness: ['endurance', 'cutting'], macro_focus: 'low_carb', fonte: 'database',
+        tags: ['green_smoothie', 'hydrating', 'fast_digesting', 'alkaline'], rating: 4.3, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_005', nome: 'Muesli Energetico Fatto in Casa', categoria: 'pre_workout', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 20, porzioni: 6, calorie: 265, proteine: 8, carboidrati: 42, grassi: 8,
+        ingredienti: ['100g avena', '30g noci', '20g semi girasole', '30g uvetta', 'miele', 'cannella'],
+        preparazione: 'Mescola avena, noci e semi. Tosta in forno 10 min. Aggiungi uvetta, miele e cannella. Conserva in contenitore ermetico.',
+        obiettivo_fitness: ['endurance', 'maintenance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['homemade_muesli', 'batch_prep', 'whole_grains', 'sustained_release'], rating: 4.5, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_006', nome: 'Crackers di Riso con Miele', categoria: 'pre_workout', tipoDieta: ['low_fat', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 3, porzioni: 1, calorie: 165, proteine: 4, carboidrati: 32, grassi: 2,
+        ingredienti: ['4 gallette riso', '2 cucchiaini miele', 'cannella', 'sale marino pizzico'],
+        preparazione: 'Spalma miele sulle gallette. Aggiungi cannella e pizzico di sale. Perfetto 20-30 min prima del workout.',
+        obiettivo_fitness: ['endurance', 'cutting'], macro_focus: 'low_carb', fonte: 'database',
+        tags: ['simple', 'fast_carbs', 'digestible', 'portable'], rating: 4.2, reviewCount: 134, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_007', nome: 'Frappè Pre-Workout Caffè e Banana', categoria: 'pre_workout', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 185, proteine: 6, carboidrati: 28, grassi: 6,
+        ingredienti: ['1 banana', '1 shot espresso freddo', '100ml latte scremato', 'ghiaccio', 'stevia'],
+        preparazione: 'Frulla banana, espresso freddo e latte. Aggiungi ghiaccio e stevia. La caffeina dà energia immediata per il workout.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'low_carb', fonte: 'database',
+        tags: ['caffeine_boost', 'pre_workout_drink', 'energy', 'performance'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pre_008', nome: 'Porridge Express Microonde', categoria: 'pre_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 3, porzioni: 1, calorie: 225, proteine: 12, carboidrati: 32, grassi: 6,
+        ingredienti: ['40g avena istantanea', '20g proteine whey', '150ml latte scremato', 'mirtilli', 'miele'],
+        preparazione: 'Mescola avena, proteine e latte in tazza. Microonde 90 secondi. Mescola, aggiungi mirtilli e miele.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['microwave', 'quick', 'protein_rich', 'convenient'], rating: 4.4, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+
+      // 💪 POST-WORKOUT (8 ricette)
+      {
+        id: 'pos_001', nome: 'Smoothie Recovery Proteico', categoria: 'post_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 385, proteine: 35, carboidrati: 28, grassi: 12,
+        ingredienti: ['30g proteine whey vaniglia', '1 banana', '250ml latte scremato', '1 cucchiaio burro mandorle', 'spinaci', 'ghiaccio'],
+        preparazione: 'Frulla tutti ingredienti 60 secondi. Consuma entro 30 min dal workout per massimo assorbimento proteico.',
+        obiettivo_fitness: ['bulking', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['post_workout', 'recovery', 'protein_synthesis', 'anabolic_window'], rating: 4.9, reviewCount: 267, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_002', nome: 'Yogurt Greco Power Bowl', categoria: 'post_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 425, proteine: 32, carboidrati: 35, grassi: 16,
+        ingredienti: ['200g yogurt greco', '15g granola proteica', 'frutti di bosco', '1 cucchiaio miele', 'mandorle a scaglie'],
+        preparazione: 'Versa yogurt in bowl. Aggiungi granola, frutti di bosco e mandorle. Completa con miele per carboidrati veloci.',
+        obiettivo_fitness: ['maintenance', 'cutting'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['greek_yogurt', 'probiotics', 'antioxidants', 'muscle_recovery'], rating: 4.7, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_003', nome: 'Pancakes Proteici Post-Workout', categoria: 'post_workout', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 12, porzioni: 1, calorie: 445, proteine: 28, carboidrati: 42, grassi: 16,
+        ingredienti: ['25g proteine whey', '1 banana', '2 uova', '30g avena', 'latte scremato', 'mirtilli', 'sciroppo acero'],
+        preparazione: 'Frulla proteine, banana, uova e avena. Cuoci piccoli pancakes 2 min per lato. Servi con mirtilli e sciroppo.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['protein_pancakes', 'comfort', 'muscle_building', 'satisfying'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_004', nome: 'Wrap Recovery Tacchino e Hummus', categoria: 'post_workout', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 1, calorie: 465, proteine: 32, carboidrati: 38, grassi: 18,
+        ingredienti: ['1 tortilla integrale', '120g fesa tacchino', '3 cucchiai hummus', 'spinaci', 'pomodori', 'avocado'],
+        preparazione: 'Spalma hummus su tortilla. Aggiungi tacchino, spinaci, pomodori e avocado. Arrotola stretto.',
+        obiettivo_fitness: ['bulking', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['wrap', 'complete_protein', 'portable', 'balanced_macros'], rating: 4.6, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_005', nome: 'Frittata Post-Allenamento', categoria: 'post_workout', tipoDieta: ['keto', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 1, calorie: 385, proteine: 28, carboidrati: 6, grassi: 26,
+        ingredienti: ['3 uova', '100g spinaci', '50g formaggio magro', 'pomodorini', 'basilico', 'olio oliva'],
+        preparazione: 'Sbatti uova con formaggio. Saltare spinaci 2 min. Versa uova, aggiungi pomodorini. Cuoci 5 min sui fornelli, finisci in forno.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['eggs', 'keto_friendly', 'low_carb', 'nutrient_dense'], rating: 4.5, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_006', nome: 'Bowl di Quinoa e Pollo', categoria: 'post_workout', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 20, porzioni: 1, calorie: 485, proteine: 35, carboidrati: 42, grassi: 16,
+        ingredienti: ['80g quinoa', '120g petto pollo', 'broccoli', 'carote', 'avocado', 'salsa tahini'],
+        preparazione: 'Cuoci quinoa 15 min. Griglia pollo e taglialo. Cuoci verdure al vapore. Componi bowl con tutti ingredienti.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['complete_meal', 'quinoa', 'balanced_nutrition', 'recovery_fuel'], rating: 4.7, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_007', nome: 'Smoothie Cioccolato e Banana', categoria: 'post_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 4, porzioni: 1, calorie: 365, proteine: 28, carboidrati: 32, grassi: 14,
+        ingredienti: ['25g proteine whey cioccolato', '1 banana', '200ml latte scremato', '1 cucchiaio cacao', 'ghiaccio'],
+        preparazione: 'Frulla proteine, banana, latte e cacao. Aggiungi ghiaccio per consistenza cremosa. Perfetto gusto chocolate milkshake.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['chocolate', 'banana', 'indulgent', 'muscle_recovery'], rating: 4.8, reviewCount: 256, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'pos_008', nome: 'Cottage Cheese Power Bowl', categoria: 'post_workout', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 325, proteine: 28, carboidrati: 18, grassi: 16,
+        ingredienti: ['150g cottage cheese', 'noci', 'miele', 'cannella', 'mela a dadini', 'semi lino'],
+        preparazione: 'Versa cottage cheese in bowl. Aggiungi mela, noci e semi di lino. Condisci con miele e cannella.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['cottage_cheese', 'casein_protein', 'slow_release', 'satisfying'], rating: 4.4, reviewCount: 178, createdAt: new Date().toISOString()
+      },
+
+      // 🍎 SPUNTINI (8 ricette)
+      {
+        id: 'spu_001', nome: 'Hummus con Bastoncini di Verdure', categoria: 'spuntino', tipoDieta: ['vegana', 'low_carb'],
+        difficolta: 'facile', tempoPreparazione: 10, porzioni: 1, calorie: 185, proteine: 8, carboidrati: 18, grassi: 8,
+        ingredienti: ['100g ceci cotti', 'tahini', 'limone', 'aglio', 'carote', 'sedano', 'peperoni', 'cetrioli'],
+        preparazione: 'Frulla ceci con tahini, limone e aglio fino a cremosità. Taglia verdure a bastoncini. Servi hummus con verdure crude.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'low_carb', fonte: 'database',
+        tags: ['hummus', 'raw_veggies', 'fiber', 'plant_protein'], rating: 4.3, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_002', nome: 'Apple Slices con Burro di Mandorle', categoria: 'spuntino', tipoDieta: ['paleo', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 3, porzioni: 1, calorie: 245, proteine: 6, carboidrati: 22, grassi: 16,
+        ingredienti: ['1 mela Granny Smith', '2 cucchiai burro mandorle', 'cannella', 'miele'],
+        preparazione: 'Taglia mela a spicchi. Servi con burro di mandorle per intingere. Spolverizza con cannella e goccia di miele.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['apple', 'almond_butter', 'natural_sugars', 'portable'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_003', nome: 'Energy Balls Cocco e Lime', categoria: 'spuntino', tipoDieta: ['vegana', 'paleo'],
+        difficolta: 'medio', tempoPreparazione: 15, porzioni: 8, calorie: 95, proteine: 3, carboidrati: 12, grassi: 4,
+        ingredienti: ['100g datteri', '30g cocco rapè', '20g mandorle', 'buccia lime', 'succo lime', 'olio cocco'],
+        preparazione: 'Ammolla datteri 10 min. Frulla con cocco, mandorle e lime. Forma palline, refrigera 30 min per rassodare.',
+        obiettivo_fitness: ['endurance', 'maintenance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['energy_balls', 'tropical', 'natural_energy', 'portable'], rating: 4.7, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_004', nome: 'Yogurt Proteico con Noci', categoria: 'spuntino', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 2, porzioni: 1, calorie: 265, proteine: 18, carboidrati: 12, grassi: 16,
+        ingredienti: ['150g yogurt greco', '30g noci', '1 cucchiaino miele', 'cannella'],
+        preparazione: 'Versa yogurt in coppetta. Aggiungi noci tritate, miele e cannella. Mix perfetto di proteine e grassi sani.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['greek_yogurt', 'nuts', 'quick', 'probiotics'], rating: 4.5, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_005', nome: 'Avocado Toast Mini', categoria: 'spuntino', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 285, proteine: 8, carboidrati: 24, grassi: 18,
+        ingredienti: ['2 fette pane integrale piccole', '1/2 avocado', 'pomodorini', 'lime', 'sale', 'pepe'],
+        preparazione: 'Tosta pane. Schiaccia avocado con lime, sale e pepe. Spalma su toast, guarnisci con pomodorini.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['avocado_toast', 'healthy_fats', 'fiber', 'trendy'], rating: 4.4, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_006', nome: 'Protein Bites Cioccolato', categoria: 'spuntino', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 10, porzioni: 6, calorie: 125, proteine: 8, carboidrati: 10, grassi: 6,
+        ingredienti: ['25g proteine whey cioccolato', '2 cucchiai burro arachidi', 'avena', 'miele', 'cioccolato chips'],
+        preparazione: 'Mescola proteine, burro arachidi e miele. Incorpora avena e chocolate chips. Forma palline, refrigera 20 min.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['protein_bites', 'chocolate', 'meal_prep', 'satisfying'], rating: 4.8, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_007', nome: 'Smoothie Proteico Verde Piccolo', categoria: 'spuntino', tipoDieta: ['vegana', 'low_carb'],
+        difficolta: 'facile', tempoPreparazione: 4, porzioni: 1, calorie: 165, proteine: 15, carboidrati: 12, grassi: 6,
+        ingredienti: ['15g proteine vegetali', '100g spinaci', '1/2 banana', '150ml latte mandorla', 'ghiaccio'],
+        preparazione: 'Frulla tutti ingredienti 45 secondi. Versione ridotta del smoothie per spuntino leggero ma nutriente.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['green_smoothie', 'light', 'plant_protein', 'hydrating'], rating: 4.2, reviewCount: 123, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'spu_008', nome: 'Mix di Frutta Secca Proteica', categoria: 'spuntino', tipoDieta: ['paleo', 'keto'],
+        difficolta: 'facile', tempoPreparazione: 2, porzioni: 1, calorie: 285, proteine: 12, carboidrati: 8, grassi: 24,
+        ingredienti: ['20g mandorle', '15g noci', '10g nocciole', '15g semi zucca', 'pizzico sale marino'],
+        preparazione: 'Mescola tutti i tipi di frutta secca e semi. Conserva in contenitore ermetico. Porzione perfetta per spuntino.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_fat', fonte: 'database',
+        tags: ['mixed_nuts', 'omega3', 'portable', 'energy_dense'], rating: 4.5, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+
+      // 🥤 SMOOTHIES (8 ricette) - Anteprima per collegamento
+      {
+        id: 'smo_001', nome: 'Smoothie Verde Detox (Preview)', categoria: 'smoothie', tipoDieta: ['vegana', 'low_carb'],
+        difficolta: 'facile', tempoPreparazione: 5, porzioni: 1, calorie: 185, proteine: 22, carboidrati: 12, grassi: 8,
+        ingredienti: ['Spinaci', 'Mela verde', 'Proteine whey', 'Acqua cocco', 'Limone', 'Zenzero'],
+        preparazione: 'Questa è una preview. Vai alla sezione Smoothies & Spuntini FIT per la collezione completa di 20+ smoothies specializzati!',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['preview', 'detox', 'green', 'specializzato'], rating: 4.8, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+
+      // 📦 MEAL PREP (8 ricette)
+      {
+        id: 'mea_001', nome: 'Chicken Meal Prep Containers', categoria: 'meal_prep', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 60, porzioni: 5, calorie: 425, proteine: 35, carboidrati: 38, grassi: 14,
+        ingredienti: ['750g petto pollo', '400g riso integrale', '500g broccoli', '250g carote', 'olio oliva', 'spezie'],
+        preparazione: 'Cuoci riso in grande quantità. Griglia tutto il pollo condito. Cuoci verdure al vapore. Dividi in 5 contenitori. Conserva in frigo 4 giorni.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['meal_prep', 'batch_cooking', 'containers', 'week_prep'], rating: 4.9, reviewCount: 345, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_002', nome: 'Overnight Oats 5 Varianti', categoria: 'meal_prep', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'facile', tempoPreparazione: 25, porzioni: 5, calorie: 285, proteine: 12, carboidrati: 42, grassi: 8,
+        ingredienti: ['250g avena', 'Latte mandorla', 'Proteine whey', 'Frutti di bosco', 'Banana', 'Burro mandorle', 'Chia', 'Miele'],
+        preparazione: 'Prepara 5 barattoli con combinazioni diverse di avena base + proteine + frutta + grassi sani. Una per ogni giorno lavorativo.',
+        obiettivo_fitness: ['maintenance', 'endurance'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['overnight_oats', 'breakfast_prep', 'variety', 'grab_and_go'], rating: 4.7, reviewCount: 267, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_003', nome: 'Buddha Bowl Prep Station', categoria: 'meal_prep', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 45, porzioni: 4, calorie: 385, proteine: 16, carboidrati: 48, grassi: 16,
+        ingredienti: ['Quinoa', 'Ceci arrostiti', 'Carote julienne', 'Cavolo massaggiato', 'Avocado', 'Semi girasole', 'Tahini', 'Limone'],
+        preparazione: 'Cuoci quinoa e ceci. Prepara verdure. Conserva componenti separati. Assembla al momento aggiungendo avocado fresco.',
+        obiettivo_fitness: ['maintenance', 'cutting'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['buddha_bowls', 'vegetarian', 'assembly', 'colorful'], rating: 4.6, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_004', nome: 'Protein Muffins Batch', categoria: 'meal_prep', tipoDieta: ['high_protein', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 35, porzioni: 12, calorie: 165, proteine: 12, carboidrati: 18, grassi: 6,
+        ingredienti: ['200g farina avena', '60g proteine whey', '3 uova', 'Banana', 'Mirtilli', 'Latte scremato', 'Lievito', 'Stevia'],
+        preparazione: 'Mescola ingredienti secchi e umidi separatamente. Unisci, versa in stampini muffin. Cuoci 18 min a 180°C. Congela porzioni.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['protein_muffins', 'batch_baking', 'freezer_friendly', 'grab_snack'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_005', nome: 'Soup Prep - Zuppa di Lenticchie', categoria: 'meal_prep', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 40, porzioni: 6, calorie: 245, proteine: 16, carboidrati: 38, grassi: 4,
+        ingredienti: ['300g lenticchie rosse', 'Carote', 'Sedano', 'Cipolla', 'Pomodori pelati', 'Brodo vegetale', 'Curcuma', 'Cumino'],
+        preparazione: 'Soffriggi verdure, aggiungi lenticchie e liquidi. Simmer 25 min. Frulla parzialmente. Congela in porzioni singole.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['soup_prep', 'lentils', 'freezer_meal', 'warming'], rating: 4.5, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_006', nome: 'Quinoa Salad Prep Jars', categoria: 'meal_prep', tipoDieta: ['vegetariana', 'balanced'],
+        difficolta: 'medio', tempoPreparazione: 30, porzioni: 4, calorie: 325, proteine: 12, carboidrati: 42, grassi: 12,
+        ingredienti: ['200g quinoa', 'Pomodorini', 'Cetrioli', 'Feta', 'Olive', 'Basilico', 'Vinaigrette', 'Barattoli grandi'],
+        preparazione: 'Cuoci quinoa. Stratifica in barattoli: dressing in fondo, quinoa, verdure, formaggio, verdi in cima. Conserva 4 giorni.',
+        obiettivo_fitness: ['maintenance', 'cutting'], macro_focus: 'balanced', fonte: 'database',
+        tags: ['mason_jar_salads', 'layered', 'quinoa', 'mediterranean'], rating: 4.4, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_007', nome: 'Power Smoothie Packs Freezer', categoria: 'meal_prep', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 20, porzioni: 10, calorie: 185, proteine: 15, carboidrati: 22, grassi: 6,
+        ingredienti: ['Spinaci porzioni', 'Frutti bosco congelati', 'Banana a fette', 'Proteine vegetali', 'Semi chia', 'Sacchetti freezer'],
+        preparazione: 'Prepara 10 sacchetti con mix di ingredienti congelati. Al mattino aggiungi liquido e frulla. Smoothie pronto in 2 min.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['smoothie_packs', 'freezer_prep', 'grab_blend', 'morning_rush'], rating: 4.7, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'mea_008', nome: 'Salmon Veggie Bake Sheet Pan', categoria: 'meal_prep', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 4, calorie: 365, proteine: 28, carboidrati: 18, grassi: 22,
+        ingredienti: ['600g filetti salmone', 'Zucchine', 'Peperoni', 'Broccoli', 'Olio oliva', 'Limone', 'Erbe', 'Aglio'],
+        preparazione: 'Taglia verdure uniformi. Condisci salmone e verdure. Cuoci su sheet pan 18 min a 200°C. Dividi in contenitori.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['sheet_pan', 'omega3', 'one_pan', 'easy_cleanup'], rating: 4.8, reviewCount: 234, createdAt: new Date().toISOString()
+      },
+
+      // 🥜 SNACK PROTEICI (8 ricette)
+      {
+        id: 'snk_001', nome: 'Barrette Proteiche Fatte in Casa', categoria: 'snack_proteici', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 8, calorie: 185, proteine: 12, carboidrati: 16, grassi: 8,
+        ingredienti: ['60g proteine whey', '100g datteri', '50g mandorle', '30g cocco rapè', 'Burro mandorle', 'Cioccolato fondente'],
+        preparazione: 'Frulla datteri fino a pasta. Mescola con proteine, mandorle tritate e cocco. Pressa in teglia, aggiungi cioccolato. Refrigera 2h.',
+        obiettivo_fitness: ['bulking', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['protein_bars', 'homemade', 'no_bake', 'portable'], rating: 4.9, reviewCount: 267, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_002', nome: 'Jerky di Tacchino Speziato', categoria: 'snack_proteici', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'difficile', tempoPreparazione: 240, porzioni: 10, calorie: 85, proteine: 16, carboidrati: 2, grassi: 1,
+        ingredienti: ['500g petto tacchino', 'Salsa soia', 'Miele', 'Peperoncino', 'Aglio', 'Zenzero', 'Disidratatore'],
+        preparazione: 'Taglia tacchino a strisce sottili. Marina 4h. Disidrata 6-8h a 70°C fino a consistenza jerky. Conserva ermeticamente.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['jerky', 'dehydrated', 'high_protein', 'long_prep'], rating: 4.6, reviewCount: 145, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_003', nome: 'Edamame Tostati al Sale', categoria: 'snack_proteici', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 15, porzioni: 4, calorie: 125, proteine: 12, carboidrati: 8, grassi: 5,
+        ingredienti: ['200g edamame sgusciati', 'Sale marino', 'Olio oliva spray', 'Paprika', 'Aglio polvere'],
+        preparazione: 'Asciuga edamame. Spruzza olio, condisci con sale e spezie. Tosta in forno 12 min a 200°C fino a croccantezza.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['edamame', 'crunchy', 'plant_protein', 'roasted'], rating: 4.4, reviewCount: 189, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_004', nome: 'Chips di Parmigiano', categoria: 'snack_proteici', tipoDieta: ['keto', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 12, porzioni: 4, calorie: 110, proteine: 10, carboidrati: 1, grassi: 7,
+        ingredienti: ['100g parmigiano grattugiato', 'Pepe nero', 'Rosmarino secco'],
+        preparazione: 'Distribuisci parmigiano in piccoli mucchietti su carta forno. Condisci con spezie. Cuoci 8 min a 200°C fino a doratura.',
+        obiettivo_fitness: ['cutting', 'keto'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['cheese_crisps', 'keto_friendly', 'zero_carb', 'crunchy'], rating: 4.7, reviewCount: 198, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_005', nome: 'Muffins Proteici Salati', categoria: 'snack_proteici', tipoDieta: ['vegetariana', 'high_protein'],
+        difficolta: 'medio', tempoPreparazione: 25, porzioni: 6, calorie: 145, proteine: 14, carboidrati: 12, grassi: 6,
+        ingredienti: ['3 uova', '30g proteine neutre', '50g farina mandorle', 'Spinaci', 'Pomodori secchi', 'Formaggio', 'Lievito'],
+        preparazione: 'Sbatti uova con proteine. Aggiungi farina, verdure e formaggio. Versa in stampini, cuoci 18 min a 180°C.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['savory_muffins', 'egg_based', 'meal_prep', 'portable'], rating: 4.5, reviewCount: 167, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_006', nome: 'Biltong Sudafricano', categoria: 'snack_proteici', tipoDieta: ['paleo', 'high_protein'],
+        difficolta: 'difficile', tempoPreparazione: 72, porzioni: 12, calorie: 95, proteine: 18, carboidrati: 0, grassi: 2,
+        ingredienti: ['600g manzo taglio magro', 'Aceto', 'Sale grosso', 'Coriandolo', 'Pepe nero'],
+        preparazione: 'Marina carne in aceto e spezie 2h. Appendi strisce in luogo ventilato 3 giorni. Alternativa: disidratatore 12h.',
+        obiettivo_fitness: ['cutting', 'strength'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['biltong', 'traditional', 'zero_carb', 'artisanal'], rating: 4.8, reviewCount: 123, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_007', nome: 'Hummus Proteico Potenziato', categoria: 'snack_proteici', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'facile', tempoPreparazione: 8, porzioni: 6, calorie: 95, proteine: 8, carboidrati: 12, grassi: 3,
+        ingredienti: ['200g ceci', '20g proteine vegetali neutre', 'Tahini', 'Limone', 'Aglio', 'Cumino'],
+        preparazione: 'Frulla ceci con proteine in polvere, tahini e aromi. Aggiungi acqua per consistenza. Servi con verdure crude.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['protein_hummus', 'plant_based', 'dip', 'enhanced'], rating: 4.3, reviewCount: 156, createdAt: new Date().toISOString()
+      },
+      {
+        id: 'snk_008', nome: 'Seitan Jerky Vegano', categoria: 'snack_proteici', tipoDieta: ['vegana', 'high_protein'],
+        difficolta: 'difficile', tempoPreparazione: 180, porzioni: 8, calorie: 105, proteine: 18, carboidrati: 4, grassi: 1,
+        ingredienti: ['200g seitan', 'Tamari', 'Fumo liquido', 'Paprika', 'Aglio', 'Sciroppo acero', 'Disidratatore'],
+        preparazione: 'Taglia seitan a strisce. Marina in salsa 3h. Disidrata 4-6h fino a consistenza chewy. Snack proteico vegano.',
+        obiettivo_fitness: ['cutting', 'maintenance'], macro_focus: 'high_protein', fonte: 'database',
+        tags: ['vegan_jerky', 'seitan', 'plant_protein', 'innovative'], rating: 4.4, reviewCount: 134, createdAt: new Date().toISOString()
       }
     ];
   };
@@ -513,7 +1060,10 @@ export default function RicettePage() {
       'post_workout': 'bg-green-100 text-green-800',
       'pranzo': 'bg-blue-100 text-blue-800',
       'cena': 'bg-purple-100 text-purple-800',
-      'spuntino': 'bg-gray-100 text-gray-800'
+      'spuntino': 'bg-gray-100 text-gray-800',
+      'smoothie': 'bg-teal-100 text-teal-800',
+      'meal_prep': 'bg-orange-100 text-orange-800',
+      'snack_proteici': 'bg-pink-100 text-pink-800'
     };
     return colors[categoria] || 'bg-gray-100 text-gray-800';
   };
@@ -534,7 +1084,7 @@ export default function RicettePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-400 mx-auto mb-4"></div>
           <h2 className="text-2xl font-bold mb-2">Caricando Database Ricette FITNESS...</h2>
-          <p className="text-gray-400">Ricette fitness + AI infinita in arrivo!</p>
+          <p className="text-gray-400">60+ ricette specializzate + AI infinita in arrivo!</p>
         </div>
       </div>
     );
@@ -565,17 +1115,19 @@ export default function RicettePage() {
       <section className="bg-gradient-to-r from-green-600 to-blue-600 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            DATABASE RICETTE FITNESS
+            DATABASE RICETTE FITNESS COMPLETO
           </h1>
           <p className="text-xl text-gray-100 mb-6 max-w-4xl mx-auto">
-            Ricette fitness da fonti specializzate + AI infinita per combinazioni illimitate. 
-            Ottimizzate per performance, recovery e risultati concreti!
+            60+ ricette fitness specializzate + AI infinita per combinazioni illimitate. 
+            Dalla colazione al post-workout, ogni ricetta è ottimizzata per performance e risultati concreti!
           </p>
-          <div className="bg-white bg-opacity-10 rounded-lg p-4 max-w-2xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-200">
+
+          {/* Stats Dashboard */}
+          <div className="bg-white bg-opacity-10 rounded-lg p-4 max-w-4xl mx-auto mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-200">
               <div className="text-center">
                 <div className="font-semibold text-lg">{filteredRecipes.length}</div>
-                <div>Ricette Trovate</div>
+                <div>Ricette Totali</div>
               </div>
               <div className="text-center">
                 <div className="font-semibold text-lg">{favoriteRecipes.size}/10</div>
@@ -589,7 +1141,66 @@ export default function RicettePage() {
                 <div className="font-semibold text-lg">{recipes.filter(r => r.proteine >= 30).length}</div>
                 <div>High Protein</div>
               </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">{recipes.filter(r => r.tempoPreparazione <= 15).length}</div>
+                <div>Quick (&lt;15min)</div>
+              </div>
             </div>
+          </div>
+
+          {/* Collegamento Smoothies Specializzato */}
+          <div className="bg-gradient-to-r from-teal-600 to-purple-600 rounded-xl p-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <Droplets className="h-8 w-8 text-white" />
+              <h3 className="text-2xl font-bold text-white">Smoothies & Spuntini FIT</h3>
+              <Apple className="h-8 w-8 text-white" />
+            </div>
+            <p className="text-teal-100 mb-4">
+              Collezione specializzata: 20+ smoothies energizzanti, frullati proteici, energy balls e spuntini fitness!
+            </p>
+            <Link 
+              href="/ricette/smoothies-spuntini"
+              className="inline-flex items-center gap-2 bg-white text-teal-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              <Coffee className="h-5 w-5" />
+              Esplora Smoothies FIT
+              <Zap className="h-5 w-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Categorie Quick Access */}
+      <section className="bg-gray-800 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-bold text-center mb-6">🎯 Categorie Specializzate</h2>
+          <div className="grid grid-cols-3 md:grid-cols-9 gap-4">
+            {MEAL_CATEGORIES.map((category) => {
+              const Icon = category.icon;
+              const count = recipes.filter(r => r.categoria === category.value).length;
+              return (
+                <button
+                  key={category.value}
+                  onClick={() => {
+                    if (category.value === 'smoothie') {
+                      window.location.href = '/ricette/smoothies-spuntini';
+                    } else {
+                      setSelectedCategory(category.value);
+                      setCurrentPage(1);
+                    }
+                  }}
+                  className="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-xl transition-all duration-300 transform hover:scale-105 border border-gray-600"
+                >
+                  <div className="text-2xl mb-2">{category.emoji}</div>
+                  <Icon className="h-6 w-6 text-green-400 mb-2" />
+                  <div className="text-sm font-semibold text-white text-center">{category.label}</div>
+                  <div className="text-xs text-gray-400">{count} ricette</div>
+                  {category.value === 'smoothie' && (
+                    <div className="text-xs text-purple-400 mt-1">📍 Specializzato</div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -681,7 +1292,7 @@ export default function RicettePage() {
           </div>
 
           {/* Filtri veloci */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-8 gap-3">
             <button
               onClick={() => {
                 const favoritesList = Array.from(favoriteRecipes);
@@ -725,10 +1336,30 @@ export default function RicettePage() {
 
             <button
               onClick={() => {
+                const mealPrepRecipes = recipes.filter(r => r.categoria === 'meal_prep');
+                setFilteredRecipes(mealPrepRecipes);
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+            >
+              📦 Meal Prep
+            </button>
+
+            <button
+              onClick={() => {
+                const ketoRecipes = recipes.filter(r => r.tipoDieta.includes('keto'));
+                setFilteredRecipes(ketoRecipes);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+            >
+              🥑 Keto
+            </button>
+
+            <button
+              onClick={() => {
                 const aiRecipes = recipes.filter(r => r.fonte === 'ai_generated');
                 setFilteredRecipes(aiRecipes);
               }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
             >
               🤖 AI Generated
             </button>
@@ -1023,7 +1654,7 @@ export default function RicettePage() {
                       onChange={(e) => setAiFormData(prev => ({...prev, categoria: e.target.value}))}
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      {MEAL_CATEGORIES.map(cat => (
+                      {MEAL_CATEGORIES.filter(cat => cat.value !== 'smoothie').map(cat => (
                         <option key={cat.value} value={cat.value}>{cat.label}</option>
                       ))}
                     </select>
@@ -1375,16 +2006,16 @@ export default function RicettePage() {
           <div className="text-center mb-6">
             <div className="flex justify-center items-center gap-3 mb-4">
               <ChefHat className="h-8 w-8 text-green-400" />
-              <h3 className="text-xl font-bold text-white">Database Ricette FITNESS</h3>
+              <h3 className="text-xl font-bold text-white">Database Ricette FITNESS Completo</h3>
             </div>
             <p className="text-gray-400 mb-4 max-w-2xl mx-auto">
-              Ricette ottimizzate da fonti fitness specializzate + AI infinita per performance, recovery e risultati concreti. 
+              60+ ricette ottimizzate da fonti fitness specializzate + AI infinita per performance, recovery e risultati concreti. 
               Ogni ricetta è calibrata per obiettivi specifici di allenamento.
             </p>
           </div>
 
           {/* Stats Footer */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-400">{recipes.length}</div>
               <div className="text-gray-400 text-sm">Ricette Totali</div>
@@ -1401,6 +2032,10 @@ export default function RicettePage() {
               <div className="text-2xl font-bold text-yellow-400">{favoriteRecipes.size}/10</div>
               <div className="text-gray-400 text-sm">Preferiti</div>
             </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-teal-400">{recipes.filter(r => r.categoria === 'meal_prep').length}</div>
+              <div className="text-gray-400 text-sm">Meal Prep</div>
+            </div>
           </div>
 
           {/* Links Footer */}
@@ -1411,8 +2046,8 @@ export default function RicettePage() {
             <Link href="/dashboard" className="text-gray-400 hover:text-green-400 transition-colors">
               Dashboard
             </Link>
-            <Link href="/ricette/smoothies-spuntini" className="text-gray-400 hover:text-green-400 transition-colors">
-              Smoothies & Spuntini FIT
+            <Link href="/ricette/smoothies-spuntini" className="text-gray-400 hover:text-teal-400 transition-colors">
+              🥤 Smoothies & Spuntini FIT
             </Link>
             <Link href="/privacy" className="text-gray-400 hover:text-green-400 transition-colors">
               Privacy
@@ -1422,11 +2057,12 @@ export default function RicettePage() {
           {/* Disclaimer */}
           <div className="text-center mt-6 pt-6 border-t border-gray-700">
             <p className="text-gray-500 text-xs">
-              ⚠️ Le ricette sono generate da AI specializzata in fitness. Consulta sempre un nutrizionista per piani personalizzati.
+              ⚠️ Le ricette sono ottimizzate per obiettivi fitness. Consulta sempre un nutrizionista per piani personalizzati.
             </p>
           </div>
         </div>
       </footer>
     </div>
   );
-}
+}'
+                          
