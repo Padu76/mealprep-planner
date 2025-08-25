@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { FITNESS_RECIPES_DB, selectFitnessRecipes } from '../../../utils/fitness_recipes_database';
+import { saveMealPlan, createUser } from '../../../utils/supabaseOperations';
+import { FormData, NutritionalCalculation, GenerateMealPlanResponse } from '../../../types';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -8,18 +10,21 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.json();
-    console.log('🏋️‍♂️ Generating FITNESS meal plan with form data:', formData);
+    const formData: FormData = await request.json();
+    console.log('🏋️‍♂️ Generating FITNESS meal plan with COMPLETE form data:', formData);
 
-    // 🔧 CALCOLO CALORIE COMPLETAMENTE FIXATO
-    console.log('🚀 ===== INIZIO CALCOLO CALORIE DEBUG =====');
-    console.log('📝 RAW FORM DATA RICEVUTO:', JSON.stringify(formData, null, 2));
+    // 🔧 CALCOLO CALORIE COMPLETAMENTE FIXATO CON ALLERGIE
+    console.log('🚀 ===== INIZIO CALCOLO CALORIE CON ALLERGIE DEBUG =====');
+    console.log('📋 Allergie ricevute:', formData.allergie);
+    console.log('🥗 Preferenze ricevute:', formData.preferenze);
     
-    const calc = calculateNutritionalNeedsFixed(formData);
+    const calc = calculateNutritionalNeedsWithAllergies(formData);
     
     console.log('📊 ===== RISULTATO CALCOLO FINALE =====');
     console.log('📊 Fixed nutritional calculations:', calc);
     console.log('🔥 CALORIE FINALI CALCOLATE:', calc.dailyCalories);
+    console.log('⚠️ ALLERGIE PROCESSATE:', calc.debugInfo.input.allergie);
+    console.log('🥗 PREFERENZE PROCESSATE:', calc.debugInfo.input.preferenze);
     console.log('🚀 ===== FINE CALCOLO CALORIE DEBUG =====');
 
     // 🚨 VERIFICA SICUREZZA CALORIE
@@ -32,30 +37,56 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 🎯 LOG DETTAGLIATO PER DEBUG
-    console.log('🔍 DETAILED CALCULATION DEBUG:');
+    // 👤 SALVA/AGGIORNA UTENTE IN DATABASE
+    console.log('👤 ===== GESTIONE UTENTE DATABASE =====');
+    try {
+      const userResult = await createUser({
+        nome: formData.nome,
+        email: formData.email,
+        telefono: formData.telefono
+      });
+      
+      if (userResult.error) {
+        console.warn('⚠️ User creation warning:', userResult.error.message);
+      } else {
+        console.log('✅ User created/updated successfully:', userResult.data?.id);
+      }
+    } catch (userError) {
+      console.error('❌ User database error:', userError);
+      // Continuiamo anche se il salvataggio utente fallisce
+    }
+
+    // 🎯 LOG DETTAGLIATO PER DEBUG CON ALLERGIE
+    console.log('📝 DETAILED CALCULATION DEBUG WITH ALLERGIES:');
     console.log('- Raw obiettivo from form:', formData.obiettivo);
     console.log('- Raw attivita from form:', formData.attivita);
+    console.log('- Raw allergie from form:', formData.allergie);
+    console.log('- Raw preferenze from form:', formData.preferenze);
     console.log('- Normalized goal:', calc.goal);
     console.log('- Normalized activity:', calc.activity);
+    console.log('- Processed allergie:', calc.debugInfo.input.allergie);
+    console.log('- Processed preferenze:', calc.debugInfo.input.preferenze);
     console.log('- Goal factor used:', calc.debugInfo.goalFactor);
     console.log('- Activity factor used:', calc.debugInfo.activityFactor);
 
-    // 🇮🇹 NUOVO: SELEZIONE RICETTE FITNESS INTELLIGENTE
-    console.log('🇮🇹 ===== SELEZIONE RICETTE FITNESS =====');
-    const fitnessRecipes = generateFitnessBasedPlan(formData, calc);
-    console.log('✅ Ricette fitness selezionate:', fitnessRecipes.totalRecipes);
+    // 🇮🇹 SELEZIONE RICETTE FITNESS CON FILTRI ALLERGIE/PREFERENZE
+    console.log('🇮🇹 ===== SELEZIONE RICETTE FITNESS CON FILTRI =====');
+    const fitnessRecipes = generateFitnessBasedPlanWithFilters(formData, calc);
+    console.log('✅ Ricette fitness selezionate (post-filtri):', fitnessRecipes.totalRecipes);
+    console.log('🚫 Ricette filtrate per allergie:', fitnessRecipes.filteredForAllergies);
+    console.log('✅ Ricette matchate per preferenze:', fitnessRecipes.matchedPreferences);
 
-    // 🤖 PROVA CLAUDE AI CON DATABASE FITNESS
+    // 🤖 PROVA CLAUDE AI CON ALLERGIE E PREFERENZE
     if (!process.env.ANTHROPIC_API_KEY) {
       console.log('⚠️ ANTHROPIC_API_KEY not found, using fitness fallback');
-      return generateFitnessBasedResponse(formData, calc, fitnessRecipes);
+      const fallbackResponse = await generateFitnessBasedResponseWithDB(formData, calc, fitnessRecipes);
+      return fallbackResponse;
     }
 
     try {
-      console.log('🤖 Calling Claude AI with FITNESS database...');
+      console.log('🤖 Calling Claude AI with FITNESS database + ALLERGIES + PREFERENCES...');
       
-      const prompt = createFitnessOptimizedPrompt(formData, calc, fitnessRecipes);
+      const prompt = createAllergyAwarePrompt(formData, calc, fitnessRecipes);
       
       const message = await anthropic.messages.create({
         model: "claude-3-haiku-20240307",
@@ -74,12 +105,62 @@ export async function POST(request: NextRequest) {
         throw new Error('Invalid AI response type');
       }
 
-      console.log('✅ Claude AI FITNESS response received');
+      console.log('✅ Claude AI FITNESS response with allergies received');
 
-      return NextResponse.json({
+      // 💾 SALVA MEAL PLAN NEL DATABASE
+      console.log('💾 ===== SALVATAGGIO MEAL PLAN =====');
+      let mealPlanId: string | undefined;
+
+      try {
+        const mealPlanData = {
+          nome_utente: formData.nome,
+          email_utente: formData.email,
+          telefono_utente: formData.telefono,
+          eta: calc.debugInfo.input.age,
+          sesso: calc.debugInfo.input.gender,
+          peso: calc.debugInfo.input.weight,
+          altezza: calc.debugInfo.input.height,
+          modalita: formData.modalita || 'guidata',
+          attivita: calc.activity,
+          obiettivo: calc.goal,
+          durata: calc.numDays,
+          pasti: calc.numMeals,
+          varieta: formData.varieta || 'diversi',
+          allergie: formData.allergie || [],
+          preferenze: formData.preferenze || [],
+          bmr: calc.bmr,
+          tdee: calc.tdee,
+          calorie_target: calc.dailyCalories,
+          distribuzione_pasti: calc.mealCalories,
+          piano_completo: aiResponse.text,
+          generato_con_ai: true,
+          fitness_optimized: true,
+          total_recipes: fitnessRecipes.totalRecipes,
+          calorie_manuali: formData.modalita === 'esperto' ? parseInt(formData.calorie_totali || '0') : undefined,
+          proteine_manuali: formData.modalita === 'esperto' ? parseInt(formData.proteine_totali || '0') : undefined,
+          carboidrati_manuali: formData.modalita === 'esperto' ? parseInt(formData.carboidrati_totali || '0') : undefined,
+          grassi_manuali: formData.modalita === 'esperto' ? parseInt(formData.grassi_totali || '0') : undefined,
+          status: 'generato' as const
+        };
+
+        const saveResult = await saveMealPlan(mealPlanData);
+        
+        if (saveResult.error) {
+          console.error('❌ Meal plan save error:', saveResult.error);
+        } else {
+          console.log('✅ Meal plan saved successfully:', saveResult.data?.id);
+          mealPlanId = saveResult.data?.id;
+        }
+      } catch (dbError) {
+        console.error('❌ Database error during meal plan save:', dbError);
+        // Continuiamo anche se il salvataggio fallisce
+      }
+
+      const response: GenerateMealPlanResponse = {
         success: true,
         piano: aiResponse.text,
-        message: 'Piano alimentare FITNESS generato con ricette italiane!',
+        message: 'Piano alimentare FITNESS generato con ricette italiane e filtri allergie/preferenze!',
+        meal_plan_id: mealPlanId,
         metadata: {
           bmr: calc.bmr,
           tdee: calc.tdee,
@@ -91,12 +172,15 @@ export async function POST(request: NextRequest) {
           totalRecipes: fitnessRecipes.totalRecipes,
           debugInfo: calc.debugInfo
         }
-      });
+      };
+
+      return NextResponse.json(response);
 
     } catch (aiError) {
       console.error('❌ Claude AI error:', aiError);
-      console.log('🔄 Falling back to FITNESS template...');
-      return generateFitnessBasedResponse(formData, calc, fitnessRecipes);
+      console.log('🔄 Falling back to FITNESS template with allergies...');
+      const fallbackResponse = await generateFitnessBasedResponseWithDB(formData, calc, fitnessRecipes);
+      return fallbackResponse;
     }
 
   } catch (error) {
@@ -109,71 +193,114 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 🇮🇹 NUOVA FUNZIONE: SELEZIONE RICETTE FITNESS ITALIANE
-function generateFitnessBasedPlan(formData: any, calc: any) {
-  console.log('🏋️‍♂️ Generating fitness-based meal selection...');
+// 🇮🇹 NUOVA FUNZIONE: SELEZIONE RICETTE CON FILTRI ALLERGIE/PREFERENZE
+function generateFitnessBasedPlanWithFilters(formData: FormData, calc: NutritionalCalculation) {
+  console.log('🏋️‍♂️ Generating fitness-based meal selection WITH FILTERS...');
   
-  const numDays = parseInt(formData.durata) || 3;
-  const numMeals = parseInt(formData.pasti) || 3;
+  const numDays = calc.numDays;
+  const numMeals = calc.numMeals;
   const objetivo = calc.goal;
   const allergie = formData.allergie || [];
+  const preferenze = formData.preferenze || [];
+  
+  console.log('🚫 Filtering for allergies:', allergie);
+  console.log('✅ Matching for preferences:', preferenze);
   
   const selectedRecipes = {
     colazione: [],
     pranzo: [],
     cena: [],
     spuntino: [],
-    totalRecipes: 0
+    totalRecipes: 0,
+    filteredForAllergies: 0,
+    matchedPreferences: 0
   };
 
-  // Seleziona ricette per ogni giorno
+  // Seleziona ricette per ogni giorno con filtri
   for (let day = 0; day < numDays; day++) {
-    // Colazione FITNESS
-    const colazioneOptions = selectFitnessRecipes('colazione', objetivo, 1, [], allergie);
+    // Colazione FITNESS con filtri
+    const colazioneOptions = selectFitnessRecipes('colazione', objetivo, 1, preferenze, allergie);
     if (colazioneOptions.length > 0) {
       const selected = colazioneOptions[day % colazioneOptions.length];
       selectedRecipes.colazione.push(selected);
       selectedRecipes.totalRecipes++;
+      
+      // Conta filtri applicati
+      if (allergie.length > 0) selectedRecipes.filteredForAllergies++;
+      if (preferenze.length > 0 && hasMatchingPreferences(selected, preferenze)) {
+        selectedRecipes.matchedPreferences++;
+      }
     }
 
-    // Pranzo FITNESS
-    const pranzoOptions = selectFitnessRecipes('pranzo', objetivo, 1, [], allergie);
+    // Pranzo FITNESS con filtri
+    const pranzoOptions = selectFitnessRecipes('pranzo', objetivo, 1, preferenze, allergie);
     if (pranzoOptions.length > 0) {
       const selected = pranzoOptions[day % pranzoOptions.length];
       selectedRecipes.pranzo.push(selected);
       selectedRecipes.totalRecipes++;
+      
+      if (allergie.length > 0) selectedRecipes.filteredForAllergies++;
+      if (preferenze.length > 0 && hasMatchingPreferences(selected, preferenze)) {
+        selectedRecipes.matchedPreferences++;
+      }
     }
 
-    // Cena FITNESS
-    const cenaOptions = selectFitnessRecipes('cena', objetivo, 1, [], allergie);
+    // Cena FITNESS con filtri
+    const cenaOptions = selectFitnessRecipes('cena', objetivo, 1, preferenze, allergie);
     if (cenaOptions.length > 0) {
       const selected = cenaOptions[day % cenaOptions.length];
       selectedRecipes.cena.push(selected);
       selectedRecipes.totalRecipes++;
+      
+      if (allergie.length > 0) selectedRecipes.filteredForAllergies++;
+      if (preferenze.length > 0 && hasMatchingPreferences(selected, preferenze)) {
+        selectedRecipes.matchedPreferences++;
+      }
     }
 
-    // Spuntini FITNESS se richiesti
+    // Spuntini FITNESS se richiesti con filtri
     if (numMeals >= 4) {
-      const spuntinoOptions = selectFitnessRecipes('spuntino', objetivo, 1, [], allergie);
+      const spuntinoOptions = selectFitnessRecipes('spuntino', objetivo, 1, preferenze, allergie);
       if (spuntinoOptions.length > 0) {
         const selected = spuntinoOptions[day % spuntinoOptions.length];
         selectedRecipes.spuntino.push(selected);
         selectedRecipes.totalRecipes++;
+        
+        if (allergie.length > 0) selectedRecipes.filteredForAllergies++;
+        if (preferenze.length > 0 && hasMatchingPreferences(selected, preferenze)) {
+          selectedRecipes.matchedPreferences++;
+        }
       }
     }
   }
 
-  console.log('🎯 FITNESS recipes selected:', selectedRecipes.totalRecipes);
+  console.log('🎯 FITNESS recipes selected with filters:', selectedRecipes.totalRecipes);
+  console.log('🚫 Total allergy-filtered:', selectedRecipes.filteredForAllergies);
+  console.log('✅ Total preference-matched:', selectedRecipes.matchedPreferences);
+  
   return selectedRecipes;
 }
 
-// 🤖 PROMPT AI FITNESS-OTTIMIZZATO CON DATABASE
-function createFitnessOptimizedPrompt(formData: any, calc: any, fitnessRecipes: any): string {
+// Helper function per check preferenze
+function hasMatchingPreferences(recipe: any, preferenze: string[]): boolean {
+  if (!preferenze || preferenze.length === 0) return false;
+  if (!recipe || !recipe.ingredienti) return false;
+  
+  const ingredientiLower = recipe.ingredienti.map((ing: string) => ing.toLowerCase());
+  return preferenze.some(pref => 
+    ingredientiLower.some(ing => ing.includes(pref.toLowerCase()))
+  );
+}
+
+// 🤖 PROMPT AI FITNESS-OTTIMIZZATO CON ALLERGIE E PREFERENZE
+function createAllergyAwarePrompt(formData: FormData, calc: NutritionalCalculation, fitnessRecipes: any): string {
   const allergieText = formData.allergie && formData.allergie.length > 0 ? 
-    `\n⚠️ ALLERGIE: ${formData.allergie.join(', ')}` : '';
+    `\n🚫 ALLERGIE E INTOLLERANZE: ${formData.allergie.join(', ')} - EVITARE ASSOLUTAMENTE` : 
+    '\n✅ ALLERGIE: Nessuna allergia dichiarata';
   
   const preferenzeText = formData.preferenze && formData.preferenze.length > 0 ? 
-    `\n🥗 PREFERENZE: ${formData.preferenze.join(', ')}` : '';
+    `\n🥗 PREFERENZE ALIMENTARI: ${formData.preferenze.join(', ')} - PRIVILEGIARE QUANDO POSSIBILE` : 
+    '\n🔧 PREFERENZE: Nessuna preferenza specifica dichiarata';
 
   // Crea esempi di ricette dal database
   const ricetteEsempi = [
@@ -181,12 +308,12 @@ function createFitnessOptimizedPrompt(formData: any, calc: any, fitnessRecipes: 
     ...fitnessRecipes.pranzo.slice(0, 2),
     ...fitnessRecipes.cena.slice(0, 2),
     ...fitnessRecipes.spuntino.slice(0, 1)
-  ].map(ricetta => {
+  ].map((ricetta: any) => {
     if (!ricetta) return '';
     return `"${ricetta.nome}" (${ricetta.calorie} kcal, ${ricetta.proteine}g prot)`;
   }).filter(Boolean).join(', ');
 
-  return `🏋️‍♂️ NUTRIZIONISTA FITNESS AI - PIANO ITALIANO OTTIMIZZATO
+  return `🏋️‍♂️ NUTRIZIONISTA FITNESS AI - PIANO ITALIANO CON FILTRI ALLERGIE/PREFERENZE
 
 👤 DATI UTENTE FITNESS:
 Nome: ${formData.nome}
@@ -205,60 +332,92 @@ Target giornaliero: ${calc.dailyCalories} kcal (TDEE × ${calc.debugInfo.goalFac
 🍽️ DISTRIBUZIONE PASTI OTTIMIZZATA:
 ${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`).join('\n')}
 
-🇮🇹 DATABASE RICETTE FITNESS DISPONIBILI:
+🇮🇹 DATABASE RICETTE FITNESS CON FILTRI:
 Ricette italiane fitness-ottimizzate disponibili: ${fitnessRecipes.totalRecipes}
+Ricette filtrate per allergie: ${fitnessRecipes.filteredForAllergies}
+Ricette matchate per preferenze: ${fitnessRecipes.matchedPreferences}
 Esempi dal database: ${ricetteEsempi}
+
+🚨 ATTENZIONE ALLERGIE E INTOLLERANZE:
+${formData.allergie && formData.allergie.length > 0 ? 
+  `⚠️ L'utente ha dichiarato allergie a: ${formData.allergie.join(', ')}
+EVITA ASSOLUTAMENTE questi ingredienti e tutti i loro derivati.
+Controlla attentamente ogni ricetta per escludere completamente questi alimenti.
+Se un ingrediente potrebbe contenere tracce, SCARTALO.` :
+  '✅ Nessuna allergia dichiarata, usa tutte le ricette disponibili.'
+}
+
+🥗 PREFERENZE ALIMENTARI:
+${formData.preferenze && formData.preferenze.length > 0 ? 
+  `✨ L'utente preferisce: ${formData.preferenze.join(', ')}
+PRIVILEGIA ricette che includono questi ingredienti quando possibile.
+Cerca di incorporare queste preferenze in ogni pasto della giornata.` :
+  '🔧 Nessuna preferenza specifica, usa varietà bilanciata di ingredienti.'
+}
 
 🎯 OBIETTIVO SPECIFICO FITNESS:
 ${calc.goal === 'dimagrimento' ? 
-  '• Focus: Deficit calorico, alta proteina, bassa densità calorica\n• Priorità: Ricette lean, verdure, proteine magre' :
+  '• Focus: Deficit calorico, alta proteina, bassa densità calorica\n• Priorità: Ricette lean, verdure, proteine magre\n• Evita: Fritture, dolci, carboidrati raffinati' :
   calc.goal === 'aumento-massa' ?
-  '• Focus: Surplus calorico, costruzione muscolare, recovery\n• Priorità: Ricette caloriche, carboidrati, proteine complete' :
-  '• Focus: Mantenimento, bilanciamento, sostenibilità\n• Priorità: Ricette bilanciate, varietà nutrizionale'
+  '• Focus: Surplus calorico, costruzione muscolare, recovery\n• Priorità: Ricette caloriche, carboidrati, proteine complete\n• Include: Frutta secca, avocado, cereali integrali' :
+  '• Focus: Mantenimento, bilanciamento, sostenibilità\n• Priorità: Ricette bilanciate, varietà nutrizionale\n• Equilibra: Tutti i macronutrienti'
 }
 
-🔥 REQUISITI FITNESS SPECIFICI:
+🔥 REQUISITI FITNESS SPECIFICI CON FILTRI:
 1. Usa SOLO ricette italiane con ingredienti fitness-friendly
-2. Ogni ricetta deve avere almeno 20g di proteine (colazione/cena) o 25g (pranzo)
-3. Bilancia macro per l'obiettivo specifico
-4. Includi preparazione, ingredienti e macro dettagliati
-5. Ricette diverse ogni giorno (varietà totale)
-6. Considera timing nutrizionale per performance
+2. RISPETTA ASSOLUTAMENTE le allergie dichiarate - ZERO TOLLERANZA
+3. PRIVILEGIA le preferenze alimentari quando possibile
+4. Ogni ricetta deve avere almeno 20g di proteine (colazione/cena) o 25g (pranzo)
+5. Bilancia macro per l'obiettivo specifico
+6. Includi preparazione, ingredienti e macro dettagliati
+7. Ricette diverse ogni giorno (varietà totale)
+8. Considera timing nutrizionale per performance
 
 📋 FORMATO RICHIESTO:
 GIORNO X:
 🌅 COLAZIONE (${calc.mealCalories.colazione || 400} kcal): [Nome Ricetta Italiana Fitness]
-- Ingredienti: [lista dettagliata con quantità]
+- Ingredienti: [lista dettagliata con quantità] ✅ VERIFICATI PER ALLERGIE
 - Preparazione: [step-by-step fitness-friendly]
 - Macro: P: XXg | C: XXg | G: XXg | Fitness Score: XX/100
+- Note Allergie: [Conferma ingredienti sicuri]
 
 ☀️ PRANZO (${calc.mealCalories.pranzo || 500} kcal): [Nome Ricetta Italiana Fitness]
-[stesso formato]
+[stesso formato con verifica allergie]
 
 🌙 CENA (${calc.mealCalories.cena || 400} kcal): [Nome Ricetta Italiana Fitness]
-[stesso formato]
+[stesso formato con verifica allergie]
 
 ${calc.mealCalories.spuntino1 ? `🍎 SPUNTINO (${calc.mealCalories.spuntino1} kcal): [Nome Spuntino Fitness]
-[stesso formato]` : ''}
+[stesso formato con verifica allergie]` : ''}
 
-💪 CREA UN PIANO CHE UN FITNESS ENTHUSIAST ITALIANO APPREZZEREBBE!
-Usa ricette che combinano tradizione italiana con obiettivi fitness moderni.
-Evita ricette inglesi - mantieni l'identità culinaria italiana ottimizzata per fitness.`;
+⚠️ CONTROLLO FINALE ALLERGIE:
+Prima di finalizzare ogni ricetta, verifica che NON contenga:
+${formData.allergie && formData.allergie.length > 0 ? formData.allergie.join(', ') : 'Nessuna allergia da controllare'}
+
+✨ BONUS PREFERENZE:
+Cerca di includere quando possibile:
+${formData.preferenze && formData.preferenze.length > 0 ? formData.preferenze.join(', ') : 'Varietà bilanciata'}
+
+💪 CREA UN PIANO CHE UN FITNESS ENTHUSIAST ITALIANO CON QUESTE SPECIFICHE ESIGENZE APPREZZEREBBE!
+Usa ricette che combinano tradizione italiana con obiettivi fitness moderni, rispettando rigorosamente allergie e privilegiando preferenze.`;
 }
 
-// 🇮🇹 FALLBACK FITNESS AVANZATO CON DATABASE
-function generateFitnessBasedResponse(formData: any, calc: any, fitnessRecipes: any) {
-  const numDays = parseInt(formData.durata) || 3;
-  const numMeals = parseInt(formData.pasti) || 3;
+// 🇮🇹 FALLBACK FITNESS CON DATABASE E ALLERGIE
+async function generateFitnessBasedResponseWithDB(formData: FormData, calc: NutritionalCalculation, fitnessRecipes: any) {
+  const numDays = calc.numDays;
+  const numMeals = calc.numMeals;
   
-  let fitnessPlanned = `🏋️‍♂️ PIANO FITNESS ITALIANO - RICETTE DATABASE INTEGRATE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  let fitnessPlanned = `🏋️‍♂️ PIANO FITNESS ITALIANO - RICETTE DATABASE CON FILTRI ALLERGIE/PREFERENZE
+┌────────────────────────────────────────────────────────────────────────────────┐
 
 👤 PROFILO FITNESS:
 Nome: ${formData.nome}
 Età: ${calc.debugInfo.input.age} anni | Sesso: ${calc.debugInfo.input.gender}
 Peso: ${calc.debugInfo.input.weight} kg | Altezza: ${calc.debugInfo.input.height} cm
 Attività: ${calc.debugInfo.input.activity} | Obiettivo: ${calc.debugInfo.input.goal}
+
+🚫 ALLERGIE: ${formData.allergie && formData.allergie.length > 0 ? formData.allergie.join(', ') : 'Nessuna'}
+🥗 PREFERENZE: ${formData.preferenze && formData.preferenze.length > 0 ? formData.preferenze.join(', ') : 'Nessuna'}
 
 📊 CALCOLI SCIENTIFICI:
 BMR: ${calc.bmr} kcal/giorno
@@ -268,26 +427,32 @@ Target: ${calc.dailyCalories} kcal/giorno
 🍽️ DISTRIBUZIONE MACRO-OTTIMIZZATA:
 ${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`).join('\n')}
 
-🇮🇹 RICETTE FITNESS ITALIANE SELEZIONATE: ${fitnessRecipes.totalRecipes}
+🇮🇹 RICETTE FITNESS ITALIANE FILTRATE: ${fitnessRecipes.totalRecipes}
+🚫 Filtrate per allergie: ${fitnessRecipes.filteredForAllergies}
+✅ Matchate per preferenze: ${fitnessRecipes.matchedPreferences}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+└────────────────────────────────────────────────────────────────────────────────┘
 
-📅 PROGRAMMA FITNESS:
+📅 PROGRAMMA FITNESS CON FILTRI:
 
 `;
 
-  // Genera giorni con ricette dal database FITNESS
+  // Genera giorni con ricette dal database FITNESS filtrate
   for (let day = 1; day <= numDays; day++) {
     const dayIndex = day - 1;
     
     fitnessPlanned += `🗓️ GIORNO ${day}:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌────────────────────────────────────────────────────────────────────────────────┐
 
 `;
 
-    // COLAZIONE FITNESS
+    // COLAZIONE FITNESS con check allergie
     const colazione = fitnessRecipes.colazione[dayIndex];
     if (colazione) {
+      const allergieCheck = formData.allergie && formData.allergie.length > 0 ? 
+        `✅ Verificato per allergie: ${formData.allergie.join(', ')}` : 
+        '✅ Nessuna allergia da controllare';
+
       fitnessPlanned += `🌅 COLAZIONE (${calc.mealCalories.colazione} kcal):
 Nome: ${colazione.nome}
 Ingredienti: ${colazione.ingredienti.join(', ')}
@@ -295,13 +460,18 @@ Preparazione: ${colazione.preparazione}
 Macro: P: ${colazione.proteine}g | C: ${colazione.carboidrati}g | G: ${colazione.grassi}g
 Fitness Score: ${colazione.fitnessScore}/100 ⭐
 Tempo: ${colazione.tempo} | Porzioni: ${colazione.porzioni}
+${allergieCheck}
 
 `;
     }
 
-    // PRANZO FITNESS
+    // PRANZO FITNESS con check allergie
     const pranzo = fitnessRecipes.pranzo[dayIndex];
     if (pranzo) {
+      const allergieCheck = formData.allergie && formData.allergie.length > 0 ? 
+        `✅ Verificato per allergie: ${formData.allergie.join(', ')}` : 
+        '✅ Nessuna allergia da controllare';
+
       fitnessPlanned += `☀️ PRANZO (${calc.mealCalories.pranzo} kcal):
 Nome: ${pranzo.nome}
 Ingredienti: ${pranzo.ingredienti.join(', ')}
@@ -309,13 +479,18 @@ Preparazione: ${pranzo.preparazione}
 Macro: P: ${pranzo.proteine}g | C: ${pranzo.carboidrati}g | G: ${pranzo.grassi}g
 Fitness Score: ${pranzo.fitnessScore}/100 ⭐
 Tempo: ${pranzo.tempo} | Porzioni: ${pranzo.porzioni}
+${allergieCheck}
 
 `;
     }
 
-    // CENA FITNESS
+    // CENA FITNESS con check allergie
     const cena = fitnessRecipes.cena[dayIndex];
     if (cena) {
+      const allergieCheck = formData.allergie && formData.allergie.length > 0 ? 
+        `✅ Verificato per allergie: ${formData.allergie.join(', ')}` : 
+        '✅ Nessuna allergia da controllare';
+
       fitnessPlanned += `🌙 CENA (${calc.mealCalories.cena} kcal):
 Nome: ${cena.nome}
 Ingredienti: ${cena.ingredienti.join(', ')}
@@ -323,14 +498,19 @@ Preparazione: ${cena.preparazione}
 Macro: P: ${cena.proteine}g | C: ${cena.carboidrati}g | G: ${cena.grassi}g
 Fitness Score: ${cena.fitnessScore}/100 ⭐
 Tempo: ${cena.tempo} | Porzioni: ${cena.porzioni}
+${allergieCheck}
 
 `;
     }
 
-    // SPUNTINO FITNESS se richiesto
+    // SPUNTINO FITNESS se richiesto con check allergie
     if (numMeals >= 4 && calc.mealCalories.spuntino1) {
       const spuntino = fitnessRecipes.spuntino[dayIndex];
       if (spuntino) {
+        const allergieCheck = formData.allergie && formData.allergie.length > 0 ? 
+          `✅ Verificato per allergie: ${formData.allergie.join(', ')}` : 
+          '✅ Nessuna allergia da controllare';
+
         fitnessPlanned += `🍎 SPUNTINO (${calc.mealCalories.spuntino1} kcal):
 Nome: ${spuntino.nome}
 Ingredienti: ${spuntino.ingredienti.join(', ')}
@@ -338,17 +518,36 @@ Preparazione: ${spuntino.preparazione}
 Macro: P: ${spuntino.proteine}g | C: ${spuntino.carboidrati}g | G: ${spuntino.grassi}g
 Fitness Score: ${spuntino.fitnessScore}/100 ⭐
 Target: ${spuntino.macroTarget}
+${allergieCheck}
 
 `;
       }
     }
 
     fitnessPlanned += `💪 TOTALE GIORNO ${day}: ${calc.dailyCalories} kcal
+└────────────────────────────────────────────────────────────────────────────────┘
 
 `;
   }
 
-  fitnessPlanned += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Sezione allergie e preferenze specifica
+  fitnessPlanned += `┌────────────────────────────────────────────────────────────────────────────────┐
+
+🚨 GESTIONE ALLERGIE E PREFERENZE:
+
+🚫 ALLERGIE DICHIARATE:
+${formData.allergie && formData.allergie.length > 0 ? 
+  formData.allergie.map(a => `• ${a}: EVITATO in tutte le ricette`).join('\n') :
+  '✅ Nessuna allergia dichiarata'
+}
+
+🥗 PREFERENZE PRIVILEGIATE:
+${formData.preferenze && formData.preferenze.length > 0 ? 
+  formData.preferenze.map(p => `• ${p}: INCLUSO quando possibile`).join('\n') :
+  '🔧 Nessuna preferenza specifica'
+}
+
+└────────────────────────────────────────────────────────────────────────────────┘
 
 🏋️‍♂️ CONSIGLI FITNESS SPECIFICI:
 • Idratazione: 35-40ml per kg di peso corporeo (${Math.round(calc.debugInfo.input.weight * 35)}ml/giorno)
@@ -374,12 +573,62 @@ ${calc.goal === 'dimagrimento' ?
 
 ✅ Piano FITNESS generato il ${new Date().toLocaleDateString('it-IT')}
 🇮🇹 Ricette italiane ottimizzate per obiettivi fitness
+🚫 Filtrato per allergie: ${formData.allergie?.join(', ') || 'nessuna'}
+🥗 Ottimizzato per preferenze: ${formData.preferenze?.join(', ') || 'nessuna'}
 🔬 Basato su science nutrizionale e database ricette fitness`;
 
-  return NextResponse.json({
+  // 💾 SALVA ANCHE IL FALLBACK NEL DATABASE
+  let mealPlanId: string | undefined;
+
+  try {
+    const mealPlanData = {
+      nome_utente: formData.nome,
+      email_utente: formData.email,
+      telefono_utente: formData.telefono,
+      eta: calc.debugInfo.input.age,
+      sesso: calc.debugInfo.input.gender,
+      peso: calc.debugInfo.input.weight,
+      altezza: calc.debugInfo.input.height,
+      modalita: formData.modalita || 'guidata',
+      attivita: calc.activity,
+      obiettivo: calc.goal,
+      durata: calc.numDays,
+      pasti: calc.numMeals,
+      varieta: formData.varieta || 'diversi',
+      allergie: formData.allergie || [],
+      preferenze: formData.preferenze || [],
+      bmr: calc.bmr,
+      tdee: calc.tdee,
+      calorie_target: calc.dailyCalories,
+      distribuzione_pasti: calc.mealCalories,
+      piano_completo: fitnessPlanned,
+      generato_con_ai: false,
+      fitness_optimized: true,
+      total_recipes: fitnessRecipes.totalRecipes,
+      calorie_manuali: formData.modalita === 'esperto' ? parseInt(formData.calorie_totali || '0') : undefined,
+      proteine_manuali: formData.modalita === 'esperto' ? parseInt(formData.proteine_totali || '0') : undefined,
+      carboidrati_manuali: formData.modalita === 'esperto' ? parseInt(formData.carboidrati_totali || '0') : undefined,
+      grassi_manuali: formData.modalita === 'esperto' ? parseInt(formData.grassi_totali || '0') : undefined,
+      status: 'generato' as const
+    };
+
+    const saveResult = await saveMealPlan(mealPlanData);
+    
+    if (saveResult.error) {
+      console.error('❌ Fallback meal plan save error:', saveResult.error);
+    } else {
+      console.log('✅ Fallback meal plan saved successfully:', saveResult.data?.id);
+      mealPlanId = saveResult.data?.id;
+    }
+  } catch (dbError) {
+    console.error('❌ Database error during fallback meal plan save:', dbError);
+  }
+
+  const response: GenerateMealPlanResponse = {
     success: true,
     piano: fitnessPlanned,
-    message: 'Piano FITNESS con ricette italiane generato!',
+    message: 'Piano FITNESS con ricette italiane e filtri allergie/preferenze generato!',
+    meal_plan_id: mealPlanId,
     metadata: {
       bmr: calc.bmr,
       tdee: calc.tdee,
@@ -387,25 +636,25 @@ ${calc.goal === 'dimagrimento' ?
       mealDistribution: calc.mealCalories,
       isCalorieSafe: calc.isSafe,
       fitnessOptimized: true,
-      italianRecipes: true,
       totalRecipes: fitnessRecipes.totalRecipes,
-      fallback: true,
       debugInfo: calc.debugInfo
     }
-  });
+  };
+
+  return NextResponse.json(response);
 }
 
-// 🔧 FUNZIONE CALCOLO CALORIE INVARIATA (FUNZIONA PERFETTAMENTE)
-function calculateNutritionalNeedsFixed(formData: any) {
-  console.log('🔍 ===== INIZIO FUNZIONE CALCOLO =====');
-  console.log('🔍 DEBUG - Raw form data RICEVUTO:', JSON.stringify(formData, null, 2));
+// 🔧 FUNZIONE CALCOLO CALORIE AGGIORNATA CON ALLERGIE
+function calculateNutritionalNeedsWithAllergies(formData: FormData): NutritionalCalculation {
+  console.log('📋 ===== INIZIO FUNZIONE CALCOLO CON ALLERGIE =====');
+  console.log('📋 DEBUG - Raw form data RICEVUTO:', JSON.stringify(formData, null, 2));
 
-  // 🔧 NORMALIZZAZIONE DATI
-  console.log('🔧 ===== FASE 1: NORMALIZZAZIONE DATI =====');
-  const normalizedData = normalizeFormData(formData);
+  // 🔧 NORMALIZZAZIONE DATI CON ALLERGIE
+  console.log('🔧 ===== FASE 1: NORMALIZZAZIONE DATI CON ALLERGIE =====');
+  const normalizedData = normalizeFormDataWithAllergies(formData);
   console.log('📊 Normalized data RISULTATO:', JSON.stringify(normalizedData, null, 2));
 
-  const { age, weight, height, gender, activity, goal, numDays, numMeals } = normalizedData;
+  const { age, weight, height, gender, activity, goal, numDays, numMeals, allergie, preferenze } = normalizedData;
   
   console.log('📋 DATI ESTRATTI PER CALCOLO:');
   console.log('- Età:', age);
@@ -414,8 +663,10 @@ function calculateNutritionalNeedsFixed(formData: any) {
   console.log('- Sesso:', gender);
   console.log('- Attività:', activity);
   console.log('- Obiettivo:', goal);
+  console.log('- Allergie:', allergie);
+  console.log('- Preferenze:', preferenze);
 
-  // 🧮 CALCOLO BMR - Harris-Benedict
+  // 🧮 CALCOLO BMR - Harris-Benedict (INVARIATO)
   console.log('🧮 ===== FASE 2: CALCOLO BMR =====');
   let bmr;
   if (gender === 'maschio') {
@@ -438,7 +689,7 @@ function calculateNutritionalNeedsFixed(formData: any) {
     bmr = part1 + part2 + part3 - part4;
   }
 
-  console.log('💓 BMR CALCOLATO:', bmr);
+  console.log('💡 BMR CALCOLATO:', bmr);
 
   // 🏃‍♂️ FATTORI ATTIVITÀ - MAPPING CORRETTO E COMPLETO
   console.log('🏃‍♂️ ===== FASE 3: FATTORE ATTIVITÀ =====');
@@ -466,9 +717,9 @@ function calculateNutritionalNeedsFixed(formData: any) {
   // 🎯 FATTORI OBIETTIVO - I TUOI 3 PARAMETRI
   console.log('🎯 ===== FASE 4: FATTORE OBIETTIVO =====');
   const goalFactors: { [key: string]: number } = {
-    'dimagrimento': 0.85,        // ← Toglie calorie
-    'mantenimento': 1.0,         // ← Tiene calcolo
-    'aumento-massa': 1.15        // ← Aumenta calorie
+    'dimagrimento': 0.85,        // ↓ Toglie calorie
+    'mantenimento': 1.0,         // ↓ Tiene calcolo
+    'aumento-massa': 1.15        // ↑ Aumenta calorie
   };
 
   console.log('🎯 Goal factors disponibili:', goalFactors);
@@ -484,10 +735,12 @@ function calculateNutritionalNeedsFixed(formData: any) {
   const dailyCalories = Math.round(tdee * goalFactor);
   console.log(`✅ CALCOLO FINALE: ${tdee} × ${goalFactor} = ${dailyCalories} kcal`);
   
-  console.log('🔥 ===== RIEPILOGO CALCOLO COMPLETO =====');
+  console.log('🔥 ===== RIEPILOGO CALCOLO COMPLETO CON ALLERGIE =====');
   console.log(`🔥 BMR: ${Math.round(bmr)} kcal`);
   console.log(`🔥 TDEE: ${Math.round(tdee)} kcal (BMR × ${activityFactor})`);
   console.log(`🔥 DAILY CALORIES: ${dailyCalories} kcal (TDEE × ${goalFactor})`);
+  console.log(`🚫 ALLERGIE: ${allergie.join(', ') || 'Nessuna'}`);
+  console.log(`🥗 PREFERENZE: ${preferenze.join(', ') || 'Nessuna'}`);
   console.log('🔥 ===== FINE RIEPILOGO =====');
 
   // 🍽️ DISTRIBUZIONE PASTI
@@ -534,9 +787,9 @@ function calculateNutritionalNeedsFixed(formData: any) {
   };
 }
 
-function normalizeFormData(formData: any) {
-  console.log('🔧 ===== NORMALIZZAZIONE DATI - DEBUG COMPLETO =====');
-  console.log('📥 FormData INPUT:', JSON.stringify(formData, null, 2));
+function normalizeFormDataWithAllergies(formData: FormData) {
+  console.log('🔧 ===== NORMALIZZAZIONE DATI CON ALLERGIE - DEBUG COMPLETO =====');
+  console.log('🔥 FormData INPUT:', JSON.stringify(formData, null, 2));
   
   const age = parseInt(String(formData.eta || '30')) || 30;
   console.log('👶 Età normalizzata:', formData.eta, '→', age);
@@ -565,6 +818,32 @@ function normalizeFormData(formData: any) {
   const numMeals = parseInt(String(formData.pasti || '3')) || 3;
   console.log('🍽️ Pasti normalizzati:', formData.pasti, '→', numMeals);
 
+  // 🚫 NORMALIZZAZIONE ALLERGIE
+  const allergie = Array.isArray(formData.allergie) ? 
+    formData.allergie.filter(a => a && a.trim()) : 
+    [];
+  console.log('🚫 Allergie normalizzate:', formData.allergie, '→', allergie);
+
+  // 🥗 NORMALIZZAZIONE PREFERENZE
+  const preferenze = Array.isArray(formData.preferenze) ? 
+    formData.preferenze.filter(p => p && p.trim()) : 
+    [];
+  console.log('🥗 Preferenze normalizzate:', formData.preferenze, '→', preferenze);
+
+  // 🎯 MODALITÀ
+  const modalita = formData.modalita || 'guidata';
+  console.log('🎯 Modalità normalizzata:', formData.modalita, '→', modalita);
+
+  // 💪 DATI MODALITÀ ESPERTO
+  const calorie_totali = formData.modalita === 'esperto' ? 
+    parseFloat(formData.calorie_totali || '0') || undefined : undefined;
+  const proteine_totali = formData.modalita === 'esperto' ? 
+    parseFloat(formData.proteine_totali || '0') || undefined : undefined;
+  const carboidrati_totali = formData.modalita === 'esperto' ? 
+    parseFloat(formData.carboidrati_totali || '0') || undefined : undefined;
+  const grassi_totali = formData.modalita === 'esperto' ? 
+    parseFloat(formData.grassi_totali || '0') || undefined : undefined;
+
   const result = {
     age: Math.max(15, Math.min(100, age)),
     weight: Math.max(40, Math.min(200, weight)),
@@ -573,10 +852,17 @@ function normalizeFormData(formData: any) {
     activity,
     goal,
     numDays: Math.max(1, Math.min(14, numDays)),
-    numMeals: Math.max(2, Math.min(7, numMeals))
+    numMeals: Math.max(2, Math.min(7, numMeals)),
+    allergie,
+    preferenze,
+    modalita,
+    calorie_totali,
+    proteine_totali,
+    carboidrati_totali,
+    grassi_totali
   };
   
-  console.log('📤 DATI NORMALIZZATI FINALI:', JSON.stringify(result, null, 2));
+  console.log('📤 DATI NORMALIZZATI FINALI CON ALLERGIE:', JSON.stringify(result, null, 2));
   console.log('🔧 ===== FINE NORMALIZZAZIONE =====');
   
   return result;
