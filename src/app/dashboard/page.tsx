@@ -8,7 +8,7 @@ import {
   Activity, Zap, Brain, Star, Trophy, Gift, ChevronRight, ChevronUp, 
   ChevronDown, Download, Share2, Copy, Plus, Settings, Bell, 
   BarChart3, PieChart as PieChartIcon, Users, Heart, CheckCircle,
-  AlertCircle, Info, Sparkles
+  AlertCircle, Info, Sparkles, X
 } from 'lucide-react';
 
 interface SavedPlan {
