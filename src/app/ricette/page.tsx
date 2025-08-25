@@ -2057,12 +2057,12 @@ export default function RicettePage() {
           {/* Disclaimer */}
           <div className="text-center mt-6 pt-6 border-t border-gray-700">
             <p className="text-gray-500 text-xs">
-              ⚠️ Le ricette sono ottimizzate per obiettivi fitness. Consulta sempre un nutrizionista per piani personalizzati.
+              Le ricette sono ottimizzate per obiettivi fitness. Consulta sempre un nutrizionista per piani personalizzati.
             </p>
           </div>
         </div>
       </footer>
     </div>
   );
-}'
+}
                           
