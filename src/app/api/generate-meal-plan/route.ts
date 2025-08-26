@@ -7,10 +7,10 @@ const anthropic = new Anthropic({
 });
 
 // URL base per le chiamate fetch interne
-const getBaseUrl = () => {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
-  return 'https://mealprep-planner.vercel.app'; // fallback per produzione
+const getBaseUrl = (request: NextRequest) => {
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'https';
+  return `${protocol}://${host}`;
 };
 
 export async function POST(request: NextRequest) {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
       console.log('📋 Dati per Airtable:', airtableData);
 
-      const airtableResponse = await fetch(`${getBaseUrl()}/api/airtable`, {
+      const airtableResponse = await fetch(`${getBaseUrl(request)}/api/airtable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
 
         console.log('📋 Piano per Airtable (primi 200 caratteri):', planData.plan_details?.substring(0, 200));
 
-        const planAirtableResponse = await fetch(`${getBaseUrl()}/api/airtable`, {
+        const planAirtableResponse = await fetch(`${getBaseUrl(request)}/api/airtable`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
