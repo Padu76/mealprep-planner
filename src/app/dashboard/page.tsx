@@ -145,7 +145,8 @@ export default function DashboardAdvanced() {
         const result = await response.json();
         if (result.success && result.records) {
           plans = result.records
-            .filter((record: any) => record.fields?.Meal_Plan)
+            // RIMUOVI IL FILTRO temporaneamente per vedere tutti i record
+            // .filter((record: any) => record.fields?.Meal_Plan) 
             .map((record: any) => {
               let parsedPlan = null;
               try {
