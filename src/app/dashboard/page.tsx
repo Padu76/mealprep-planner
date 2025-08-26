@@ -156,35 +156,41 @@ export default function DashboardAdvanced() {
                 console.warn('Could not parse Meal_Plan for record:', record.id);
               }
 
+              // Assicuriamoci che tutti i campi numerici abbiano valori di default
+              const calculatedCalories = Number(record.fields.Calculated_Calories) || 2000;
+              const duration = Number(record.fields.Duration) || 7;
+              const mealsPerDay = Number(record.fields.Meals_Per_Day) || 3;
+              
               return {
                 id: record.id,
                 airtableId: record.id,
                 nome: record.fields.Nome || 'Piano Senza Nome',
                 createdAt: record.createdTime?.split('T')[0] || new Date().toISOString().split('T')[0],
                 obiettivo: record.fields.Goal || 'Non specificato',
-                durata: String(record.fields.Duration || '7'),
-                pasti: String(record.fields.Meals_Per_Day || '3'),
-                calorie: record.fields.Calculated_Calories || 2000,
-                totalCalories: record.fields.Calculated_Calories || 2000,
-                totalProteins: Math.round((record.fields.Calculated_Calories || 2000) * 0.25 / 4),
-                allergie: record.fields.Exclusions ? record.fields.Exclusions.split(',').map((s: string) => s.trim()) : [],
-                preferenze: record.fields.Diet_Type ? [record.fields.Diet_Type] : [],
+                durata: String(duration),
+                pasti: String(mealsPerDay),
+                calorie: calculatedCalories,
+                totalCalories: calculatedCalories,
+                totalProteins: Math.round(calculatedCalories * 0.25 / 4),
+                allergie: record.fields.Exclusions ? 
+                  String(record.fields.Exclusions).split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+                preferenze: record.fields.Diet_Type ? [String(record.fields.Diet_Type)] : [],
                 formData: {
-                  nome: record.fields.Nome,
-                  email: record.fields.Email,
-                  age: record.fields.Age,
-                  weight: record.fields.Weight,
-                  height: record.fields.Height,
-                  gender: record.fields.Gender,
-                  activity_level: record.fields.Activity_Level,
-                  goal: record.fields.Goal,
-                  duration: record.fields.Duration,
-                  meals_per_day: record.fields.Meals_Per_Day
+                  nome: record.fields.Nome || '',
+                  email: record.fields.Email || '',
+                  age: Number(record.fields.Age) || 30,
+                  weight: Number(record.fields.Weight) || 70,
+                  height: Number(record.fields.Height) || 170,
+                  gender: record.fields.Gender || 'maschio',
+                  activity_level: record.fields.Activity_Level || 'moderato',
+                  goal: record.fields.Goal || 'mantenimento',
+                  duration: duration,
+                  meals_per_day: mealsPerDay
                 },
                 days: parsedPlan?.days || [],
                 generatedPlan: record.fields.Meal_Plan || '',
                 status: record.fields.Status || 'Completato',
-                email: record.fields.Email
+                email: record.fields.Email || ''
               };
             });
           console.log(`Loaded ${plans.length} plans from Meal_Requests`);
@@ -221,7 +227,15 @@ export default function DashboardAdvanced() {
   };
 
   const calculateUserStats = (plans: SavedPlan[]) => {
-    if (plans.length === 0) {
+    // Filtra i piani non validi
+    const validPlans = plans.filter(plan => 
+      plan && 
+      typeof plan.durata === 'string' && 
+      typeof plan.calorie === 'number' &&
+      typeof plan.totalCalories === 'number'
+    );
+
+    if (validPlans.length === 0) {
       setUserStats({
         totalPlans: 0, totalCalories: 0, totalDays: 0, currentStreak: 0,
         longestStreak: 0, monthlyPoints: 0, totalPoints: 0, level: 1,
@@ -231,11 +245,11 @@ export default function DashboardAdvanced() {
       return;
     }
 
-    const totalDays = plans.reduce((sum, plan) => sum + parseInt(plan.durata), 0);
-    const totalCalories = plans.reduce((sum, plan) => sum + plan.totalCalories, 0);
+    const totalDays = validPlans.reduce((sum, plan) => sum + parseInt(plan.durata), 0);
+    const totalCalories = validPlans.reduce((sum, plan) => sum + plan.totalCalories, 0);
     const avgCaloriesPerDay = Math.round(totalCalories / Math.max(totalDays, 1));
     
-    const sortedPlans = [...plans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sortedPlans = [...validPlans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
@@ -254,32 +268,33 @@ export default function DashboardAdvanced() {
     }
     longestStreak = Math.max(longestStreak, tempStreak);
     
-    const basePoints = plans.length * 20;
+    const basePoints = validPlans.length * 20;
     const streakBonus = currentStreak * 10;
-    const varietyBonus = Math.min(100, plans.length * 5);
+    const varietyBonus = Math.min(100, validPlans.length * 5);
     const totalPoints = basePoints + streakBonus + varietyBonus;
     const level = Math.floor(totalPoints / 200) + 1;
     const weeklyProgress = Math.min(100, (currentStreak / 7) * 100);
-    const completionRate = Math.min(100, (plans.length / 10) * 100);
+    const completionRate = Math.min(100, (validPlans.length / 10) * 100);
 
-    const objectives = plans.map(p => p.obiettivo).filter(o => o !== 'Non specificato');
+    const objectives = validPlans.map(p => p.obiettivo).filter(o => o !== 'Non specificato');
     const preferredObjective = objectives.length > 0 ? 
       objectives.reduce((acc: any, obj) => {
         acc[obj] = (acc[obj] || 0) + 1;
         return acc;
       }, {}) : {};
     
-    const mostCommonObjective = Object.keys(preferredObjective).reduce((a, b) => 
-      preferredObjective[a] > preferredObjective[b] ? a : b, 'Nessuno'
-    );
+    const mostCommonObjective = Object.keys(preferredObjective).length > 0 ? 
+      Object.keys(preferredObjective).reduce((a, b) => 
+        preferredObjective[a] > preferredObjective[b] ? a : b, 'Nessuno'
+      ) : 'Nessuno';
 
     setUserStats({
-      totalPlans: plans.length,
+      totalPlans: validPlans.length,
       totalCalories,
       totalDays,
       currentStreak,
       longestStreak,
-      monthlyPoints: plans.filter(p => new Date(p.createdAt) >= new Date(Date.now() - 30*24*60*60*1000)).length * 20,
+      monthlyPoints: validPlans.filter(p => new Date(p.createdAt) >= new Date(Date.now() - 30*24*60*60*1000)).length * 20,
       totalPoints,
       level,
       preferredObjective: mostCommonObjective,
@@ -589,22 +604,31 @@ export default function DashboardAdvanced() {
   const generateNutritionReportData = () => {
     const now = new Date();
     
+    // Filtra i piani validi per il report
+    const validPlans = savedPlans.filter(plan => 
+      plan && 
+      typeof plan.calorie === 'number' &&
+      typeof plan.obiettivo === 'string' &&
+      typeof plan.durata === 'string' &&
+      typeof plan.createdAt === 'string'
+    );
+    
     return {
       date: now.toLocaleDateString('it-IT'),
       userStats,
-      savedPlans: savedPlans.slice(0, 10),
+      savedPlans: validPlans.slice(0, 10),
       nutritionTrends,
       achievements: achievements.filter(a => a.unlocked),
-      totalPlans: savedPlans.length,
-      avgCaloriesPerPlan: savedPlans.length > 0 ? 
-        Math.round(savedPlans.reduce((sum, plan) => sum + plan.calorie, 0) / savedPlans.length) : 0,
+      totalPlans: validPlans.length,
+      avgCaloriesPerPlan: validPlans.length > 0 ? 
+        Math.round(validPlans.reduce((sum, plan) => sum + plan.calorie, 0) / validPlans.length) : 0,
       mostUsedGoal: userStats?.preferredObjective || 'Non specificato',
-      recentPlans: savedPlans.slice(0, 5).map(plan => ({
-        nome: plan.nome,
-        obiettivo: plan.obiettivo,
-        calorie: plan.calorie,
-        durata: plan.durata,
-        createdAt: plan.createdAt
+      recentPlans: validPlans.slice(0, 5).map(plan => ({
+        nome: plan.nome || 'Piano Senza Nome',
+        obiettivo: plan.obiettivo || 'Non specificato',
+        calorie: plan.calorie || 0,
+        durata: plan.durata || '0',
+        createdAt: plan.createdAt || ''
       }))
     };
   };
