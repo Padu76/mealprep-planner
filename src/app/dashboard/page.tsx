@@ -1429,7 +1429,7 @@ export default function DashboardAdvanced() {
       </div>
     </div>
   );
-}white">Calorie Medie/Giorno</div>
+}ibold text-white">Calorie Medie/Giorno</div>
                       <div className="text-gray-400 text-sm">Target: 2000 kcal</div>
                     </div>
                     <div className="text-right">
@@ -1443,4 +1443,4 @@ export default function DashboardAdvanced() {
 
                   <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
                     <div>
-                      <div className="font-semibold text-
+                      <div className="font-sem
