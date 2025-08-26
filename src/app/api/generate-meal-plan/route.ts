@@ -6,6 +6,13 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// URL base per le chiamate fetch interne
+const getBaseUrl = () => {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
+  return 'https://mealprep-planner.vercel.app'; // fallback per produzione
+};
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.json();
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
 
       console.log('📋 Dati per Airtable:', airtableData);
 
-      const airtableResponse = await fetch('/api/airtable', {
+      const airtableResponse = await fetch(`${getBaseUrl()}/api/airtable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 🎯 LOG DETTAGLIATO CON ALLERGIE/PREFERENZE
-    console.log('📝 DETAILED CALCULATION WITH ALLERGIES/PREFERENCES:');
+    console.log('🔍 DETAILED CALCULATION WITH ALLERGIES/PREFERENCES:');
     console.log('- Raw obiettivo from form:', formData.obiettivo);
     console.log('- Raw attivita from form:', formData.attivita);
     console.log('- Raw allergie from form:', formData.allergie);
@@ -169,7 +176,7 @@ export async function POST(request: NextRequest) {
 
         console.log('📋 Piano per Airtable (primi 200 caratteri):', planData.plan_details?.substring(0, 200));
 
-        const planAirtableResponse = await fetch('/api/airtable', {
+        const planAirtableResponse = await fetch(`${getBaseUrl()}/api/airtable`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -254,7 +261,7 @@ function generateFitnessBasedPlanWithFiltersSafe(formData: any, calc: any) {
     fallbacksUsed: 0
   };
 
-  // 🏪 RICETTE FALLBACK PER EMERGENZE
+  // 🪐 RICETTE FALLBACK PER EMERGENZE
   const fallbackRecipes = {
     colazione: {
       nome: "Yogurt Greco con Miele",
@@ -490,7 +497,7 @@ function generateEmergencyFallbackPlan(formData: any, calc: any, airtableRecordI
   console.log('🚨 Generating EMERGENCY fallback plan - no recipes found');
   
   const emergencyPlan = `🚨 PIANO FITNESS DI EMERGENZA
-┌────────────────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────────┐
 
 ⚠️ ATTENZIONE: Piano di emergenza generato automaticamente
 Il database ricette non ha restituito risultati per i parametri richiesti.
@@ -527,7 +534,7 @@ ${calc.numMeals >= 4 ? `🍎 SPUNTINO (${calc.mealCalories.spuntino1 || 200} kca
 
 💾 Piano salvato con ID: ${airtableRecordId || 'N/A'}
 
-└────────────────────────────────────────────────────────────────────────────────┘`;
+└────────────────────────────────────────────────────────────────────────────┘`;
 
   return NextResponse.json({
     success: true,
@@ -666,7 +673,7 @@ async function generateFitnessBasedResponseWithAllergiesSafe(formData: any, calc
   const numMeals = calc.numMeals;
   
   let fitnessPlanned = `🏋️‍♂️ PIANO FITNESS ITALIANO - CON FILTRI ALLERGIE/PREFERENZE
-┌────────────────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────────┐
 
 👤 PROFILO FITNESS:
 Nome: ${formData.nome}
@@ -691,7 +698,7 @@ ${Object.entries(calc.mealCalories).map(([meal, cal]) => `${meal}: ${cal} kcal`)
 ${fitnessRecipes.fallbacksUsed > 0 ? `🛡️ Ricette fallback usate: ${fitnessRecipes.fallbacksUsed}` : ''}
 ${airtableRecordId ? `💾 Salvato su Airtable: ${airtableRecordId}` : ''}
 
-└────────────────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────────┘
 
 📅 PROGRAMMA FITNESS CON FILTRI:
 
@@ -702,7 +709,7 @@ ${airtableRecordId ? `💾 Salvato su Airtable: ${airtableRecordId}` : ''}
     const dayIndex = day - 1;
     
     fitnessPlanned += `🗓️ GIORNO ${day}:
-┌────────────────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────────┐
 
 `;
 
@@ -805,13 +812,13 @@ ${preferenzeCheck}
     }
 
     fitnessPlanned += `💪 TOTALE GIORNO ${day}: ${calc.dailyCalories} kcal
-└────────────────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────────┘
 
 `;
   }
 
   // Resto del piano...
-  fitnessPlanned += `┌────────────────────────────────────────────────────────────────────────────────┐
+  fitnessPlanned += `┌────────────────────────────────────────────────────────────────────────────┐
 
 🚨 GESTIONE ALLERGIE E PREFERENZE SPECIFICHE:
 
@@ -844,7 +851,7 @@ Questo può accadere quando i filtri allergie/preferenze sono molto restrittivi.
 Il piano rimane nutrizionalmente valido e sicuro.` : ''
 }
 
-└────────────────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────────┘
 
 ✅ Piano FITNESS PERSONALIZZATO generato il ${new Date().toLocaleDateString('it-IT')}
 🇮🇹 Ricette italiane ottimizzate per obiettivi fitness
@@ -879,8 +886,6 @@ Il piano rimane nutrizionalmente valido e sicuro.` : ''
 }
 
 // Le altre funzioni rimangono invariate...
-// (calculateNutritionalNeedsWithAllergies, normalizeFormDataWithAllergies, etc.)
-
 function calculateNutritionalNeedsWithAllergies(formData: any) {
   console.log('📋 ===== CALCOLO CON ALLERGIE/PREFERENZE =====');
   console.log('📋 Raw form data:', JSON.stringify(formData, null, 2));
