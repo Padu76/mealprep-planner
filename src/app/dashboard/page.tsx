@@ -8,7 +8,7 @@ import {
   Activity, Zap, Brain, Star, Trophy, Gift, ChevronRight, ChevronUp, 
   ChevronDown, Download, Share2, Copy, Plus, Settings, Bell, 
   BarChart3, PieChart as PieChartIcon, Users, Heart, CheckCircle,
-  AlertCircle, Info, Sparkles
+  AlertCircle, Info, Sparkles, X
 } from 'lucide-react';
 
 interface SavedPlan {
@@ -27,6 +27,8 @@ interface SavedPlan {
   days: any[];
   generatedPlan: string;
   airtableId?: string;
+  status?: string;
+  email?: string;
 }
 
 interface UserStats {
@@ -108,6 +110,7 @@ export default function DashboardAdvanced() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [animateProgress, setAnimateProgress] = useState(false);
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Caricamento dati da Airtable
   useEffect(() => {
@@ -118,7 +121,7 @@ export default function DashboardAdvanced() {
     try {
       setLoading(true);
       
-      // Carica piani salvati da Airtable
+      // Carica piani salvati da Meal_Requests (tabella corretta)
       await loadSavedPlans();
       
       // Genera dati analytics e insights
@@ -130,7 +133,7 @@ export default function DashboardAdvanced() {
       setTimeout(() => setAnimateProgress(true), 500);
       
     } catch (error) {
-      console.error('❌ Error loading dashboard data:', error);
+      console.error('⚠ Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -138,13 +141,14 @@ export default function DashboardAdvanced() {
 
   const loadSavedPlans = async () => {
     try {
-      // Prima prova Airtable
+      console.log('📋 Loading plans from Meal_Requests table...');
+      
+      // Carica da Meal_Requests invece di meal_plans
       const response = await fetch('/api/airtable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'read',
-          table: 'meal_plans'
+          action: 'getMealRequests' // Usa l'action esistente che funziona
         })
       });
 
@@ -153,37 +157,61 @@ export default function DashboardAdvanced() {
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.records) {
-          plans = result.records.map((record: any) => ({
-            id: record.id,
-            airtableId: record.id,
-            nome: record.fields.nome || '',
-            createdAt: record.fields.createdAt || new Date().toISOString().split('T')[0],
-            obiettivo: record.fields.obiettivo || '',
-            durata: record.fields.durata || '7',
-            pasti: record.fields.pasti || '3',
-            calorie: record.fields.calorie || 0,
-            totalCalories: record.fields.totalCalories || 0,
-            totalProteins: record.fields.totalProteins || 0,
-            allergie: record.fields.allergie || [],
-            preferenze: record.fields.preferenze || [],
-            formData: record.fields.formData || {},
-            days: record.fields.days || [],
-            generatedPlan: record.fields.generatedPlan || ''
-          }));
-          console.log(`✅ Loaded ${plans.length} plans from Airtable`);
+          plans = result.records
+            .filter((record: any) => record.fields?.Meal_Plan) // Solo record con piani generati
+            .map((record: any) => {
+              // Parse del campo Meal_Plan se è JSON
+              let parsedPlan = null;
+              try {
+                if (record.fields.Meal_Plan && typeof record.fields.Meal_Plan === 'string') {
+                  parsedPlan = JSON.parse(record.fields.Meal_Plan);
+                }
+              } catch (e) {
+                console.warn('Could not parse Meal_Plan for record:', record.id);
+              }
+
+              return {
+                id: record.id,
+                airtableId: record.id,
+                nome: record.fields.Nome || 'Piano Senza Nome',
+                createdAt: record.createdTime?.split('T')[0] || new Date().toISOString().split('T')[0],
+                obiettivo: record.fields.Goal || 'Non specificato',
+                durata: String(record.fields.Duration || '7'),
+                pasti: String(record.fields.Meals_Per_Day || '3'),
+                calorie: record.fields.Calculated_Calories || 2000,
+                totalCalories: record.fields.Calculated_Calories || 2000,
+                totalProteins: Math.round((record.fields.Calculated_Calories || 2000) * 0.25 / 4), // Stima 25% proteine
+                allergie: record.fields.Exclusions ? record.fields.Exclusions.split(',').map((s: string) => s.trim()) : [],
+                preferenze: record.fields.Diet_Type ? [record.fields.Diet_Type] : [],
+                formData: {
+                  nome: record.fields.Nome,
+                  email: record.fields.Email,
+                  age: record.fields.Age,
+                  weight: record.fields.Weight,
+                  height: record.fields.Height,
+                  gender: record.fields.Gender,
+                  activity_level: record.fields.Activity_Level,
+                  goal: record.fields.Goal,
+                  duration: record.fields.Duration,
+                  meals_per_day: record.fields.Meals_Per_Day
+                },
+                days: parsedPlan?.days || [],
+                generatedPlan: record.fields.Meal_Plan || '',
+                status: record.fields.Status || 'Completato',
+                email: record.fields.Email
+              };
+            });
+          console.log(`✅ Loaded ${plans.length} plans from Meal_Requests`);
         }
+      } else {
+        console.error('❌ Failed to load from Airtable:', response.status);
       }
 
-      // Fallback a localStorage se Airtable vuoto
+      // Fallback a localStorage se Airtable fallisce
       if (plans.length === 0) {
         const localPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
         plans = localPlans;
-        
-        // Migra a Airtable se ci sono piani locali
-        if (localPlans.length > 0) {
-          console.log('🔄 Migrating local plans to Airtable...');
-          await migratePlansToAirtable(localPlans);
-        }
+        console.log(`📱 Loaded ${plans.length} plans from localStorage as fallback`);
       }
 
       setSavedPlans(plans);
@@ -197,44 +225,18 @@ export default function DashboardAdvanced() {
       calculateAchievements(plans);
       
     } catch (error) {
-      console.error('❌ Error loading plans:', error);
-    }
-  };
-
-  const migratePlansToAirtable = async (localPlans: SavedPlan[]) => {
-    for (const plan of localPlans) {
-      try {
-        await fetch('/api/airtable', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create',
-            table: 'meal_plans',
-            fields: {
-              nome: plan.nome,
-              createdAt: plan.createdAt,
-              obiettivo: plan.obiettivo,
-              durata: plan.durata,
-              pasti: plan.pasti,
-              calorie: plan.calorie,
-              totalCalories: plan.totalCalories,
-              totalProteins: plan.totalProteins,
-              allergie: plan.allergie,
-              preferenze: plan.preferenze,
-              formData: plan.formData,
-              days: plan.days,
-              generatedPlan: plan.generatedPlan
-            }
-          })
-        });
-      } catch (error) {
-        console.error('❌ Error migrating plan:', plan.nome, error);
+      console.error('⚠ Error loading plans:', error);
+      
+      // Fallback completo a localStorage
+      const localPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
+      setSavedPlans(localPlans);
+      setFilteredPlans(localPlans);
+      if (localPlans.length > 0) {
+        setSelectedPlan(localPlans[0]);
       }
+      calculateUserStats(localPlans);
+      calculateAchievements(localPlans);
     }
-    
-    // Pulisce localStorage dopo migrazione
-    localStorage.removeItem('mealPrepSavedPlans');
-    console.log('✅ Migration to Airtable completed');
   };
 
   const calculateUserStats = (plans: SavedPlan[]) => {
@@ -283,11 +285,16 @@ export default function DashboardAdvanced() {
     const weeklyProgress = Math.min(100, (currentStreak / 7) * 100);
     const completionRate = Math.min(100, (plans.length / 10) * 100); // Obiettivo 10 piani
 
-    const preferredObjective = plans.length > 0 ? 
-      plans.reduce((acc: any, plan) => {
-        acc[plan.obiettivo] = (acc[plan.obiettivo] || 0) + 1;
+    const objectives = plans.map(p => p.obiettivo).filter(o => o !== 'Non specificato');
+    const preferredObjective = objectives.length > 0 ? 
+      objectives.reduce((acc: any, obj) => {
+        acc[obj] = (acc[obj] || 0) + 1;
         return acc;
-      }, {})[0] || 'Nessuno' : 'Nessuno';
+      }, {}) : {};
+    
+    const mostCommonObjective = Object.keys(preferredObjective).reduce((a, b) => 
+      preferredObjective[a] > preferredObjective[b] ? a : b, 'Nessuno'
+    );
 
     setUserStats({
       totalPlans: plans.length,
@@ -298,7 +305,7 @@ export default function DashboardAdvanced() {
       monthlyPoints: plans.filter(p => new Date(p.createdAt) >= new Date(Date.now() - 30*24*60*60*1000)).length * 20,
       totalPoints,
       level,
-      preferredObjective,
+      preferredObjective: mostCommonObjective,
       avgCaloriesPerDay,
       varietyScore: varietyBonus,
       weeklyProgress,
@@ -308,7 +315,7 @@ export default function DashboardAdvanced() {
 
   const calculateAchievements = (plans: SavedPlan[]) => {
     const stats = userStats || {} as UserStats;
-    const uniqueObjectives = new Set(plans.map(p => p.obiettivo)).size;
+    const uniqueObjectives = new Set(plans.map(p => p.obiettivo).filter(o => o !== 'Non specificato')).size;
 
     const achievements: Achievement[] = [
       { 
@@ -499,11 +506,10 @@ export default function DashboardAdvanced() {
       // Elimina da Airtable se presente
       if (airtableId) {
         await fetch('/api/airtable', {
-          method: 'POST',
+          method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'delete',
-            table: 'meal_plans',
+            action: 'deletePlan',
             recordId: airtableId
           })
         });
@@ -524,8 +530,8 @@ export default function DashboardAdvanced() {
       console.log('✅ Plan deleted successfully');
       
     } catch (error) {
-      console.error('❌ Error deleting plan:', error);
-      alert('❌ Errore nell\'eliminazione. Riprova!');
+      console.error('⚠ Error deleting plan:', error);
+      alert('⚠ Errore nell\'eliminazione. Riprova!');
     }
   };
 
@@ -557,6 +563,219 @@ export default function DashboardAdvanced() {
       case 'suggestion': return 'bg-purple-900/20 border-purple-600/30';
       default: return 'bg-gray-900/20 border-gray-600/30';
     }
+  };
+
+  // ✅ PIANIFICA SETTIMANA - Crea un piano per 7 giorni
+  const handleWeeklyPlanning = async () => {
+    try {
+      // Reindirizza al form principale con parametri preimpostati per la settimana
+      const params = new URLSearchParams({
+        durata: '7',
+        pasti: '3',
+        obiettivo: userStats?.preferredObjective || 'mantenimento',
+        mode: 'weekly-planning'
+      });
+      
+      window.location.href = `/?${params.toString()}`;
+      
+    } catch (error) {
+      console.error('Error starting weekly planning:', error);
+      alert('Errore nell\'avvio della pianificazione settimanale');
+    }
+  };
+
+  // ✅ REPORT NUTRIZIONALE - Genera e scarica PDF
+  const handleNutritionReport = async () => {
+    if (isGeneratingReport) return;
+    
+    try {
+      setIsGeneratingReport(true);
+      
+      // Genera report HTML
+      const reportData = generateNutritionReportData();
+      const htmlContent = generateReportHTML(reportData);
+      
+      // Crea blob e download
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Report-Nutrizionale-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+      
+      // Feedback all'utente
+      alert('📊 Report nutrizionale scaricato con successo!');
+      
+    } catch (error) {
+      console.error('Error generating nutrition report:', error);
+      alert('Errore nella generazione del report');
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const generateNutritionReportData = () => {
+    const now = new Date();
+    
+    return {
+      date: now.toLocaleDateString('it-IT'),
+      userStats,
+      savedPlans: savedPlans.slice(0, 10), // Ultimi 10 piani
+      nutritionTrends,
+      achievements: achievements.filter(a => a.unlocked),
+      totalPlans: savedPlans.length,
+      avgCaloriesPerPlan: savedPlans.length > 0 ? 
+        Math.round(savedPlans.reduce((sum, plan) => sum + plan.calorie, 0) / savedPlans.length) : 0,
+      mostUsedGoal: userStats?.preferredObjective || 'Non specificato',
+      recentPlans: savedPlans.slice(0, 5).map(plan => ({
+        nome: plan.nome,
+        obiettivo: plan.obiettivo,
+        calorie: plan.calorie,
+        durata: plan.durata,
+        createdAt: plan.createdAt
+      }))
+    };
+  };
+
+  const generateReportHTML = (data: any) => {
+    return `
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Report Nutrizionale - ${data.date}</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #10b981; }
+            .header h1 { color: #10b981; margin: 0; font-size: 2em; }
+            .header p { color: #666; margin: 5px 0; }
+            .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
+            .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e9ecef; }
+            .stat-card h3 { margin: 0 0 10px 0; color: #333; font-size: 1.1em; }
+            .stat-card .value { font-size: 2em; font-weight: bold; color: #10b981; margin: 10px 0; }
+            .section { margin: 30px 0; }
+            .section h2 { color: #333; border-bottom: 2px solid #10b981; padding-bottom: 10px; }
+            .plans-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .plans-table th, .plans-table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            .plans-table th { background: #f8f9fa; font-weight: 600; color: #333; }
+            .achievements { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+            .achievement { background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeaa7; }
+            .achievement .icon { font-size: 1.5em; margin-right: 10px; }
+            .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; }
+            @media print { body { background: white; } .container { box-shadow: none; } }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📊 Report Nutrizionale</h1>
+                <p>Generato il ${data.date}</p>
+                <p>Dashboard Fitness AI - Meal Prep Analysis</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Piani Totali</h3>
+                    <div class="value">${data.totalPlans}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Livello Attuale</h3>
+                    <div class="value">Lv.${data.userStats?.level || 1}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Punti Totali</h3>
+                    <div class="value">${data.userStats?.totalPoints || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Streak Corrente</h3>
+                    <div class="value">${data.userStats?.currentStreak || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Calorie Medie</h3>
+                    <div class="value">${data.avgCaloriesPerPlan}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Obiettivo Preferito</h3>
+                    <div class="value" style="font-size: 1.2em;">${data.mostUsedGoal}</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📋 Piani Recenti</h2>
+                <table class="plans-table">
+                    <thead>
+                        <tr>
+                            <th>Nome Piano</th>
+                            <th>Obiettivo</th>
+                            <th>Calorie</th>
+                            <th>Durata</th>
+                            <th>Data Creazione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.recentPlans.map((plan: any) => `
+                            <tr>
+                                <td>${plan.nome}</td>
+                                <td>${plan.obiettivo}</td>
+                                <td>${plan.calorie} kcal</td>
+                                <td>${plan.durata} giorni</td>
+                                <td>${plan.createdAt}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h2>🏆 Achievement Sbloccati</h2>
+                <div class="achievements">
+                    ${data.achievements.map((achievement: any) => `
+                        <div class="achievement">
+                            <span class="icon">${achievement.icon}</span>
+                            <strong>${achievement.title}</strong> - ${achievement.points} punti
+                            <br><small>${achievement.description}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📈 Analisi Performance</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Progresso Settimanale</h3>
+                        <div class="value">${Math.round(data.userStats?.weeklyProgress || 0)}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Tasso Completamento</h3>
+                        <div class="value">${Math.round(data.userStats?.completionRate || 0)}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Streak Massima</h3>
+                        <div class="value">${data.userStats?.longestStreak || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Varietà Score</h3>
+                        <div class="value">${data.userStats?.varietyScore || 0}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p><strong>Meal Prep AI Dashboard</strong></p>
+                <p>Report generato automaticamente il ${new Date().toLocaleString('it-IT')}</p>
+                <p>Continua così per raggiungere i tuoi obiettivi fitness! 💪</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
   };
 
   if (loading) {
@@ -789,7 +1008,7 @@ export default function DashboardAdvanced() {
 
             {/* Quick Actions & Recent Plans */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Quick Actions */}
+              {/* Quick Actions - FIXED */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
                 <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
                   <Zap className="h-5 w-5" />
@@ -811,7 +1030,10 @@ export default function DashboardAdvanced() {
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </Link>
                   
-                  <button className="w-full flex items-center gap-3 p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition-all duration-300 group">
+                  <button 
+                    onClick={handleWeeklyPlanning}
+                    className="w-full flex items-center gap-3 p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition-all duration-300 group"
+                  >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Calendar className="h-5 w-5 text-white" />
                     </div>
@@ -822,12 +1044,22 @@ export default function DashboardAdvanced() {
                     <ChevronRight className="h-4 w-4 text-gray-400" />
                   </button>
                   
-                  <button className="w-full flex items-center gap-3 p-3 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg transition-all duration-300 group">
+                  <button 
+                    onClick={handleNutritionReport}
+                    disabled={isGeneratingReport}
+                    className="w-full flex items-center gap-3 p-3 bg-gray-700/50 hover:bg-gray-600/50 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all duration-300 group"
+                  >
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <BarChart3 className="h-5 w-5 text-white" />
+                      {isGeneratingReport ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <BarChart3 className="h-5 w-5 text-white" />
+                      )}
                     </div>
                     <div className="flex-1 text-left">
-                      <div className="font-semibold text-white">Report Nutrizionale</div>
+                      <div className="font-semibold text-white">
+                        {isGeneratingReport ? 'Generando...' : 'Report Nutrizionale'}
+                      </div>
                       <div className="text-xs text-gray-400">Export per nutrizionista</div>
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-400" />
@@ -835,7 +1067,7 @@ export default function DashboardAdvanced() {
                 </div>
               </div>
 
-              {/* Recent Plans - SENZA IMMAGINI */}
+              {/* Recent Plans */}
               <div className="lg:col-span-2">
                 {filteredPlans.length > 0 ? (
                   <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
@@ -871,7 +1103,7 @@ export default function DashboardAdvanced() {
                             </button>
                           </div>
                           
-                          {/* Piano Stats - FOCUS SU DATI */}
+                          {/* Piano Stats */}
                           <div className="grid grid-cols-3 gap-2 mb-3">
                             <div className="text-center bg-green-600/20 rounded py-1">
                               <div className="text-green-400 font-bold text-sm">{plan.calorie}</div>
@@ -1012,20 +1244,6 @@ export default function DashboardAdvanced() {
                 </h3>
                 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                    <div>
-                      <div className="font-semibold text-white">Calorie Medie/Giorno</div>
-                      <div className="text-gray-400 text-sm">Target: 2000 kcal</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold text-lg">1,950</div>
-                      <div className="text-green-400 text-sm flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        -2.5%
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
                     <div>
                       <div className="font-semibold text-white">Proteine Medie/Giorno</div>
@@ -1211,4 +1429,18 @@ export default function DashboardAdvanced() {
       </div>
     </div>
   );
-}
+}white">Calorie Medie/Giorno</div>
+                      <div className="text-gray-400 text-sm">Target: 2000 kcal</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-green-400 font-bold text-lg">1,950</div>
+                      <div className="text-green-400 text-sm flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        -2.5%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
+                    <div>
+                      <div className="font-semibold text-
