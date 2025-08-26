@@ -107,8 +107,20 @@ export default function DashboardAdvanced() {
   const [animateProgress, setAnimateProgress] = useState(false);
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
   // Stati per la gestione della visualizzazione dei piani
+  // Stati per la gestione della visualizzazione dei piani
   const [showAllPlans, setShowAllPlans] = useState(false);
+  const [selectedPlanDetails, setSelectedPlanDetails] = useState<SavedPlan | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  // Funzione per vedere i dettagli del piano
+  const viewPlanDetails = (plan: SavedPlan) => {
+    setSelectedPlanDetails(plan);
+  };
+
+  // Funzione per chiudere i dettagli
+  const closePlanDetails = () => {
+    setSelectedPlanDetails(null);
+  };
 
   useEffect(() => {
     loadDashboardData();
@@ -1419,6 +1431,127 @@ export default function DashboardAdvanced() {
           </div>
         )}
       </div>
+
+      {/* Modal Piano Details */}
+      {selectedPlanDetails && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-green-400">{selectedPlanDetails.nome}</h2>
+                <button
+                  onClick={closePlanDetails}
+                  className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="h-6 w-6 text-gray-400" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-green-600/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-green-400">{selectedPlanDetails.calorie}</div>
+                    <div className="text-green-300 text-sm">kcal/giorno</div>
+                  </div>
+                  <div className="bg-blue-600/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-blue-400">{selectedPlanDetails.durata}</div>
+                    <div className="text-blue-300 text-sm">giorni</div>
+                  </div>
+                  <div className="bg-purple-600/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-purple-400">{selectedPlanDetails.pasti}</div>
+                    <div className="text-purple-300 text-sm">pasti</div>
+                  </div>
+                  <div className="bg-orange-600/20 rounded-lg p-3 text-center">
+                    <div className="text-2xl font-bold text-orange-400">{selectedPlanDetails.totalProteins}g</div>
+                    <div className="text-orange-300 text-sm">proteine</div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-700/30 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-white mb-2">Informazioni Piano</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-400">Obiettivo:</span>
+                      <span className="text-white ml-2">{selectedPlanDetails.obiettivo}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Creato:</span>
+                      <span className="text-white ml-2">{selectedPlanDetails.createdAt}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Allergie:</span>
+                      <span className="text-white ml-2">{selectedPlanDetails.allergie.length > 0 ? selectedPlanDetails.allergie.join(', ') : 'Nessuna'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Preferenze:</span>
+                      <span className="text-white ml-2">{selectedPlanDetails.preferenze.length > 0 ? selectedPlanDetails.preferenze.join(', ') : 'Nessuna'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {selectedPlanDetails.generatedPlan && (
+                  <div className="bg-gray-700/30 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-white mb-3">Piano Nutrizionale</h3>
+                    <div className="bg-black/50 rounded p-4 max-h-96 overflow-y-auto">
+                      <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+                        {selectedPlanDetails.generatedPlan}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedPlanDetails.generatedPlan || '');
+                      alert('Piano copiato negli appunti!');
+                    }}
+                    className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copia Piano
+                  </button>
+                  <button
+                    onClick={closePlanDetails}
+                    className="flex items-center gap-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-400 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Chiudi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Anteprima Ultimo Piano Generato */}
+      {filteredPlans.length > 0 && !selectedPlanDetails && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <div className="bg-gray-800/90 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 max-w-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-green-400">Ultimo Piano</h3>
+              <button
+                onClick={() => viewPlanDetails(filteredPlans[0])}
+                className="text-xs text-blue-400 hover:text-blue-300"
+              >
+                Dettagli
+              </button>
+            </div>
+            <div className="text-xs text-gray-300">
+              <div className="font-medium">{filteredPlans[0].nome}</div>
+              <div className="text-gray-400">{filteredPlans[0].createdAt}</div>
+              <div className="flex gap-2 mt-1">
+                <span className="bg-green-600/20 px-2 py-1 rounded text-green-400">
+                  {filteredPlans[0].calorie} kcal
+                </span>
+                <span className="bg-blue-600/20 px-2 py-1 rounded text-blue-400">
+                  {filteredPlans[0].durata}gg
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
