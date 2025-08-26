@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { 
-  TrendingUp, TrendingDown, Target, Award, Calendar, Clock, Flame, 
-  Activity, Zap, Brain, Star, Trophy, Gift, ChevronRight, ChevronUp, 
-  ChevronDown, Download, Share2, Copy, Plus, Settings, Bell, 
-  BarChart3, PieChart as PieChartIcon, Users, Heart, CheckCircle,
-  AlertCircle, Info, Sparkles, X
+  TrendingUp, Target, Award, Calendar, Clock, 
+  Activity, Zap, Brain, Trophy, ChevronRight, ChevronUp, 
+  ChevronDown, Plus, Bell, BarChart3, PieChart as PieChartIcon, 
+  CheckCircle, AlertCircle, Info, Sparkles, X
 } from 'lucide-react';
 
 interface SavedPlan {
@@ -93,7 +92,6 @@ interface Challenge {
 }
 
 export default function DashboardAdvanced() {
-  // Stati principali
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<SavedPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,8 +101,6 @@ export default function DashboardAdvanced() {
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [nutritionTrends, setNutritionTrends] = useState<NutritionTrend[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
-
-  // Stati UI avanzati
   const [activeView, setActiveView] = useState<'overview' | 'analytics' | 'challenges' | 'insights'>('overview');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | '3months'>('week');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -112,7 +108,6 @@ export default function DashboardAdvanced() {
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
-  // Caricamento dati da Airtable
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -120,20 +115,13 @@ export default function DashboardAdvanced() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Carica piani salvati da Meal_Requests (tabella corretta)
       await loadSavedPlans();
-      
-      // Genera dati analytics e insights
       generateAnalyticsData();
       generateAIInsights();
       generateChallenges();
-      
-      // Animazioni progressive
       setTimeout(() => setAnimateProgress(true), 500);
-      
     } catch (error) {
-      console.error('⚠ Error loading dashboard data:', error);
+      console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -141,14 +129,13 @@ export default function DashboardAdvanced() {
 
   const loadSavedPlans = async () => {
     try {
-      console.log('📋 Loading plans from Meal_Requests table...');
+      console.log('Loading plans from Meal_Requests table...');
       
-      // Carica da Meal_Requests invece di meal_plans
       const response = await fetch('/api/airtable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'getMealRequests' // Usa l'action esistente che funziona
+          action: 'getMealRequests'
         })
       });
 
@@ -158,9 +145,8 @@ export default function DashboardAdvanced() {
         const result = await response.json();
         if (result.success && result.records) {
           plans = result.records
-            .filter((record: any) => record.fields?.Meal_Plan) // Solo record con piani generati
+            .filter((record: any) => record.fields?.Meal_Plan)
             .map((record: any) => {
-              // Parse del campo Meal_Plan se è JSON
               let parsedPlan = null;
               try {
                 if (record.fields.Meal_Plan && typeof record.fields.Meal_Plan === 'string') {
@@ -180,7 +166,7 @@ export default function DashboardAdvanced() {
                 pasti: String(record.fields.Meals_Per_Day || '3'),
                 calorie: record.fields.Calculated_Calories || 2000,
                 totalCalories: record.fields.Calculated_Calories || 2000,
-                totalProteins: Math.round((record.fields.Calculated_Calories || 2000) * 0.25 / 4), // Stima 25% proteine
+                totalProteins: Math.round((record.fields.Calculated_Calories || 2000) * 0.25 / 4),
                 allergie: record.fields.Exclusions ? record.fields.Exclusions.split(',').map((s: string) => s.trim()) : [],
                 preferenze: record.fields.Diet_Type ? [record.fields.Diet_Type] : [],
                 formData: {
@@ -201,17 +187,14 @@ export default function DashboardAdvanced() {
                 email: record.fields.Email
               };
             });
-          console.log(`✅ Loaded ${plans.length} plans from Meal_Requests`);
+          console.log(`Loaded ${plans.length} plans from Meal_Requests`);
         }
-      } else {
-        console.error('❌ Failed to load from Airtable:', response.status);
       }
 
-      // Fallback a localStorage se Airtable fallisce
       if (plans.length === 0) {
         const localPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
         plans = localPlans;
-        console.log(`📱 Loaded ${plans.length} plans from localStorage as fallback`);
+        console.log(`Loaded ${plans.length} plans from localStorage as fallback`);
       }
 
       setSavedPlans(plans);
@@ -225,9 +208,7 @@ export default function DashboardAdvanced() {
       calculateAchievements(plans);
       
     } catch (error) {
-      console.error('⚠ Error loading plans:', error);
-      
-      // Fallback completo a localStorage
+      console.error('Error loading plans:', error);
       const localPlans = JSON.parse(localStorage.getItem('mealPrepSavedPlans') || '[]');
       setSavedPlans(localPlans);
       setFilteredPlans(localPlans);
@@ -254,7 +235,6 @@ export default function DashboardAdvanced() {
     const totalCalories = plans.reduce((sum, plan) => sum + plan.totalCalories, 0);
     const avgCaloriesPerDay = Math.round(totalCalories / Math.max(totalDays, 1));
     
-    // Calcola streak e statistiche avanzate
     const sortedPlans = [...plans].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     let currentStreak = 0;
     let longestStreak = 0;
@@ -274,16 +254,13 @@ export default function DashboardAdvanced() {
     }
     longestStreak = Math.max(longestStreak, tempStreak);
     
-    // Sistema punti avanzato
     const basePoints = plans.length * 20;
     const streakBonus = currentStreak * 10;
     const varietyBonus = Math.min(100, plans.length * 5);
     const totalPoints = basePoints + streakBonus + varietyBonus;
     const level = Math.floor(totalPoints / 200) + 1;
-
-    // Calcola progresso settimanale e completion rate
     const weeklyProgress = Math.min(100, (currentStreak / 7) * 100);
-    const completionRate = Math.min(100, (plans.length / 10) * 100); // Obiettivo 10 piani
+    const completionRate = Math.min(100, (plans.length / 10) * 100);
 
     const objectives = plans.map(p => p.obiettivo).filter(o => o !== 'Non specificato');
     const preferredObjective = objectives.length > 0 ? 
@@ -386,7 +363,6 @@ export default function DashboardAdvanced() {
       }
     ];
 
-    // Aggiungi date di sblocco per achievements sbloccati
     achievements.forEach(achievement => {
       if (achievement.unlocked && !achievement.unlockedAt) {
         achievement.unlockedAt = new Date().toISOString();
@@ -397,7 +373,6 @@ export default function DashboardAdvanced() {
   };
 
   const generateAnalyticsData = () => {
-    // Genera dati trend nutrizionali per i grafici
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
@@ -405,10 +380,10 @@ export default function DashboardAdvanced() {
       return {
         date: date.toISOString().split('T')[0],
         day: date.toLocaleDateString('it-IT', { weekday: 'short' }),
-        calories: Math.floor(Math.random() * 400) + 1800, // 1800-2200
-        proteins: Math.floor(Math.random() * 50) + 100,   // 100-150g
-        carbs: Math.floor(Math.random() * 100) + 150,     // 150-250g
-        fats: Math.floor(Math.random() * 30) + 50         // 50-80g
+        calories: Math.floor(Math.random() * 400) + 1800,
+        proteins: Math.floor(Math.random() * 50) + 100,
+        carbs: Math.floor(Math.random() * 100) + 150,
+        fats: Math.floor(Math.random() * 30) + 50
       };
     });
 
@@ -503,7 +478,6 @@ export default function DashboardAdvanced() {
 
   const deletePlan = async (planId: string, airtableId?: string) => {
     try {
-      // Elimina da Airtable se presente
       if (airtableId) {
         await fetch('/api/airtable', {
           method: 'DELETE',
@@ -515,7 +489,6 @@ export default function DashboardAdvanced() {
         });
       }
 
-      // Aggiorna stato locale
       const updatedPlans = savedPlans.filter(plan => plan.id !== planId);
       setSavedPlans(updatedPlans);
       setFilteredPlans(updatedPlans);
@@ -527,11 +500,11 @@ export default function DashboardAdvanced() {
       calculateUserStats(updatedPlans);
       calculateAchievements(updatedPlans);
       
-      console.log('✅ Plan deleted successfully');
+      console.log('Plan deleted successfully');
       
     } catch (error) {
-      console.error('⚠ Error deleting plan:', error);
-      alert('⚠ Errore nell\'eliminazione. Riprova!');
+      console.error('Error deleting plan:', error);
+      alert('Errore nell\'eliminazione. Riprova!');
     }
   };
 
@@ -565,10 +538,8 @@ export default function DashboardAdvanced() {
     }
   };
 
-  // ✅ PIANIFICA SETTIMANA - Crea un piano per 7 giorni
   const handleWeeklyPlanning = async () => {
     try {
-      // Reindirizza al form principale con parametri preimpostati per la settimana
       const params = new URLSearchParams({
         durata: '7',
         pasti: '3',
@@ -584,18 +555,15 @@ export default function DashboardAdvanced() {
     }
   };
 
-  // ✅ REPORT NUTRIZIONALE - Genera e scarica PDF
   const handleNutritionReport = async () => {
     if (isGeneratingReport) return;
     
     try {
       setIsGeneratingReport(true);
       
-      // Genera report HTML
       const reportData = generateNutritionReportData();
       const htmlContent = generateReportHTML(reportData);
       
-      // Crea blob e download
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
@@ -608,8 +576,7 @@ export default function DashboardAdvanced() {
       
       URL.revokeObjectURL(url);
       
-      // Feedback all'utente
-      alert('📊 Report nutrizionale scaricato con successo!');
+      alert('Report nutrizionale scaricato con successo!');
       
     } catch (error) {
       console.error('Error generating nutrition report:', error);
@@ -625,7 +592,7 @@ export default function DashboardAdvanced() {
     return {
       date: now.toLocaleDateString('it-IT'),
       userStats,
-      savedPlans: savedPlans.slice(0, 10), // Ultimi 10 piani
+      savedPlans: savedPlans.slice(0, 10),
       nutritionTrends,
       achievements: achievements.filter(a => a.unlocked),
       totalPlans: savedPlans.length,
@@ -675,7 +642,7 @@ export default function DashboardAdvanced() {
     <body>
         <div class="container">
             <div class="header">
-                <h1>📊 Report Nutrizionale</h1>
+                <h1>Report Nutrizionale</h1>
                 <p>Generato il ${data.date}</p>
                 <p>Dashboard Fitness AI - Meal Prep Analysis</p>
             </div>
@@ -708,7 +675,7 @@ export default function DashboardAdvanced() {
             </div>
 
             <div class="section">
-                <h2>📋 Piani Recenti</h2>
+                <h2>Piani Recenti</h2>
                 <table class="plans-table">
                     <thead>
                         <tr>
@@ -734,7 +701,7 @@ export default function DashboardAdvanced() {
             </div>
 
             <div class="section">
-                <h2>🏆 Achievement Sbloccati</h2>
+                <h2>Achievement Sbloccati</h2>
                 <div class="achievements">
                     ${data.achievements.map((achievement: any) => `
                         <div class="achievement">
@@ -746,32 +713,10 @@ export default function DashboardAdvanced() {
                 </div>
             </div>
 
-            <div class="section">
-                <h2>📈 Analisi Performance</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>Progresso Settimanale</h3>
-                        <div class="value">${Math.round(data.userStats?.weeklyProgress || 0)}%</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Tasso Completamento</h3>
-                        <div class="value">${Math.round(data.userStats?.completionRate || 0)}%</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Streak Massima</h3>
-                        <div class="value">${data.userStats?.longestStreak || 0}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Varietà Score</h3>
-                        <div class="value">${data.userStats?.varietyScore || 0}</div>
-                    </div>
-                </div>
-            </div>
-
             <div class="footer">
                 <p><strong>Meal Prep AI Dashboard</strong></p>
                 <p>Report generato automaticamente il ${new Date().toLocaleString('it-IT')}</p>
-                <p>Continua così per raggiungere i tuoi obiettivi fitness! 💪</p>
+                <p>Continua così per raggiungere i tuoi obiettivi fitness!</p>
             </div>
         </div>
     </body>
@@ -792,7 +737,6 @@ export default function DashboardAdvanced() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-      {/* Header Avanzato */}
       <header className="bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
@@ -825,7 +769,6 @@ export default function DashboardAdvanced() {
             </div>
           </div>
 
-          {/* Quick Stats Header */}
           {userStats && (
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-center">
               <div className="bg-gradient-to-br from-green-600/20 to-green-700/10 border border-green-600/30 rounded-lg p-3">
@@ -858,7 +801,6 @@ export default function DashboardAdvanced() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Navigation Tabs */}
         <div className="flex justify-center mb-8">
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-1 flex gap-1">
             {[
@@ -883,10 +825,8 @@ export default function DashboardAdvanced() {
           </div>
         </div>
 
-        {/* Overview View */}
         {activeView === 'overview' && (
           <div className="space-y-8">
-            {/* Advanced Progress Section */}
             {userStats && (
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
                 <h2 className="text-2xl font-bold mb-6 text-green-400 flex items-center gap-2">
@@ -895,7 +835,6 @@ export default function DashboardAdvanced() {
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Weekly Progress */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Progresso Settimanale</span>
@@ -911,7 +850,6 @@ export default function DashboardAdvanced() {
                     </div>
                   </div>
 
-                  {/* Completion Rate */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">Tasso Completamento</span>
@@ -930,7 +868,6 @@ export default function DashboardAdvanced() {
               </div>
             )}
 
-            {/* Enhanced Achievements */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
               <h2 className="text-2xl font-bold mb-6 text-yellow-400 flex items-center gap-2">
                 <Award className="h-6 w-6" />
@@ -967,7 +904,6 @@ export default function DashboardAdvanced() {
                       {achievement.description}
                     </p>
                     
-                    {/* Progress Bar */}
                     {achievement.maxProgress && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs">
@@ -1006,9 +942,7 @@ export default function DashboardAdvanced() {
               </div>
             </div>
 
-            {/* Quick Actions & Recent Plans */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Quick Actions - FIXED */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
                 <h3 className="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
                   <Zap className="h-5 w-5" />
@@ -1067,7 +1001,6 @@ export default function DashboardAdvanced() {
                 </div>
               </div>
 
-              {/* Recent Plans */}
               <div className="lg:col-span-2">
                 {filteredPlans.length > 0 ? (
                   <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
@@ -1103,7 +1036,6 @@ export default function DashboardAdvanced() {
                             </button>
                           </div>
                           
-                          {/* Piano Stats */}
                           <div className="grid grid-cols-3 gap-2 mb-3">
                             <div className="text-center bg-green-600/20 rounded py-1">
                               <div className="text-green-400 font-bold text-sm">{plan.calorie}</div>
@@ -1154,10 +1086,8 @@ export default function DashboardAdvanced() {
           </div>
         )}
 
-        {/* Analytics View */}
         {activeView === 'analytics' && (
           <div className="space-y-8">
-            {/* Nutrition Trends Chart */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-blue-400 flex items-center gap-2">
@@ -1203,7 +1133,6 @@ export default function DashboardAdvanced() {
               </div>
             </div>
 
-            {/* Macro Distribution */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
                 <h3 className="text-xl font-bold mb-4 text-purple-400 flex items-center gap-2">
@@ -1236,7 +1165,6 @@ export default function DashboardAdvanced() {
                 </div>
               </div>
 
-              {/* Weekly Stats */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
                 <h3 className="text-xl font-bold mb-4 text-green-400 flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
@@ -1244,6 +1172,20 @@ export default function DashboardAdvanced() {
                 </h3>
                 
                 <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
+                    <div>
+                      <div className="font-semibold text-white">Calorie Medie/Giorno</div>
+                      <div className="text-gray-400 text-sm">Target: 2000 kcal</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-green-400 font-bold text-lg">1,950</div>
+                      <div className="text-green-400 text-sm flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        -2.5%
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
                     <div>
                       <div className="font-semibold text-white">Proteine Medie/Giorno</div>
@@ -1277,7 +1219,6 @@ export default function DashboardAdvanced() {
           </div>
         )}
 
-        {/* Challenges View */}
         {activeView === 'challenges' && (
           <div className="space-y-8">
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
@@ -1307,7 +1248,6 @@ export default function DashboardAdvanced() {
                     <h3 className="font-bold text-white mb-2">{challenge.title}</h3>
                     <p className="text-gray-400 text-sm mb-4">{challenge.description}</p>
                     
-                    {/* Progress */}
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Progresso</span>
@@ -1331,7 +1271,6 @@ export default function DashboardAdvanced() {
                       </div>
                     </div>
                     
-                    {/* Deadline */}
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">Scadenza:</span>
                       <span className="text-gray-300">
@@ -1352,7 +1291,6 @@ export default function DashboardAdvanced() {
           </div>
         )}
 
-        {/* AI Insights View */}
         {activeView === 'insights' && (
           <div className="space-y-8">
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
@@ -1429,18 +1367,5 @@ export default function DashboardAdvanced() {
       </div>
     </div>
   );
-}ibold text-white">Calorie Medie/Giorno</div>
-                      <div className="text-gray-400 text-sm">Target: 2000 kcal</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold text-lg">1,950</div>
-                      <div className="text-green-400 text-sm flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        -2.5%
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-                    <div>
-                      <div className="font-sem
+}
+                      
