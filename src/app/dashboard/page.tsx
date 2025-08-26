@@ -143,10 +143,20 @@ export default function DashboardAdvanced() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('DEBUG Airtable response:', result);
+        
         if (result.success && result.records) {
+          console.log('DEBUG Records found:', result.records.length);
+          console.log('DEBUG First record:', result.records[0]);
+          
           plans = result.records
-            // RIMUOVI IL FILTRO temporaneamente per vedere tutti i record
-            // .filter((record: any) => record.fields?.Meal_Plan) 
+            .filter((record: any) => {
+              // Filtra solo record validi con dati base
+              return record && 
+                     record.fields && 
+                     record.fields.Nome && 
+                     (record.fields.Calculated_Calories || record.fields.BMR);
+            })
             .map((record: any) => {
               let parsedPlan = null;
               try {
@@ -228,13 +238,27 @@ export default function DashboardAdvanced() {
   };
 
   const calculateUserStats = (plans: SavedPlan[]) => {
-    // Filtra i piani non validi
-    const validPlans = plans.filter(plan => 
-      plan && 
-      typeof plan.durata === 'string' && 
-      typeof plan.calorie === 'number' &&
-      typeof plan.totalCalories === 'number'
-    );
+    console.log('DEBUG calculateUserStats input:', plans);
+    
+    // Filtra i piani non validi con controlli più stringenti
+    const validPlans = plans.filter(plan => {
+      const isValid = plan && 
+        typeof plan === 'object' &&
+        typeof plan.durata === 'string' && 
+        typeof plan.calorie === 'number' &&
+        typeof plan.totalCalories === 'number' &&
+        !isNaN(plan.calorie) &&
+        !isNaN(plan.totalCalories) &&
+        plan.calorie > 0 &&
+        plan.totalCalories > 0;
+      
+      if (!isValid) {
+        console.log('DEBUG Invalid plan filtered out:', plan);
+      }
+      return isValid;
+    });
+
+    console.log('DEBUG Valid plans after filtering:', validPlans.length);
 
     if (validPlans.length === 0) {
       setUserStats({
