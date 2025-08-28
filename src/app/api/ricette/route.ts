@@ -189,7 +189,7 @@ GENERA RACCOMANDAZIONI INTELLIGENTI E PERSONALIZZATE!`;
   }
 }
 
-// GENERA NUOVA RICETTA AI FITNESS INTERNAZIONALE - VERSIONE COMPLETA MIGLIORATA
+// GENERA NUOVA RICETTA AI FITNESS INTERNAZIONALE - VERSIONE COMPLETA CON NOMI REALISTICI
 async function handleGenerateRecipe(data: GenerateRecipeRequest) {
   console.log('Generating FITNESS recipe from international sources...', {
     categoria: data.categoria,
@@ -241,13 +241,12 @@ TRENDING FITNESS CONTENT TOPICS:
 - Contest prep meals da IFBB Pro
 - Recovery foods da sports science research
 
-REQUISITI CREATIVITÀ MASSIMA (seed: ${recipeSeed}):
-Nome accattivante e memorabile (NO "Fitness - ingrediente e verdure")
-Ingredienti creativi ma reperibili in Italia
-Tecniche moderne da social media fitness
-Presentazione Instagram-worthy
-Sapore che conquista, non solo "sano"
-Timing perfetto per obiettivo specifico
+REQUISITI NAMING REALISTICO (seed: ${recipeSeed}):
+Nome chiaro e comprensibile che indica ingredienti principali
+NO nomi fantasy o troppo creativi
+Esempi: "Pollo Grigliato con Quinoa", "Salmone alle Verdure", "Bowl di Tacchino Speziato"
+La persona deve capire subito cosa cucinerà
+Ingredienti principali visibili nel nome
 
 ISPIRAZIONE FONTE SPECIFICA:
 ${getFitnessContentInspiration(data.fonte_fitness || 'nutrizionista_sportivo', recipeSeed)}
@@ -261,8 +260,8 @@ Usa terminologie da food blogger, hashtag fitness, linguaggio accattivante ma sc
 FORMATO RISPOSTA (JSON RIGOROSO):
 {
   "ricetta": {
-    "nome": "Nome super creativo e appetitoso (NO generico!)",
-    "descrizione": "Description Instagram-style appetitosa (30-40 parole)",
+    "nome": "Nome realistico e comprensibile (es: Pollo Grigliato con Quinoa, Salmone alle Verdure)",
+    "descrizione": "Description appetitosa ma chiara (30-40 parole)",
     "categoria": "${data.categoria}",
     "difficolta": "${data.difficolta || 'medio'}",
     "tempo_preparazione": ${data.tempo_max || 25},
@@ -297,12 +296,12 @@ FORMATO RISPOSTA (JSON RIGOROSO):
   }
 }
 
-GENERA RICETTA VIRALE DEGNA DI DIVENTARE TREND SU FITNESS SOCIAL!
+GENERA RICETTA CON NOME CHIARO E COMPRENSIBILE!
 
 IMPORTANTE: 
-- Seed ${recipeSeed} deve portare a ricetta UNICA e CREATIVA
-- Zero nomi generici come "Pranzo Fitness - pollo e riso"  
-- Massima creatività ispirata da veri content creator
+- Seed ${recipeSeed} deve portare a ricetta UNICA
+- Nome deve essere chiaro e indicare ingredienti principali  
+- Massima creatività negli ingredienti, nome pratico e comprensibile
 - Traduzione naturale in italiano dei concetti internazionali
 - Bilancia scienza e appetibilità per engagement massimo`;
 
@@ -325,25 +324,25 @@ IMPORTANTE:
     
     const recipeData = JSON.parse(responseText);
 
-    console.log(`AI generated creative FITNESS recipe: ${recipeData.ricetta?.nome}`);
+    console.log(`AI generated realistic FITNESS recipe: ${recipeData.ricetta?.nome}`);
 
     return NextResponse.json({
       success: true,
       data: recipeData,
-      message: 'Creative FITNESS recipe generated from international content sources'
+      message: 'Realistic FITNESS recipe generated from international content sources'
     });
 
   } catch (error) {
     console.error('FITNESS recipe generation error:', error);
     
-    // FALLBACK CREATIVO - no più ricette generiche
-    const creativeFallback = generateCreativeFallback(data, recipeSeed);
+    // FALLBACK REALISTICO - nomi chiari
+    const realisticFallback = generateRealisticFallback(data, recipeSeed);
     
     return NextResponse.json({
       success: true,
-      data: { ricetta: creativeFallback },
-      message: 'Ricetta creativa generata con sistema avanzato',
-      warning: 'AI temporaneamente sovraccarica, utilizzato sistema creativo di backup'
+      data: { ricetta: realisticFallback },
+      message: 'Ricetta realistica generata con sistema avanzato',
+      warning: 'AI temporaneamente sovraccarica, utilizzato sistema realistico di backup'
     });
   }
 }
@@ -623,7 +622,7 @@ OTTIMIZZA LA RICETTA!`;
   }
 }
 
-// UTILITY FUNCTIONS FITNESS CREATIVE
+// UTILITY FUNCTIONS FITNESS REALISTIC
 
 function getFitnessContentInspiration(fonte: string, seed: number): string {
   const inspirations = {
@@ -703,17 +702,16 @@ function getTimingSpecificGuidance(timing: string): string {
   return guidance[timing] || guidance['any_time'];
 }
 
-function generateCreativeFallback(data: GenerateRecipeRequest, seed: number): any {
-  // NOMI CREATIVI invece di generici
-  const creativeNames = [
-    'Power Beast Bowl', 'Elite Fuel Stack', 'Champion Gains Combo', 'Warrior Nutrition Bowl',
-    'Beast Mode Fuel', 'Peak Performance Plate', 'Alpha Strength Stack', 'Gladiator Gains',
-    'Titan Power Bowl', 'Phoenix Recovery Stack', 'Thunder Bolt Combo', 'Lightning Fuel Bowl',
-    'Matrix Power Stack', 'Velocity Gains Plate', 'Nitro Performance Bowl', 'Turbo Strength Stack'
+function generateRealisticFallback(data: GenerateRecipeRequest, seed: number): any {
+  // NOMI REALISTICI E COMPRENSIBILI
+  const realisticNames = [
+    'Salmone Grigliato con Quinoa', 'Pollo Teriyaki e Verdure', 'Bowl di Tacchino Speziato', 'Merluzzo in Crosta alle Erbe',
+    'Tonno Scottato e Riso Basmati', 'Petto di Pollo al Curry', 'Salmone e Patate Dolci', 'Bowl di Pollo Mediterraneo',
+    'Tacchino alle Spezie Orientali', 'Pesce Bianco alle Zucchine', 'Pollo Marinato con Farro', 'Salmone e Avocado Bowl'
   ];
 
   // INGREDIENTI CREATIVI basati su seed
-  const creativeIngredients = [
+  const realisticIngredients = [
     ['120g salmone grigliato', '80g quinoa rossa', '100g edamame', '1/2 avocado a cubetti'],
     ['150g pollo marinato teriyaki', '70g riso venere', '150g broccoli saltati', 'semi di sesamo'],
     ['140g tacchino speziato', '90g patate dolci al forno', '100g spinaci baby', 'tahini'],
@@ -722,8 +720,8 @@ function generateCreativeFallback(data: GenerateRecipeRequest, seed: number): an
     ['140g petto pollo curry', '85g bulgur', '110g cavolfiori', 'curcuma e lime']
   ];
 
-  const selectedName = creativeNames[seed % creativeNames.length];
-  const selectedIngredients = creativeIngredients[seed % creativeIngredients.length];
+  const selectedName = realisticNames[seed % realisticNames.length];
+  const selectedIngredients = realisticIngredients[seed % realisticIngredients.length];
 
   return {
     nome: selectedName,
@@ -751,7 +749,7 @@ function generateCreativeFallback(data: GenerateRecipeRequest, seed: number): an
       'Carboidrati per energia sostenuta e recovery',
       'Micronutrienti per performance e salute generale'
     ],
-    content_source: `Sistema creativo avanzato - seed ${seed}`,
+    content_source: `Sistema realistico avanzato - seed ${seed}`,
     timing_notes: getOptimalTiming(data.timing_workout || 'any_time'),
     instagram_appeal: 'Presentazione colorata e fotogenica perfetta per social media'
   };
@@ -817,7 +815,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     message: 'API Ricette FITNESS - International Database',
-    version: '3.0 - Creative Fitness Enhanced',
+    version: '4.0 - Realistic Names Enhanced',
     endpoints: {
       'POST /': {
         'getAIRecommendations': 'Get personalized AI recipe recommendations',
