@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const AIRTABLE_MEAL_REQUESTS_TABLE = 'Meal_Requests';
-const AIRTABLE_MEAL_PLANS_TABLE = 'meal_plans'; // Tabella per piani salvati dashboard
+const AIRTABLE_MEAL_PLANS_TABLE = 'meal_plans';
+const AIRTABLE_RECIPES_AI_TABLE = 'recipes_ai'; // ✅ NUOVO: Tabella ricette AI
+const AIRTABLE_USER_FAVORITES_TABLE = 'user_favorites'; // ✅ NUOVO: Tabella preferiti
 
 const AIRTABLE_BASE_URL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}`;
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // NUOVE ACTIONS PER DASHBOARD
+    // ✅ ACTIONS UNIFICATE - Dashboard + Ricette AI
     switch (action) {
       // Dashboard meal_plans actions
       case 'read':
@@ -34,6 +36,22 @@ export async function POST(request: NextRequest) {
       
       case 'delete':
         return await deleteRecord(table || 'meal_plans', recordId);
+
+      // ✅ NUOVE: Ricette AI actions
+      case 'saveAiRecipe':
+        return await saveAiRecipe(data);
+      
+      case 'getAiRecipes':
+        return await getAiRecipes();
+      
+      case 'saveFavorite':
+        return await saveFavorite(data);
+      
+      case 'getFavorites':
+        return await getFavorites(data.userId || 'default');
+      
+      case 'removeFavorite':
+        return await removeFavorite(data);
 
       // Esistenti meal requests actions
       case 'saveMealRequest':
@@ -109,7 +127,389 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// 🆕 READ RECORDS - Nuova funzione per dashboard
+// ===== ✅ NUOVE FUNZIONI RICETTE AI =====
+
+// 💾 SALVA RICETTA AI - Con tutti i campi della struttura CSV
+async function saveAiRecipe(data: any) {
+  try {
+    console.log('🤖 Saving AI recipe with data:', data);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_RECIPES_AI_TABLE}`;
+    
+    // ✅ MAPPING COMPLETO per tutti i campi CSV
+    const cleanedData: any = {
+      // Campi base
+      nome: String(data.nome || ''),
+      categoria: String(data.categoria || 'pranzo'),
+      difficolta: String(data.difficolta || 'medio'),
+      tempoPreparazione: Number(data.tempoPreparazione || 30),
+      porzioni: Number(data.porzioni || 1),
+      
+      // Macronutrienti
+      calorie: Number(data.calorie || 0),
+      proteine: Number(data.proteine || 0),
+      carboidrati: Number(data.carboidrati || 0),
+      grassi: Number(data.grassi || 0),
+      
+      // Contenuti (array come stringhe separate da |)
+      ingredienti: Array.isArray(data.ingredienti) ? data.ingredienti.join('|') : String(data.ingredienti || ''),
+      preparazione: String(data.preparazione || ''),
+      
+      // Fitness specifici
+      macro_focus: String(data.macro_focus || 'balanced'),
+      fonte: 'ai_generated',
+      rating: Number(data.rating || 4.7),
+      reviewCount: Number(data.reviewCount || 1),
+      createdAt: new Date().toISOString(),
+      
+      // ✅ NUOVI CAMPI FITNESS della struttura CSV
+      fonte_fitness: String(data.fonte_fitness || 'nutrizionista_sportivo'),
+      timing_workout: String(data.timing_workout || 'any_time'),
+      fitness_benefits: String(data.fitness_benefits || 'Performance ottimizzata'),
+      timing_notes: String(data.timing_notes || 'Consumare secondo necessità'),
+      international_origin: String(data.international_origin || 'Database fitness internazionale'),
+      performance_score: Number(data.performance_score || 85)
+    };
+    
+    // Array fields (converti in string)
+    if (Array.isArray(data.tipoDieta)) {
+      cleanedData.tipoDieta = data.tipoDieta.join(',');
+    } else {
+      cleanedData.tipoDieta = String(data.tipoDieta || 'balanced');
+    }
+    
+    if (Array.isArray(data.obiettivo_fitness)) {
+      cleanedData.obiettivo_fitness = data.obiettivo_fitness.join(',');
+    } else {
+      cleanedData.obiettivo_fitness = String(data.obiettivo_fitness || 'maintenance');
+    }
+    
+    if (Array.isArray(data.tags)) {
+      cleanedData.tags = data.tags.join(',');
+    } else {
+      cleanedData.tags = String(data.tags || 'ai_generated,fitness');
+    }
+
+    console.log('🧹 Final AI recipe data for Airtable:', cleanedData);
+
+    const response = await fetch(tableUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fields: cleanedData
+      })
+    });
+
+    const responseText = await response.text();
+    console.log('📡 AI Recipe save response status:', response.status);
+
+    if (!response.ok) {
+      console.error('❌ Airtable saveAiRecipe Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to save AI recipe to Airtable',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log('✅ AI Recipe saved successfully:', result.id);
+
+    return NextResponse.json({
+      success: true,
+      recordId: result.id,
+      message: 'AI recipe saved successfully'
+    });
+
+  } catch (error) {
+    console.error('💥 Error saving AI recipe:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to save AI recipe',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 📋 GET RICETTE AI
+async function getAiRecipes() {
+  try {
+    console.log('📋 Getting AI recipes...');
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_RECIPES_AI_TABLE}`;
+    const url = `${tableUrl}?sort[0][field]=createdAt&sort[0][direction]=desc&maxRecords=100`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const responseText = await response.text();
+    console.log('📡 AI recipes response status:', response.status);
+
+    if (!response.ok) {
+      // Se tabella non esiste, ritorna array vuoto
+      if (response.status === 404) {
+        console.log('⚠️ AI recipes table not found, returning empty array');
+        return NextResponse.json({
+          success: true,
+          records: []
+        });
+      }
+
+      console.error('❌ Airtable getAiRecipes Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to get AI recipes',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log(`✅ Retrieved ${result.records?.length || 0} AI recipes`);
+
+    return NextResponse.json({
+      success: true,
+      records: result.records || []
+    });
+
+  } catch (error) {
+    console.error('💥 Error getting AI recipes:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to get AI recipes',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ❤️ SALVA PREFERITO
+async function saveFavorite(data: any) {
+  try {
+    console.log('❤️ Saving favorite:', data);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_USER_FAVORITES_TABLE}`;
+    
+    const cleanedData = {
+      userId: String(data.userId || 'default'),
+      recipeId: String(data.recipeId || ''),
+      recipeName: String(data.recipeName || ''),
+      createdAt: new Date().toISOString()
+    };
+
+    const response = await fetch(tableUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fields: cleanedData
+      })
+    });
+
+    const responseText = await response.text();
+    console.log('📡 Favorite save response status:', response.status);
+
+    if (!response.ok) {
+      console.error('❌ Airtable saveFavorite Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to save favorite',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log('✅ Favorite saved successfully:', result.id);
+
+    return NextResponse.json({
+      success: true,
+      recordId: result.id,
+      message: 'Favorite saved successfully'
+    });
+
+  } catch (error) {
+    console.error('💥 Error saving favorite:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to save favorite',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 📋 GET PREFERITI
+async function getFavorites(userId: string) {
+  try {
+    console.log('📋 Getting favorites for user:', userId);
+    
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_USER_FAVORITES_TABLE}`;
+    const filterFormula = `{userId} = "${userId}"`;
+    const encodedFormula = encodeURIComponent(filterFormula);
+    const url = `${tableUrl}?filterByFormula=${encodedFormula}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const responseText = await response.text();
+    console.log('📡 Favorites response status:', response.status);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return NextResponse.json({
+          success: true,
+          records: []
+        });
+      }
+
+      console.error('❌ Airtable getFavorites Error:', responseText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to get favorites',
+          status: response.status,
+          details: responseText 
+        },
+        { status: response.status }
+      );
+    }
+
+    const result = JSON.parse(responseText);
+    console.log(`✅ Retrieved ${result.records?.length || 0} favorites`);
+
+    return NextResponse.json({
+      success: true,
+      records: result.records || []
+    });
+
+  } catch (error) {
+    console.error('💥 Error getting favorites:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to get favorites',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// 🗑️ RIMUOVI PREFERITO
+async function removeFavorite(data: any) {
+  try {
+    console.log('🗑️ Removing favorite:', data);
+    
+    const { userId, recipeId } = data;
+    
+    // Prima trova il record
+    const tableUrl = `${AIRTABLE_BASE_URL}/${AIRTABLE_USER_FAVORITES_TABLE}`;
+    const filterFormula = `AND({userId} = "${userId}", {recipeId} = "${recipeId}")`;
+    const encodedFormula = encodeURIComponent(filterFormula);
+    const findUrl = `${tableUrl}?filterByFormula=${encodedFormula}`;
+    
+    const findResponse = await fetch(findUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!findResponse.ok) {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to find favorite record'
+      }, { status: findResponse.status });
+    }
+
+    const findResult = await findResponse.json();
+    
+    if (!findResult.records || findResult.records.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'Favorite not found or already removed'
+      });
+    }
+
+    // Elimina il record trovato
+    const recordId = findResult.records[0].id;
+    const deleteResponse = await fetch(`${tableUrl}/${recordId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+      }
+    });
+
+    if (!deleteResponse.ok) {
+      const errorText = await deleteResponse.text();
+      console.error('❌ Airtable removeFavorite Error:', errorText);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Failed to remove favorite',
+          details: errorText 
+        },
+        { status: deleteResponse.status }
+      );
+    }
+
+    console.log('✅ Favorite removed successfully:', recordId);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Favorite removed successfully'
+    });
+
+  } catch (error) {
+    console.error('💥 Error removing favorite:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Failed to remove favorite',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// ===== FUNZIONI ESISTENTI (invariate) =====
+
+// 📖 READ RECORDS - Nuova funzione per dashboard
 async function readRecords(tableName: string) {
   try {
     console.log('📖 Reading records from table:', tableName);
@@ -175,11 +575,11 @@ async function readRecords(tableName: string) {
   }
 }
 
-// 🆕 CREATE RECORD - Nuova funzione per dashboard
+// 💾 CREATE RECORD - Nuova funzione per dashboard
 async function createRecord(tableName: string, fields: any) {
   try {
     console.log('💾 Creating record in table:', tableName);
-    console.log('📝 Fields to create:', fields);
+    console.log('📄 Fields to create:', fields);
     
     const tableUrl = `${AIRTABLE_BASE_URL}/${tableName}`;
     
@@ -233,7 +633,7 @@ async function createRecord(tableName: string, fields: any) {
   }
 }
 
-// 🆕 DELETE RECORD - Nuova funzione per dashboard
+// 🗑️ DELETE RECORD - Nuova funzione per dashboard
 async function deleteRecord(tableName: string, recordId: string) {
   try {
     console.log('🗑️ Deleting record:', recordId, 'from table:', tableName);
@@ -285,6 +685,8 @@ async function deleteRecord(tableName: string, recordId: string) {
   }
 }
 
+// ===== RESTO DELLE FUNZIONI ESISTENTI (invariate) =====
+
 // 🧪 TEST CONNECTION - SEMPLIFICATO
 async function testConnection() {
   try {
@@ -332,6 +734,9 @@ async function testConnection() {
     }, { status: 500 });
   }
 }
+
+// [RESTO DELLE FUNZIONI ESISTENTI INVARIATE - saveMealRequest, saveMealPlan, getUserPlans, etc.]
+// Mantengo il codice esistente per non rompere la compatibilità
 
 // 💾 SALVA RICHIESTA MEAL PLAN - SEMPLIFICATO PER DEBUG
 async function saveMealRequest(data: any) {
@@ -644,7 +1049,7 @@ async function getMealRequests() {
     
     // MAPPING SEMPLIFICATO - SOLO CAMPI ESISTENTI
     const formattedRecords = result.records?.map((record: any) => {
-      console.log('🔍 Processing record fields:', Object.keys(record.fields || {}));
+      console.log('📄 Processing record fields:', Object.keys(record.fields || {}));
       
       return {
         id: record.id,
@@ -1033,9 +1438,13 @@ export async function GET() {
     status: 'Airtable API is running',
     mealRequestsTable: AIRTABLE_MEAL_REQUESTS_TABLE,
     mealPlansTable: AIRTABLE_MEAL_PLANS_TABLE,
+    recipesAiTable: AIRTABLE_RECIPES_AI_TABLE, // ✅ NUOVO
+    userFavoritesTable: AIRTABLE_USER_FAVORITES_TABLE, // ✅ NUOVO
     availableActions: [
       // Dashboard actions
       'read', 'create', 'delete',
+      // ✅ NUOVE: Ricette AI actions
+      'saveAiRecipe', 'getAiRecipes', 'saveFavorite', 'getFavorites', 'removeFavorite',
       // Legacy actions  
       'testConnection',
       'saveMealRequest', 
@@ -1047,6 +1456,6 @@ export async function GET() {
       'updateStatus'
     ],
     timestamp: new Date().toISOString(),
-    version: '6.0.0-dashboard-support'
+    version: '7.0.0-ai-recipes-support' // ✅ AGGIORNATO
   });
 }
