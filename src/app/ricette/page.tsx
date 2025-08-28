@@ -492,64 +492,40 @@ export default function RicettePage() {
       const results = await Promise.all(promises);
       const validRecipes = results.filter(recipe => recipe !== null);
 
-      // Salva ricette in Airtable e stato locale
+      // Bypass Airtable - Crea ricette direttamente in stato locale
       const newAiRecipes: Recipe[] = [];
       
       for (const aiRecipe of validRecipes) {
-        const saveResponse = await fetch('/api/airtable', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create',
-            table: 'recipes_ai',
-            fields: {
-              nome: aiRecipe.nome,
-              categoria: aiFilters.categoria,
-              tipoDieta: [aiFilters.tipo_dieta],
-              difficolta: aiFilters.difficolta,
-              tempoPreparazione: parseInt(aiFilters.tempo_max),
-              porzioni: aiRecipe.porzioni || 1,
-              calorie: aiRecipe.macros.calorie,
-              proteine: aiRecipe.macros.proteine,
-              carboidrati: aiRecipe.macros.carboidrati,
-              grassi: aiRecipe.macros.grassi,
-              ingredienti: Array.isArray(aiRecipe.ingredienti) ? aiRecipe.ingredienti : [],
-              preparazione: Array.isArray(aiRecipe.preparazione) ? aiRecipe.preparazione.join('. ') : aiRecipe.preparazione,
-              obiettivo_fitness: [aiFilters.obiettivo_fitness],
-              macro_focus: aiFilters.macro_focus,
-              tags: ['ai_generated', 'fitness_optimized', aiFilters.fonte_fitness, aiFilters.timing_workout],
-              rating: 4.7,
-              reviewCount: 1,
-              createdAt: new Date().toISOString()
-            }
-          })
-        });
-
-        if (saveResponse.ok) {
-          const newRecipe: Recipe = {
-            id: `ai_${Date.now()}_${Math.random()}`,
-            nome: aiRecipe.nome,
-            categoria: aiFilters.categoria as any,
-            tipoDieta: [aiFilters.tipo_dieta],
-            difficolta: aiFilters.difficolta as any,
-            tempoPreparazione: parseInt(aiFilters.tempo_max),
-            porzioni: aiRecipe.porzioni || 1,
-            calorie: aiRecipe.macros.calorie,
-            proteine: aiRecipe.macros.proteine,
-            carboidrati: aiRecipe.macros.carboidrati,
-            grassi: aiRecipe.macros.grassi,
-            ingredienti: Array.isArray(aiRecipe.ingredienti) ? aiRecipe.ingredienti : [],
-            preparazione: Array.isArray(aiRecipe.preparazione) ? aiRecipe.preparazione.join('. ') : aiRecipe.preparazione,
-            obiettivo_fitness: [aiFilters.obiettivo_fitness],
-            macro_focus: aiFilters.macro_focus as any,
-            fonte: 'ai_generated',
-            tags: ['ai_generated', 'fitness_optimized'],
-            rating: 4.7,
-            reviewCount: 1,
-            createdAt: new Date().toISOString()
-          };
-          newAiRecipes.push(newRecipe);
-        }
+        console.log('✅ Processing AI recipe:', aiRecipe.nome);
+        
+        const newRecipe: Recipe = {
+          id: `ai_${Date.now()}_${Math.random()}`,
+          nome: aiRecipe.nome,
+          categoria: aiFilters.categoria as any,
+          tipoDieta: [aiFilters.tipo_dieta],
+          difficolta: aiFilters.difficolta as any,
+          tempoPreparazione: parseInt(aiFilters.tempo_max),
+          porzioni: aiRecipe.porzioni || 1,
+          calorie: aiRecipe.macros.calorie,
+          proteine: aiRecipe.macros.proteine,
+          carboidrati: aiRecipe.macros.carboidrati,
+          grassi: aiRecipe.macros.grassi,
+          ingredienti: Array.isArray(aiRecipe.ingredienti) ? aiRecipe.ingredienti : [],
+          preparazione: Array.isArray(aiRecipe.preparazione) ? aiRecipe.preparazione.join('. ') : aiRecipe.preparazione,
+          obiettivo_fitness: [aiFilters.obiettivo_fitness],
+          macro_focus: aiFilters.macro_focus as any,
+          fonte: 'ai_generated',
+          tags: ['ai_generated', 'fitness_optimized', aiFilters.fonte_fitness || 'fitness', aiFilters.timing_workout || 'anytime'],
+          rating: 4.7,
+          reviewCount: 1,
+          createdAt: new Date().toISOString()
+        };
+        newAiRecipes.push(newRecipe);
+        
+        // Salva anche in localStorage come backup
+        const existingRecipes = JSON.parse(localStorage.getItem('ai_generated_recipes') || '[]');
+        existingRecipes.push(newRecipe);
+        localStorage.setItem('ai_generated_recipes', JSON.stringify(existingRecipes));
       }
 
       // Aggiorna stato
